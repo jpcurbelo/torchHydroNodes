@@ -1,6 +1,7 @@
 ####### Gitignore file for python projects - Added by author
 # Folders
 venv-hydronodes/*
+examples/test_run/*
 
 # Files
 
