@@ -6,7 +6,8 @@ data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
 # Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
 forcings: 
   - daymet
-  - maurer
+  # - maurer
+  # - maurer_extended
 
 nn_dynamic_inputs:
   - prcp(mm/day)
@@ -95,6 +96,12 @@ experiment_name: test_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
+
+# Set seed for reproducibility
+seed: 1111
+
+# Set precision for the model [float32, float64]
+precision: float32
 
 # Number of parallel workers used in the data pipeline
 num_workers: 8
