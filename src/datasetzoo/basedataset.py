@@ -72,21 +72,106 @@ class BaseDataset(Dataset):
         data_list = []
         
         # Check if static inputs are provided - it is assumed that dynamic inputs and target are always provided
-        print('nn_static_inputs' not in self.cfg, 'nn_static_inputs' not in self.cfg.keys())
         if 'nn_static_inputs' not in self.cfg or not self.cfg['nn_static_inputs']:
             self.cfg['nn_static_inputs'] = []
         
         # List of columns to keep, everything else will be removed to reduce memory footprint
         keep_cols = self.cfg['nn_dynamic_inputs'] + self.cfg['nn_static_inputs'] + self.cfg['target_variables']
         keep_cols = list(sorted(set(keep_cols)))
+        # Lowercase all columns
+        keep_cols = [col.lower() for col in keep_cols]
         
         for basin in tqdm(self.basins, file=sys.stdout):
             
             df = self._load_basin_data(basin)
             
+            # Make the columns to be lower case
+            df.columns = [col.lower() for col in df.columns]
+
+            # Compute mean from min-max pairs if necessary
+            df = self._compute_mean_from_min_max(df, keep_cols)
+            
+            # Remove unnecessary columns
+            df = self._remove_unnecessary_columns(df, keep_cols)
+            
+            
+            # # Make end_date the last second of the specified day, such that the
+            # # dataset will include all hours of the last day, not just 00:00.
+            # start_dates = self.start_and_end_dates[basin]["start_dates"]
+            # end_dates = [
+            #     date + pd.Timedelta(days=1, seconds=-1) for date in self.start_and_end_dates[basin]["end_dates"]
+            # ]
+            
+            # basin_data_list = []
+            # # Create xarray data set for each period slice of the specific basin
+            # for i, (start_date, end_date) in enumerate(zip(start_dates, end_dates)):
+            #     pass
+            
+            
+            
+            
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
         """This function has to return the data for the specified basin as a time-indexed pandas DataFrame"""
         raise NotImplementedError("This function has to be implemented by the child class")
+    
+    
+    def _compute_mean_from_min_max(self, df, keep_cols):
+        """
+        Compute the mean from the minimum and maximum values for specified columns.
+
+        Args:
+            df (DataFrame): The DataFrame containing the data.
+            keep_cols (list): A list of columns to keep.
+
+        Returns:
+            DataFrame: The DataFrame with mean columns added.
+
+        Raises:
+            KeyError: If no suitable min-max pairs are found for computing the mean.
+        """
+        if any(col.startswith('tmean') for col in keep_cols):
+            # Loop through all available features and try to find min-max pairs
+            for col in df.columns:
+                if col.startswith(('tmax', 'tmin')):
+                    complement_col = col.replace('tmax', 'tmin') if col.startswith('tmax') else col.replace('tmin', 'tmax')
+                    mean_col_name = col.replace('max', 'mean').replace('min', 'mean')
+                    
+                    if complement_col in df.columns:
+                        df[mean_col_name] = (df[col] + df[complement_col]) / 2
+                        return df
+                    else:
+                        # If no min-max pairs found, raise KeyError
+                        raise KeyError(f"Cannot compute '{mean_col_name}'. No suitable min-max pairs found.")
+
+    def _remove_unnecessary_columns(self, df, keep_cols):
+        """
+        Remove unnecessary columns from DataFrame.
+
+        Args:
+            df (DataFrame): The DataFrame containing the data.
+            keep_cols (list): A list of columns to keep.
+
+        Returns:
+            DataFrame: The DataFrame with unnecessary columns removed.
+
+        Raises:
+            KeyError: If any of the specified columns in keep_cols are not found in the DataFrame.
+
+        """
+        # Check if any of the specified columns are not found in the DataFrame
+        not_available_columns = [col for col in keep_cols if not any(df_col.startswith(col) for df_col in df.columns)]
+        if not_available_columns:
+            msg = [
+                f"The following features are not available in the data: {not_available_columns}. ",
+                f"These are the available features: {df.columns.tolist()}"
+            ]
+            raise KeyError("".join(msg))
+        
+        # Keep only columns that start with the specified columns in keep_cols
+        df = df[[col for col in df.columns if any(col.startswith(k) for k in keep_cols)]]
+        
+        return df
+
         
         
         

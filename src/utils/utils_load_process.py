@@ -23,21 +23,30 @@ def load_run_config(config_file):
     with open(config_file, 'r') as ymlfile:
         config_data = yaml.load(ymlfile, Loader=yaml.FullLoader)  
          
+         
+    if not os.path.exists('runs'):
+        os.mkdir('runs')
+         
     if "experiment_name" in config_data and config_data["experiment_name"]:
         experiment_name = config_data['experiment_name']
-        if not os.path.exists(experiment_name):
-            os.mkdir(experiment_name)
+    else:
+        experiment_name = 'run'
                             
-        # Create a folder to save the trained models
-        now = datetime.now()
-        dt_string = now.strftime("%y%m%d %H%M%S")
-        run_dir = os.path.join(experiment_name  , f'run_{dt_string.split()[0]}_{dt_string.split()[1]}')
-        try:
-            os.mkdir(run_dir)
-        except OSError as error:
-            print(f"Folder '{run_dir}' already existed.")
+    # Create a folder to save the trained models
+    now = datetime.now()
+    dt_string = now.strftime("%y%m%d %H%M%S")
+    run_dir = os.path.join('runs'  , f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}')
+    try:
+        os.mkdir(run_dir)
+    except OSError as error:
+        print(f"Folder '{run_dir}' already existed.")
+        
+    # Check if forcings are provided for camelus dataset
+    if config_data['dataset'] == 'camelsus' and ('forcings' not in config_data or not config_data['forcings']):
+        config_data['forcings'] = ['daymet']
+        # Raise a warning
+        print('Warning! (Data): Forcing data not provided. Using Daymet data as default.')
 
-     
     # Save the configuration data to a JSON file   
     config_data_file = run_dir + '/config_data.json'
     with open(config_data_file, 'w') as f:
@@ -69,8 +78,11 @@ def load_basin_file(basin_file: Path) -> List[str]:
     
     with open(basin_file, 'r') as f:
         basins = f.read().splitlines()
-        
-    return basins      
+    
+    # Convert basins to strings of 8 characters with leading zeros if needed
+    basins = [f"{int(basin):08d}" if basin.isdigit() else basin for basin in basins]
+
+    return basins    
           
           
                     

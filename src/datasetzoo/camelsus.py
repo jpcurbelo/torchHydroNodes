@@ -55,7 +55,7 @@ def load_camels_us_forcings(data_dir: Path, basin: str, forcings: str) -> Tuple[
     if file_path:
         file_path = file_path[0]
     else:
-        raise FileNotFoundError(f'No file for Basin {basin} at {file_path}')
+        raise FileNotFoundError(f'No file for Basin {basin} at {forcing_path}/**')
     
     with open(file_path, 'r') as fp:
         # load area from header
@@ -63,7 +63,7 @@ def load_camels_us_forcings(data_dir: Path, basin: str, forcings: str) -> Tuple[
         fp.readline()
         area = int(fp.readline())
         # load the dataframe from the rest of the stream
-        df = pd.read_csv(fp, sep='\s+')
+        df = pd.read_csv(fp, sep=r'\s+')
         df["date"] = pd.to_datetime(df.Year.map(str) + "/" + df.Mnth.map(str) + "/" + df.Day.map(str),
                                     format="%Y/%m/%d")
         df = df.set_index("date")
@@ -91,6 +91,7 @@ def load_camels_us_discharge(data_dir: Path, basin: str, area: int) -> pd.Series
     """
 
     discharge_path = data_dir / 'usgs_streamflow'
+    
     file_path = list(discharge_path.glob(f'**/{basin}_streamflow_qc.txt'))
     if file_path:
         file_path = file_path[0]
@@ -98,7 +99,7 @@ def load_camels_us_discharge(data_dir: Path, basin: str, area: int) -> pd.Series
         raise FileNotFoundError(f'No file for Basin {basin} at {file_path}')
 
     col_names = ['basin', 'Year', 'Mnth', 'Day', 'QObs', 'flag']
-    df = pd.read_csv(file_path, sep='\s+', header=None, names=col_names)
+    df = pd.read_csv(file_path, sep=r'\s+', header=None, names=col_names)
     df["date"] = pd.to_datetime(df.Year.map(str) + "/" + df.Mnth.map(str) + "/" + df.Day.map(str), format="%Y/%m/%d")
     df = df.set_index("date")
 

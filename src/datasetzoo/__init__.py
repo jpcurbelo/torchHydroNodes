@@ -7,7 +7,7 @@ def get_dataset(cfg: dict,
                 basin: str = None,
                 scaler: dict = {}) -> BaseDataset:
     
-    if cfg['dataset'].lower() == "camels_us":
+    if cfg['dataset'].lower() == "camelsus":
         Dataset = CamelsUS
         
     else:
