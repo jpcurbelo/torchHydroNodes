@@ -5,17 +5,19 @@ import pandas as pd
 import logging
 from tqdm import tqdm
 import sys
+import numpy as np
+import torch
 
-from src.utils.utils_load_process import load_basin_file
-
-LOGGER = logging.getLogger(__name__)
-
+from src.utils.utils_load_process import (
+    Config, 
+    load_basin_file,
+)
 
 # Ref -> https://github.com/neuralhydrology/neuralhydrology/blob/master/neuralhydrology/datasetzoo/basedataset.py
 class BaseDataset(Dataset):
     
     def __init__(self,
-            cfg: dict,
+            cfg: Config,
             is_train: bool = True,
             basin: str = None,
             scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = {}):
@@ -24,19 +26,14 @@ class BaseDataset(Dataset):
         self.cfg = cfg
         self.is_train = is_train
         
-            
         if not is_train and not scaler:
             raise ValueError("During evaluation of validation or test period, scaler dictionary has to be passed")
-
-            # if cfg.use_basin_id_encoding and not id_to_int:
-            #     raise ValueError("For basin id embedding, the id_to_int dictionary has to be passed anything but train")
-        
         self.scaler = scaler
         
-        self.basins = load_basin_file(cfg['basin_file'])
+        self.basins = load_basin_file(cfg.basin_file)
         
-        # # During training we log data processing with progress bars, but not during validation/testing
-        # self._disable_pbar = cfg.verbose == 0 or not self.is_train
+        # During training we log data processing with progress bars, but not during validation/testing
+        self._disable_pbar = not self.cfg.verbose
         
         # Initialize class attributes that are filled in the data loading functions
         self._x_d = {}
@@ -51,12 +48,42 @@ class BaseDataset(Dataset):
         self.num_samples = 0
         self.period_starts = {}  # needed for restoring date index during evaluation
         
+        # Get the start and end dates for each period
+        self._get_start_and_end_dates()
+    
         # Load and preprocess data
         self._load_data()
     
     def __len__(self):
         return self.num_samples
     
+    def _get_start_and_end_dates(self):
+        '''
+        Extract the minimum (start) and maximum (end) dates across all train, validation, and test periods.
+        
+        - Returns:
+            min_date: datetime, minimum date.
+        '''
+        
+        all_dates = []
+
+        for period in ['train', 'valid', 'test']:
+            start_key = f'{period}_start_date'
+            end_key = f'{period}_end_date'
+            
+            # Check if start and end dates are properties of the Config object
+            if hasattr(self.cfg, '_cfg') and start_key in self.cfg._cfg and end_key in self.cfg._cfg:
+                start_date = self.cfg._cfg[start_key]
+                end_date = self.cfg._cfg[end_key]
+                all_dates.extend([start_date, end_date])
+                
+                self.start_and_end_dates[period] = {
+                    'start_date': start_date,
+                    'end_date': end_date
+                }
+
+        # min_date = min(all_dates)
+        # max_date = max(all_dates)
     
     def _load_data(self):
         
@@ -65,23 +92,43 @@ class BaseDataset(Dataset):
         
         xr = self._load_or_create_xarray_dataset()
         
-        print('xr', xr)
+        if self.cfg.loss.lower() in ['nse', 'weightednse']:
+            # Get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.
+            self._calculate_per_basin_std(xr)
+            
+            # Get feature-wise center and scale values for the feature normalization
+            self._setup_normalization(xr)
+            
+            # Performs normalization
+            xr = (xr - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"]
+            
+            # self._create_lookup_table(xr)
+            
         
     def _load_or_create_xarray_dataset(self) -> xarray.Dataset:
+        '''
+        Load the data for all basins and create an xarray Dataset.
+        
+        - Returns:
+            xr: xarray.Dataset, the xarray Dataset containing the data for all basins.
+        '''
         
         data_list = []
         
         # Check if static inputs are provided - it is assumed that dynamic inputs and target are always provided
-        if 'nn_static_inputs' not in self.cfg or not self.cfg['nn_static_inputs']:
+        if hasattr(self.cfg, 'nn_static_inputs') and self.cfg.nn_static_inputs:
             self.cfg['nn_static_inputs'] = []
         
         # List of columns to keep, everything else will be removed to reduce memory footprint
-        keep_cols = self.cfg['nn_dynamic_inputs'] + self.cfg['nn_static_inputs'] + self.cfg['target_variables']
+        keep_cols = self.cfg.nn_dynamic_inputs + self.cfg.nn_static_inputs + self.cfg.target_variables
         keep_cols = list(sorted(set(keep_cols)))
         # Lowercase all columns
         keep_cols = [col.lower() for col in keep_cols]
         
-        for basin in tqdm(self.basins, file=sys.stdout):
+        if self.cfg.verbose:
+            print("-- Loading basin data into xarray data set.")
+        
+        for basin in tqdm(self.basins, disable=self._disable_pbar, file=sys.stdout):
             
             df = self._load_basin_data(basin)
             
@@ -93,27 +140,26 @@ class BaseDataset(Dataset):
             
             # Remove unnecessary columns
             df = self._remove_unnecessary_columns(df, keep_cols)
+     
+            # Subset the DataFrame by existing periods
+            df = self._subset_df_by_periods(df)    
             
+            # Convert to xarray Dataset and add basin string as additional coordinate
+            xr = xarray.Dataset.from_dataframe(df.astype(self.cfg.precision['numpy']))
+            xr = xr.assign_coords(basin=basin)
+            data_list.append(xr)
             
-            # # Make end_date the last second of the specified day, such that the
-            # # dataset will include all hours of the last day, not just 00:00.
-            # start_dates = self.start_and_end_dates[basin]["start_dates"]
-            # end_dates = [
-            #     date + pd.Timedelta(days=1, seconds=-1) for date in self.start_and_end_dates[basin]["end_dates"]
-            # ]
+        if not data_list:
+            raise ValueError("No data loaded.")
+        
+        # Create one large dataset that has two coordinates: datetime and basin
+        xr = xarray.concat(data_list, dim='basin')
             
-            # basin_data_list = []
-            # # Create xarray data set for each period slice of the specific basin
-            # for i, (start_date, end_date) in enumerate(zip(start_dates, end_dates)):
-            #     pass
-            
-            
-            
-            
+        return xr
+               
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
         """This function has to return the data for the specified basin as a time-indexed pandas DataFrame"""
         raise NotImplementedError("This function has to be implemented by the child class")
-    
     
     def _compute_mean_from_min_max(self, df, keep_cols):
         """
@@ -172,9 +218,66 @@ class BaseDataset(Dataset):
         
         return df
 
+    def _subset_df_by_periods(self, df):  
+        '''
+        Subset the DataFrame by the specified periods.
         
+        - Args:
+            df: DataFrame, the DataFrame to subset.
         
+        - Returns:
+            subsetted_df: DataFrame, the subsetted DataFrame.
+        '''
+           
+        # Initialize an empty DataFrame to store the subsetted data
+        subsetted_df = pd.DataFrame()
         
+        # Iterate over each interval and filter the DataFrame
+        for _, dates in self.start_and_end_dates.items():
+            start_date = dates['start_date']
+            end_date = dates['end_date']
+            interval_subset = df[(df.index >= start_date) & (df.index <= end_date)]            
+            subsetted_df = pd.concat([subsetted_df, interval_subset])
+            
+        # Filter by unique dates
+        subsetted_df = subsetted_df[~subsetted_df.index.duplicated(keep='first')]
         
+        # Sort by DatetimeIndex and reindex
+        subsetted_df = subsetted_df.sort_index(axis=0, ascending=True)
+        subsetted_df = subsetted_df.reindex(pd.date_range(subsetted_df.index[0], subsetted_df.index[-1], freq='D'))   ## freq=native_frequency
+
+        return subsetted_df
         
-        
+    def _calculate_per_basin_std(self, xr: xarray.Dataset):
+
+        basin_coordinates = xr["basin"].values.tolist()
+        if self.cfg.verbose:
+            print("-- Calculating target variable stds per basin")
+        nan_basins = []
+        for basin in tqdm(self.basins, file=sys.stdout, disable=self._disable_pbar):
+            
+            obs = xr.sel(basin=basin)[self.cfg.target_variables].to_array().values
+            if np.sum(~np.isnan(obs)) > 1:
+                # Calculate std for each target
+                per_basin_target_stds = torch.tensor(np.expand_dims(np.nanstd(obs, axis=1), 0), dtype=self.cfg.precision['torch'])
+            else:
+                nan_basins.append(basin)
+                per_basin_target_stds = torch.full((1, obs.shape[0]), np.nan, dtype=self.cfg.precision['torch'])
+
+            self._per_basin_target_stds[basin] = per_basin_target_stds
+            
+        if len(nan_basins) > 0:
+            print("Warning! (Data): The following basins had not enough valid target values to calculate a standard deviation: "
+                           f"{', '.join(nan_basins)}. NSE loss values for this basin will be NaN.")
+            
+    def _setup_normalization(self, xr: xarray.Dataset):
+        # default center and scale values are feature mean and std
+        self.scaler["xarray_feature_scale"] = xr.std(skipna=True)
+        self.scaler["xarray_feature_center"] = xr.mean(skipna=True)   
+
+            
+            
+            
+            
+            
+###############################

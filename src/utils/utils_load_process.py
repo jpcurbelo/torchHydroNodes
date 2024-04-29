@@ -3,68 +3,13 @@ import json
 import os
 from datetime import datetime
 import pandas as pd
+from pandas import Timestamp
 from pathlib import Path
-from typing import List
+from typing import List, Union, Any
+import numpy as np
+import torch
 
-## Functions
-def load_run_config(config_file):
-    '''
-    Load the configuration data from a YAML file, save the configuration data to a JSON file,
-    and return the configuration data.
-    
-    - Args:
-        config_file: str, path to the YAML file with the configuration data.
-        
-    - Returns:
-        config_data: dict, configuration data.
-    '''
-    
-    ## Config data
-    with open(config_file, 'r') as ymlfile:
-        config_data = yaml.load(ymlfile, Loader=yaml.FullLoader)  
-         
-         
-    if not os.path.exists('runs'):
-        os.mkdir('runs')
-         
-    if "experiment_name" in config_data and config_data["experiment_name"]:
-        experiment_name = config_data['experiment_name']
-    else:
-        experiment_name = 'run'
-                            
-    # Create a folder to save the trained models
-    now = datetime.now()
-    dt_string = now.strftime("%y%m%d %H%M%S")
-    run_dir = os.path.join('runs'  , f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}')
-    try:
-        os.mkdir(run_dir)
-    except OSError as error:
-        print(f"Folder '{run_dir}' already existed.")
-        
-    # Check if forcings are provided for camelus dataset
-    if config_data['dataset'] == 'camelsus' and ('forcings' not in config_data or not config_data['forcings']):
-        config_data['forcings'] = ['daymet']
-        # Raise a warning
-        print('Warning! (Data): Forcing data not provided. Using Daymet data as default.')
-
-    # Save the configuration data to a JSON file   
-    config_data_file = run_dir + '/config_data.json'
-    with open(config_data_file, 'w') as f:
-        json.dump(config_data, f, indent=4)
-        
-    # Transform dates to datetime objects
-    config_data['train_start_date'] = pd.to_datetime(config_data['train_start_date'], format='%d/%m/%Y')
-    config_data['train_end_date'] = pd.to_datetime(config_data['train_end_date'], format='%d/%m/%Y')
-    config_data['valid_start_date'] = pd.to_datetime(config_data['valid_start_date'], format='%d/%m/%Y')
-    config_data['valid_end_date'] = pd.to_datetime(config_data['valid_end_date'], format='%d/%m/%Y')
-    config_data['test_start_date'] = pd.to_datetime(config_data['test_start_date'], format='%d/%m/%Y')
-    config_data['test_end_date'] = pd.to_datetime(config_data['test_end_date'], format='%d/%m/%Y')
-    
-    # Transform data_dir to a Path object
-    config_data['data_dir'] = Path(config_data['data_dir'])
-    
-    return config_data        
-          
+## Functions      
 def load_basin_file(basin_file: Path) -> List[str]:
     '''
     Load the basin file and return the list of basins.
@@ -83,13 +28,236 @@ def load_basin_file(basin_file: Path) -> List[str]:
     basins = [f"{int(basin):08d}" if basin.isdigit() else basin for basin in basins]
 
     return basins    
-          
-          
-                    
+                            
 def load_forcing_target_data(run_config):
     
     pass
 
+## Classes
+class Config(object):
+    '''
+    During parsing, config keys that contain 'dir', 'file', or 'path' will be converted to pathlib.Path instances.
+    '''
+    
+    def __init__(self, yml_path_or_dict: Union[Path, dict]):
+        
+        if isinstance(yml_path_or_dict, Path) or isinstance(yml_path_or_dict, str):
+            self._cfg = self._parse_run_config(yml_path_or_dict)
+        else:
+            raise ValueError(f'Cannot create a config from input of type {type(yml_path_or_dict)}.')
+        
+        # Create a folder to save the trained models
+        if isinstance(yml_path_or_dict, Path):
+            self.create_run_folder_tree()
+        
+    def create_run_folder_tree(self):
+        '''
+        Create a folder to save the trained models.
+        
+        - Args:
+            config_data: dict, configuration data.
+            
+        - Returns:
+            None
+        '''
+        
+        if not os.path.exists('runs'):
+            os.mkdir('runs')
+            
+        # Experiment name
+        if "experiment_name" in self._cfg and self._cfg["experiment_name"]:
+            experiment_name = self._cfg['experiment_name']
+        else:
+            experiment_name = 'run'
+                               
+        # Create a folder to save the trained models
+        now = datetime.now()
+        dt_string = now.strftime("%y%m%d %H%M%S")
+        run_dir = os.path.join('runs'  , f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}')
+        try:
+            os.mkdir(run_dir)
+        except OSError as error:
+            print(f"Folder '{run_dir}' already existed.")
+            
+        # Check if forcings are provided for camelus dataset
+        # if config_data['dataset'] == 'camelsus' and ('forcings' not in config_data or not config_data['forcings']):
+        #     config_data['forcings'] = ['daymet']
+        if self.dataset == 'camelsus' and not self.forcings:
+            self._cfg['forcings'] = ['daymet']
+            # Raise a warning
+            print('Warning! (Data): Forcing data not provided. Using Daymet data as default.')
+
+        # Convert PosixPath objects to strings before serializing
+        cfg_copy = self._cfg.copy()
+        for key, value in cfg_copy.items():
+            if isinstance(value, Path):
+                cfg_copy[key] = str(value)
+            elif isinstance(value, Timestamp):
+                cfg_copy[key] = value.isoformat()
+               
+        # Convert precision to string
+        if cfg_copy['precision']['numpy'] == np.float32:
+            cfg_copy['precision'] = 'float32'
+        else:
+            cfg_copy['precision'] = 'float64'
+
+        # Save the configuration data to a JSON file   
+        config_data_file = run_dir + '/config_data.json'   
+        with open(config_data_file, 'w') as f:
+            json.dump(cfg_copy, f, indent=4)
+    
+    def _get_property_value(self, key: str) -> Union[float, int, str, list, dict, Path, pd.Timestamp]:
+        '''
+        Get the value of a property from the config.
+        
+        - Args:
+            key: str, key of the property.
+            
+        - Returns:
+            value: float, int, str, list, dict, Path, pd.Timestamp, value of the property.
+        '''
+        
+        """Use this function internally to return attributes of the config that are mandatory"""
+        if key not in self._cfg.keys():
+            raise ValueError(f"{key} is not specified in the config (.yml).")
+        elif self._cfg[key] is None:
+            raise ValueError(f"{key} is mandatory but 'None' in the config.")
+        else:
+            return self._cfg[key]    
+        
+    @staticmethod
+    def _parse_run_config(config_file):
+        '''
+        Parse the configuration data from a YAML file or a dictionary.
+        
+        - Args:
+            config_file: str, path to the YAML file with the configuration data.
+            
+        - Returns:
+            cfg: dict, configuration data.
+        '''
+        
+        # Read the config file
+        if isinstance(config_file, Path):
+            if config_file.exists():
+                with open(config_file, 'r') as ymlfile:
+                    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
+            else:
+                raise FileNotFoundError(f"File not found: {config_file}")
+        else:
+            cfg = config_file
+        
+        # Parse the config dictionary
+        for key, val in cfg.items():
+            # Convert all path strings to PosixPath objects
+            if any([key.endswith(x) for x in ['_dir', '_path', '_file', '_files']]):
+                if (val is not None) and (val != "None"):
+                    if isinstance(val, list):
+                        temp_list = []
+                        for element in val:
+                            temp_list.append(Path(element))
+                        cfg[key] = temp_list
+                    else:
+                        cfg[key] = Path(val)
+                else:
+                    cfg[key] = None
+                    
+            # Convert all date strings to datetime objects
+            if key.endswith('_date'):
+                if isinstance(val, list):
+                    temp_list = []
+                    for elem in val:
+                        temp_list.append(pd.to_datetime(elem, format='%d/%m/%Y'))
+                    cfg[key] = temp_list
+                else:
+                    cfg[key] = pd.to_datetime(val, format='%d/%m/%Y')
+                    
+        # Set precision
+        if 'precision' not in cfg or cfg['precision'] not in ['float32', 'float64']:
+            cfg['precision'] = {
+                'numpy': np.float32,
+                'torch': torch.float32
+            }
+        else:
+            cfg['precision'] = {
+                'numpy': np.float32 if cfg['precision'] == 'float32' else np.float64,
+                'torch': torch.float32 if cfg['precision'] == 'float32' else torch.float64
+            }
+            
+        # Add more config parsing if necessary
+        return cfg
+         
+    @staticmethod
+    def _as_default_list(value: Any) -> list:
+        '''
+        Convert the value to a list if it is not a list.
+        
+        - Args:
+            value: Any, value to convert to a list.
+            
+        - Returns:
+            list, value as a list.
+        '''
+        
+        if value is None:
+            return []
+        elif isinstance(value, list):
+            return value
+        else:
+            return [value]      
+        
+    @property
+    def dataset(self) -> str:
+        return self._get_property_value("dataset")
+    
+    @property
+    def basin_file(self) -> Path:
+        return self._get_property_value("basin_file")
+    
+    @property
+    def nn_dynamic_inputs(self) -> list:
+        return self._get_property_value("nn_dynamic_inputs")
+    
+    @property
+    def nn_static_inputs(self) -> list:
+        if "static_attributes" in self._cfg.keys():
+            self._as_default_list(self._cfg['nn_static_inputs'])
+        else:
+            return []
+    
+    @property
+    def target_variables(self) -> list:
+        return self._get_property_value("target_variables")
+    
+    @property
+    def forcings(self) -> List[str]:
+        return self._as_default_list(self._get_property_value("forcings"))
+        
+    @property
+    def data_dir(self) -> Path:
+        return self._get_property_value("data_dir")
+
+    @property
+    def precision(self) -> dict:
+        return self._get_property_value("precision")
+    
+    @property
+    def loss(self) -> str:
+        return self._get_property_value("loss")
+    
+    @property
+    def verbose(self) -> int:
+        """Defines level of verbosity.
+
+        0: Only log info messages, don't show progress bars
+        1: Log info messages and show progress bars
+
+        Returns
+        -------
+        int
+            Level of verbosity.
+        """
+        return self._cfg.get("verbose", 1)
 
 
 if __name__ == "__main__":

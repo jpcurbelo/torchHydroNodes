@@ -22,17 +22,17 @@ class CamelsUS(BaseDataset):
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
         # get forcings
         dfs = []
-        for forcing in self.cfg['forcings']:
-            df, area = load_camels_us_forcings(self.cfg['data_dir'], basin, forcing)
+        for forcing in self.cfg.forcings:
+            df, area = load_camels_us_forcings(self.cfg.data_dir, basin, forcing)
 
             # rename columns
-            if len(self.cfg['forcings']) > 1:
+            if len(self.cfg.forcings) > 1:
                 df = df.rename(columns={col: f"{col}_{forcing}" for col in df.columns})
             dfs.append(df)
         df = pd.concat(dfs, axis=1)
         
         # add discharge
-        df['obs_runoff(mm/day)'] = load_camels_us_discharge(self.cfg['data_dir'], basin, area)   
+        df['obs_runoff(mm/day)'] = load_camels_us_discharge(self.cfg.data_dir, basin, area)   
 
         # replace invalid discharge values by NaNs
         qobs_cols = [col for col in df.columns if "qobs" in col.lower()]
@@ -46,6 +46,20 @@ class CamelsUS(BaseDataset):
     
     
 def load_camels_us_forcings(data_dir: Path, basin: str, forcings: str) -> Tuple[pd.DataFrame, int]:
+    '''
+    Load the forcing data for a basin of the CAMELS US data set.
+    
+    - Args:
+        data_dir: Path, path to the CAMELS US directory. This folder must contain a 'basin_mean_forcing' folder with 18
+                  subdirectories (for the 18 HUCS) as in the original CAMELS data set. In each HUC folder are the forcing files
+                    (.txt), starting with the 8-digit basin id.
+        basin: str, 8-digit USGS identifier of the basin.
+        forcings: str, name of the forcing data to load.
+        
+    - Returns:
+        df: pd.DataFrame, time-index pandas.DataFrame of the forcing values.
+        area: int, catchment area (m2), used to normalize the discharge.
+    '''
     
     forcing_path = data_dir / 'basin_mean_forcing' / forcings
     if not forcing_path.is_dir():

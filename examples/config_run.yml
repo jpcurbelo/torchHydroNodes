@@ -46,7 +46,7 @@ test_end_date: "30/09/2010"
 pretrain_nn: False
 
 # Loss function to use [mse, nse]
-loss: mse
+loss: nse
 # Metrics to use for evaluation
 metrics:
   - NSE
@@ -114,6 +114,9 @@ log_tensorboard: True
 
 # If a value and greater than 0, logs n random basins as figures during validation
 log_n_figures: 2
+
+# Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
+verbose: 1
 
 # Save model weights every n epochs (if model performance improves on validation set)
 save_weights_every: 10
