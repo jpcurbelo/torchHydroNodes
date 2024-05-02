@@ -41,6 +41,18 @@ class BaseConceptModel:
         '''This function should return the model parameters'''
         raise NotImplementedError("This function has to be implemented by the child class")
     
+    def run (self, basin):
+        '''This function should run the model'''
+        raise NotImplementedError("This function has to be implemented by the child class")
+    
+    def save_results(self, ds, results, basin, period='train'):
+        '''This function should save the model results'''
+        raise NotImplementedError("This function has to be implemented by the child class")
+    
+    def plot_results(self, ds, q_bucket, basin, period='train', plot_prcp=False):
+        '''This function should plot the model results'''
+        raise NotImplementedError("This function has to be implemented by the child class")        
+    
     # @property
     # def get_parameters(self):
     #     '''This function should return the model parameters'''

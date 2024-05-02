@@ -11,8 +11,10 @@ def get_concept_model(cfg: Config,
     '''Get the concept model based on the configuration'''
     
     if cfg.concept_model.lower() == "exphydro":
-        model = ExpHydro(cfg,
-                         ds,
-                         odesmethod=odesmethod)        
+        Model = ExpHydro
     else:
         raise NotImplementedError(f"No model class implemented for model {cfg.model}")
+    
+    model = Model(cfg=cfg, ds=ds, odesmethod=odesmethod)
+    
+    return model

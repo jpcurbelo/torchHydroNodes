@@ -99,7 +99,7 @@ clip_gradient_norm: 1.0
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: test_run
+experiment_name: concept_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0

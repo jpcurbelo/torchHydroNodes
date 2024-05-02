@@ -76,8 +76,19 @@ class Config(object):
         run_dir = os.path.join('runs'  , f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}')
         try:
             os.mkdir(run_dir)
+            self._cfg['run_dir'] = run_dir
         except OSError as error:
             print(f"Folder '{run_dir}' already existed.")
+            
+        # Create a folder to save img content
+        plots_dir = os.path.join(run_dir, 'model_plots')
+        os.mkdir(plots_dir)
+        self._cfg['plots_dir'] = plots_dir
+        
+        # Create a folder to save the model results (csv files)
+        results_dir = os.path.join(run_dir, 'model_results')
+        os.mkdir(results_dir)
+        self._cfg['results_dir'] = results_dir
             
         # Check if forcings are provided for camelus dataset
         # if config_data['dataset'] == 'camelsus' and ('forcings' not in config_data or not config_data['forcings']):
@@ -286,6 +297,22 @@ class Config(object):
     @property   
     def concept_model(self) -> str:
         return self._get_property_value("concept_model")
+    
+    @property
+    def run_dir(self) -> Path:
+        return self._get_property_value("run_dir")
+    
+    @property
+    def plots_dir(self) -> Path:
+        return self._get_property_value("plots_dir")
+    
+    @property
+    def results_dir(self) -> Path:
+        return self._get_property_value("results_dir")
+    
+    @property
+    def disable_pbar(self) -> bool:
+        return not self._cfg.get("verbose")
     
 
 if __name__ == "__main__":
