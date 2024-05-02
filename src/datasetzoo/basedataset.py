@@ -19,12 +19,12 @@ class BaseDataset(Dataset):
     def __init__(self,
             cfg: Config,
             is_train: bool = True,
-            basin: str = None,
-            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = {}):
+            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = dict()):
         
         super(BaseDataset, self).__init__()
         self.cfg = cfg
         self.is_train = is_train
+        self._compute_scaler = True if is_train else False
         
         if not is_train and not scaler:
             raise ValueError("During evaluation of validation or test period, scaler dictionary has to be passed")
@@ -36,17 +36,17 @@ class BaseDataset(Dataset):
         self._disable_pbar = not self.cfg.verbose
         
         # Initialize class attributes that are filled in the data loading functions
-        self._x_d = {}
-        self._x_h = {}
-        self._x_f = {}
-        self._x_s = {}
-        self._attributes = {}
-        self._y = {}
-        self._per_basin_target_stds = {}
-        self._dates = {}
-        self.start_and_end_dates = {}
+        self._x_d = dict()
+        self._x_h = dict()
+        self._x_f = dict()
+        self._x_s = dict()
+        self._attributes = dict()
+        self._y = dict()
+        self._per_basin_target_stds = dict()
+        self._dates = dict()
+        self.start_and_end_dates = dict()
         self.num_samples = 0
-        self.period_starts = {}  # needed for restoring date index during evaluation
+        self.period_starts = dict()  # needed for restoring date index during evaluation
         
         # Get the start and end dates for each period
         self._get_start_and_end_dates()
@@ -65,17 +65,15 @@ class BaseDataset(Dataset):
             min_date: datetime, minimum date.
         '''
         
-        all_dates = []
-
-        for period in ['train', 'valid', 'test']:
+        period_list = ['train', 'valid'] if self.is_train else ['test']
+        for period in period_list:
             start_key = f'{period}_start_date'
             end_key = f'{period}_end_date'
             
             # Check if start and end dates are properties of the Config object
             if hasattr(self.cfg, '_cfg') and start_key in self.cfg._cfg and end_key in self.cfg._cfg:
-                start_date = self.cfg._cfg[start_key]
-                end_date = self.cfg._cfg[end_key]
-                all_dates.extend([start_date, end_date])
+                start_date = getattr(self.cfg, start_key) 
+                end_date   = getattr(self.cfg, end_key)
                 
                 self.start_and_end_dates[period] = {
                     'start_date': start_date,
@@ -92,18 +90,23 @@ class BaseDataset(Dataset):
         
         xr = self._load_or_create_xarray_dataset()
         
+        # If is_train, split the data into train and validation periods
+        if self.is_train:
+            self.xr_train = xr.sel(date=slice(self.start_and_end_dates['train']['start_date'], self.start_and_end_dates['valid']['start_date']))
+            self.xr_valid = xr.sel(date=slice(self.start_and_end_dates['valid']['start_date'], self.start_and_end_dates['valid']['end_date']))
+        else:
+            self.xr_test = xr.sel(date=slice(self.start_and_end_dates['test']['start_date'], self.start_and_end_dates['test']['end_date']))
+        
         if self.cfg.loss.lower() in ['nse', 'weightednse']:
             # Get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.
-            self._calculate_per_basin_std(xr)
+            self._calculate_per_basin_std(self.xr_train)
             
+        if self._compute_scaler:
             # Get feature-wise center and scale values for the feature normalization
-            self._setup_normalization(xr)
-            
-            # Performs normalization
-            xr = (xr - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"]
-            
-            # self._create_lookup_table(xr)
-            
+            self._setup_normalization(self.xr_train)
+                        
+        # Performs normalization
+        # xr = (xr - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"] 
         
     def _load_or_create_xarray_dataset(self) -> xarray.Dataset:
         '''
@@ -113,11 +116,11 @@ class BaseDataset(Dataset):
             xr: xarray.Dataset, the xarray Dataset containing the data for all basins.
         '''
         
-        data_list = []
+        data_list = list()
         
         # Check if static inputs are provided - it is assumed that dynamic inputs and target are always provided
         if hasattr(self.cfg, 'nn_static_inputs') and self.cfg.nn_static_inputs:
-            self.cfg['nn_static_inputs'] = []
+            self.cfg['nn_static_inputs'] = list()
         
         # List of columns to keep, everything else will be removed to reduce memory footprint
         keep_cols = self.cfg.nn_dynamic_inputs + self.cfg.nn_static_inputs + self.cfg.target_variables
@@ -241,10 +244,10 @@ class BaseDataset(Dataset):
             
         # Filter by unique dates
         subsetted_df = subsetted_df[~subsetted_df.index.duplicated(keep='first')]
-        
+                
         # Sort by DatetimeIndex and reindex
         subsetted_df = subsetted_df.sort_index(axis=0, ascending=True)
-        subsetted_df = subsetted_df.reindex(pd.date_range(subsetted_df.index[0], subsetted_df.index[-1], freq='D'))   ## freq=native_frequency
+        # subsetted_df = subsetted_df.reindex(pd.date_range(subsetted_df.index[0], subsetted_df.index[-1], freq='D'))   ## freq=native_frequency
 
         return subsetted_df
         
@@ -253,7 +256,7 @@ class BaseDataset(Dataset):
         basin_coordinates = xr["basin"].values.tolist()
         if self.cfg.verbose:
             print("-- Calculating target variable stds per basin")
-        nan_basins = []
+        nan_basins = list()
         for basin in tqdm(self.basins, file=sys.stdout, disable=self._disable_pbar):
             
             obs = xr.sel(basin=basin)[self.cfg.target_variables].to_array().values
@@ -271,13 +274,21 @@ class BaseDataset(Dataset):
                            f"{', '.join(nan_basins)}. NSE loss values for this basin will be NaN.")
             
     def _setup_normalization(self, xr: xarray.Dataset):
-        # default center and scale values are feature mean and std
+        '''
+        Setup the normalization for the xarray dataset. 
+        The default center and scale values are the feature mean and std.
+        
+        - Args:
+            xr: xarray.Dataset, the xarray dataset to normalize.
+            
+        - Returns:
+            None
+        '''
+        
         self.scaler["xarray_feature_scale"] = xr.std(skipna=True)
         self.scaler["xarray_feature_center"] = xr.mean(skipna=True)   
 
-            
-            
-            
+
             
             
 ###############################

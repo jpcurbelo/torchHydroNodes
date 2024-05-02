@@ -141,7 +141,7 @@ class Config(object):
         if isinstance(config_file, Path):
             if config_file.exists():
                 with open(config_file, 'r') as ymlfile:
-                    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
+                    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)                    
             else:
                 raise FileNotFoundError(f"File not found: {config_file}")
         else:
@@ -153,7 +153,7 @@ class Config(object):
             if any([key.endswith(x) for x in ['_dir', '_path', '_file', '_files']]):
                 if (val is not None) and (val != "None"):
                     if isinstance(val, list):
-                        temp_list = []
+                        temp_list = list()
                         for element in val:
                             temp_list.append(Path(element))
                         cfg[key] = temp_list
@@ -165,7 +165,7 @@ class Config(object):
             # Convert all date strings to datetime objects
             if key.endswith('_date'):
                 if isinstance(val, list):
-                    temp_list = []
+                    temp_list = list()
                     for elem in val:
                         temp_list.append(pd.to_datetime(elem, format='%d/%m/%Y'))
                     cfg[key] = temp_list
@@ -200,7 +200,7 @@ class Config(object):
         '''
         
         if value is None:
-            return []
+            return list()
         elif isinstance(value, list):
             return value
         else:
@@ -223,7 +223,7 @@ class Config(object):
         if "static_attributes" in self._cfg.keys():
             self._as_default_list(self._cfg['nn_static_inputs'])
         else:
-            return []
+            return list()
     
     @property
     def target_variables(self) -> list:
@@ -259,6 +259,34 @@ class Config(object):
         """
         return self._cfg.get("verbose", 1)
 
+    @property
+    def train_start_date(self) -> pd.Timestamp:
+        return self._get_property_value("train_start_date")
+    
+    @property
+    def train_end_date(self) -> pd.Timestamp:
+        return self._get_property_value("train_end_date")
+    
+    @property
+    def test_start_date(self) -> pd.Timestamp:
+        return self._get_property_value("test_start_date")
+    
+    @property
+    def test_end_date(self) -> pd.Timestamp:
+        return self._get_property_value("test_end_date")
+    
+    @property
+    def valid_start_date(self) -> pd.Timestamp:
+        return self._get_property_value("valid_start_date")
+    
+    @property
+    def valid_end_date(self) -> pd.Timestamp:
+        return self._get_property_value("valid_end_date")
+    
+    @property   
+    def concept_model(self) -> str:
+        return self._get_property_value("concept_model")
+    
 
 if __name__ == "__main__":
     pass

@@ -14,13 +14,19 @@ from src.utils.utils_load_process import (
 )
 
 from src.datasetzoo import get_dataset
+from src.modelzoo_concept import get_concept_model
 
 def main(config_file):
     
     # Create a Config object for the the run config
     cfg = Config(Path(config_file))
     
-    ds = get_dataset(cfg=cfg, period="train", is_train=True, scaler=dict()) 
+    # Load the forcing and target data 
+    ds = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
+
+    # Load the model
+    model_concept = get_concept_model(cfg, ds.xr_train)
+    
 
 if __name__ == '__main__':
     

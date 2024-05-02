@@ -6,22 +6,21 @@ import pandas as pd
 import numpy as np
 
 from src.datasetzoo.basedataset import BaseDataset
+from src.utils.utils_load_process import Config
 
 
 class CamelsUS(BaseDataset):
     
     def __init__(self,
-            cfg: dict,
+            cfg: Config,
             is_train: bool = True,
-            period: str = "train",
-            basin: str = None,
-            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = {}):
+            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = dict()):
         
-        super(CamelsUS, self).__init__(cfg, is_train, period, scaler)
+        super(CamelsUS, self).__init__(cfg, is_train, scaler)
         
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
         # get forcings
-        dfs = []
+        dfs = list()
         for forcing in self.cfg.forcings:
             df, area = load_camels_us_forcings(self.cfg.data_dir, basin, forcing)
 
