@@ -23,7 +23,7 @@ class BaseConceptModel:
         self.data_type_torch = cfg.precision['torch']
         
         # Interpolators
-        self.interpolators = self.interpolator_dict()
+        self.interpolators = self.create_interpolator_dict()
         
     def conceptual_model(self, t, y, params):
         '''This function should implement the conceptual model to be used for the task'''
@@ -33,7 +33,7 @@ class BaseConceptModel:
         '''This function should implement the step function to be used for the task'''
         raise NotImplementedError("This function has to be implemented by the child class")
     
-    def interpolator_dict(self, t):
+    def create_interpolator_dict(self, t):
         '''This function should return the interpolator dictionary for the input variables'''
         raise NotImplementedError("This function has to be implemented by the child class")
     

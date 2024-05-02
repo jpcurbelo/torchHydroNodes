@@ -35,19 +35,19 @@ nn_model: mlp
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-# train_start_date: "01/10/1980"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
-
-train_start_date: "01/10/1995"
+train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2002"
+valid_end_date: "30/09/2010"
 test_start_date: "01/10/2000"
-test_end_date: "30/09/2002"
+test_end_date: "30/09/2010"
+
+# train_start_date: "01/10/1995"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2002"
+# test_start_date: "01/10/2000"
+# test_end_date: "30/09/2002"
 
 # Set if the NN model should be pre-trained
 pretrain_nn: False

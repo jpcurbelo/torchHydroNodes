@@ -29,11 +29,11 @@ class CamelsUS(BaseDataset):
                 df = df.rename(columns={col: f"{col}_{forcing}" for col in df.columns})
             dfs.append(df)
         df = pd.concat(dfs, axis=1)
-        
-        # add discharge
+
+        # Add discharge
         df['obs_runoff(mm/day)'] = load_camels_us_discharge(self.cfg.data_dir, basin, area)   
 
-        # replace invalid discharge values by NaNs
+        # Replace invalid discharge values by NaNs
         qobs_cols = [col for col in df.columns if "qobs" in col.lower()]
         for col in qobs_cols:
             df.loc[df[col] < 0, col] = np.nan
@@ -80,6 +80,11 @@ def load_camels_us_forcings(data_dir: Path, basin: str, forcings: str) -> Tuple[
         df["date"] = pd.to_datetime(df.Year.map(str) + "/" + df.Mnth.map(str) + "/" + df.Day.map(str),
                                     format="%Y/%m/%d")
         df = df.set_index("date")
+        
+        # If any columns contain 'dayl(s)' in the name, convert from seconds to hours
+        for col in df.columns:
+            if 'dayl(s)' in col:
+                df[col] /= 3600
 
     return df, area
 

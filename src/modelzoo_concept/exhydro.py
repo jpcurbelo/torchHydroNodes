@@ -22,7 +22,7 @@ class ExpHydro(BaseConceptModel):
         super().__init__(cfg, ds, odesmethod)
         
         # Interpolators
-        self.interpolators = self.interpolator_dict()
+        self.interpolators = self.create_interpolator_dict()
         self.time_series = np.arange(len(ds['date'].values))
         
         # Parameters per basin
@@ -37,7 +37,7 @@ class ExpHydro(BaseConceptModel):
         # Df: Thermal degree‐day factor                   
         # Tmax: Temperature above which snow starts melting 
         # Tmin: Temperature below which precipitation is snow
-        
+         
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       
         # S1: Storage state S_water (t)   
@@ -57,7 +57,7 @@ class ExpHydro(BaseConceptModel):
         ds0_dt = Ps(precp, temp, tmin, self.step_function) - m_out
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = Pr(precp, temp, tmin, self.step_function) + m_out - ET(s1, temp, lday, smax, self.step_function) - q_out
-        
+
         return [ds0_dt, ds1_dt]
            
     def step_function(self, x):
@@ -72,7 +72,7 @@ class ExpHydro(BaseConceptModel):
         '''
         return (np.tanh(5.0 * x) + 1.0) * 0.5
     
-    def interpolator_dict(self):
+    def create_interpolator_dict(self):
         '''
         Create interpolator functions for the input variables.
         
@@ -161,8 +161,18 @@ class ExpHydro(BaseConceptModel):
         # Set the parameters
         params = tuple(basin_params[2:])
         
+        # print('Initial conditions:', y0)
+        # print('Parameters:', params)
+        # aux = input('Press any key to continue...')
+        
+        # print('len(precp_series)', len(self.time_series))
+        # print('len(time_series)', len(self.time_series))
+        # print('S_ic', y0)
+        # print('self.time_series', self.time_series)
+        # aux = input('Press Enter to continue...')
+        
         # Run the model
-        y = sp_solve_ivp(self.conceptual_model, t_span=(0, len(self.time_series)), y0=y0, t_eval=self.time_series, 
+        y = sp_solve_ivp(self.conceptual_model, t_span=(0, len(self.time_series) - 1), y0=y0, t_eval=self.time_series, 
                          args=params, method=self.odesmethod)
         
         # Extract snow and water series ->  two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022
@@ -182,6 +192,16 @@ class ExpHydro(BaseConceptModel):
         return s_snow, s_water, q_bucket, et_bucket, m_bucket, ps_bucket, pr_bucket
     
     def save_results(self, ds, results, basin, period='train'):
+        '''
+        Save the model results to a CSV file.
+        
+        - Args:
+            ds: xarray.Dataset, dataset with the input data.
+            results: tuple, tuple with the model results.
+            basin: str, basin name.
+            period: str, period of the run ('train', 'test', 'valid').
+            
+        '''
         
         results_dict = {
             'date': ds['date'],
@@ -206,6 +226,17 @@ class ExpHydro(BaseConceptModel):
         results_df.to_csv(results_file, index=False)
         
     def plot_results(self, ds, q_bucket, basin, period='train', plot_prcp=False):
+        '''
+        Plot the model predictions and observed values.
+        
+        - Args:
+            ds: xarray.Dataset, dataset with the input data.
+            q_bucket: array_like, model predictions.
+            basin: str, basin name.
+            period: str, period of the run ('train', 'test', 'valid').
+            plot_prcp: bool, whether to plot the precipitation rate.
+            
+        '''
         
         dates = ds['date']
         q_obs = ds['obs_runoff(mm/day)']            
@@ -265,24 +296,24 @@ class ExpHydro(BaseConceptModel):
         
 ## Auxiliary functions
 # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
-Qb = lambda S1, f, Smax, Qmax, step_fct: step_fct(S1) * step_fct(S1 - Smax) * Qmax \
-                                        + step_fct(S1) * step_fct(Smax - S1) * Qmax * np.exp(-f * (Smax - S1))
+Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
+                                        + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
                                         
-# Qspill is the snowmelt is available to infiltrate into the catchment bucket, but the storage S has reached full capacity Smax.
-Qs = lambda S1, Smax, step_fct: step_fct(S1) * step_fct(S1 - Smax) * (S1 - Smax)
+# Qspill is the snowmelt is available to infiltrate into the catchment bucket, but the storage S has reached full capacity smax.
+Qs = lambda s1, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * (s1 - smax)
 
 # Precipitation as snow (A1) - Hoge_EtAl_HESS_2022
-Ps = lambda P, T, Tmin, step_fct: step_fct(Tmin - T) * P
+Ps = lambda p, t, tmin, step_fct: step_fct(tmin - t) * p
 
 # Precipitation as snow (A2) - Hoge_EtAl_HESS_2022
-Pr = lambda P, T, Tmin, step_fct: step_fct(T - Tmin) * P
+Pr = lambda p, t, tmin, step_fct: step_fct(t - tmin) * p
 
 # Melting (A4) - Hoge_EtAl_HESS_2022
-M = lambda T, Tmax, S0, Df, step_fct: step_fct(T - Tmax) * step_fct(S0) * np.minimum(S0, Df * (T - Tmax))
+M = lambda t, tmax, s0, Df, step_fct: step_fct(t - tmax) * step_fct(s0) * np.minimum(s0, Df * (t - tmax))
 
 # Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
-ET = lambda S1, T, Lday, Smax, step_fct: step_fct(S1) * step_fct(S1 - Smax) * PET(T, Lday) + \
-                               step_fct(S1) * step_fct(Smax - S1) * PET(T, Lday) * (S1 / Smax)
+ET = lambda s1, t, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(t, lday)  \
+                            + step_fct(s1) * step_fct(smax - s1) * PET(t, lday) * (s1 / smax)
                                                  
 # Potential evapotranspiration - Hamon’s formula (Hamon, 1963) - Hoge_EtAl_HESS_2022 
-PET = lambda T, Lday: 29.8 * Lday * 0.611 * np.exp((17.3 * T) / (T + 237.3)) / (T + 273.2)    
+PET = lambda t, lday: 29.8 * lday * 0.611 * np.exp((17.3 * t) / (t + 237.3)) / (t + 273.2)    
