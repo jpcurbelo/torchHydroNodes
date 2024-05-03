@@ -7,7 +7,7 @@ import sys
 import numpy as np
 import torch
 
-from src.utils.utils_load_process import (
+from src.utils.load_process import (
     Config, 
     load_basin_file,
 )
@@ -91,7 +91,7 @@ class BaseDataset(Dataset):
         
         # If is_train, split the data into train and validation periods
         if self.is_train:
-            self.xr_train = xr.sel(date=slice(self.start_and_end_dates['train']['start_date'], self.start_and_end_dates['valid']['start_date']))
+            self.xr_train = xr.sel(date=slice(self.start_and_end_dates['train']['start_date'], self.start_and_end_dates['train']['end_date']))
             self.xr_valid = xr.sel(date=slice(self.start_and_end_dates['valid']['start_date'], self.start_and_end_dates['valid']['end_date']))
         else:
             self.xr_test = xr.sel(date=slice(self.start_and_end_dates['test']['start_date'], self.start_and_end_dates['test']['end_date']))
@@ -144,7 +144,7 @@ class BaseDataset(Dataset):
             df = self._remove_unnecessary_columns(df, keep_cols)
      
             # Subset the DataFrame by existing periods
-            df = self._subset_df_by_periods(df)    
+            df = self._subset_df_by_periods(df)   
             
             # Convert to xarray Dataset and add basin string as additional coordinate
             xr = xarray.Dataset.from_dataframe(df.astype(self.cfg.precision['numpy']))

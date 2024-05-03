@@ -1,4 +1,4 @@
-from src.utils.utils_load_process import Config
+from src.utils.load_process import Config
 from src.datasetzoo.basedataset import BaseDataset
 from src.datasetzoo.camelsus import CamelsUS
 

@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import xarray
 
-from src.utils.utils_load_process import Config
+from src.utils.load_process import Config
 from src.datasetzoo.basedataset import BaseDataset
 
 # Classes
@@ -21,6 +21,9 @@ class BaseConceptModel:
         # Set the data type attribute for the model
         self.data_type_np = cfg.precision['numpy']
         self.data_type_torch = cfg.precision['torch']
+        
+        # Time series
+        self.time_series = np.linspace(0, len(ds['date'].values) - 1, len(ds['date'].values))
         
         # Interpolators
         self.interpolators = self.create_interpolator_dict()
@@ -48,10 +51,7 @@ class BaseConceptModel:
     def save_results(self, ds, results, basin, period='train'):
         '''This function should save the model results'''
         raise NotImplementedError("This function has to be implemented by the child class")
-    
-    def plot_results(self, ds, q_bucket, basin, period='train', plot_prcp=False):
-        '''This function should plot the model results'''
-        raise NotImplementedError("This function has to be implemented by the child class")        
+  
     
     # @property
     # def get_parameters(self):

@@ -1,12 +1,12 @@
 import xarray
 
-from src.utils.utils_load_process import Config
+from src.utils.load_process import Config
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_concept.exhydro import ExpHydro
 
 def get_concept_model(cfg: Config,
                       ds: xarray.Dataset,
-                      odesmethod:str ='RK23'
+                      odesmethod:str='RK23'    # 'RK45'     #'RK23'
                     ) -> BaseConceptModel:
     '''Get the concept model based on the configuration'''
     

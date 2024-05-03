@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from src.datasetzoo.basedataset import BaseDataset
-from src.utils.utils_load_process import Config
+from src.utils.load_process import Config
 
 
 class CamelsUS(BaseDataset):

@@ -9,10 +9,10 @@ from tqdm import tqdm
 project_dir = str(Path(__file__).resolve().parent.parent)
 sys.path.append(project_dir)
 
-from src.utils.utils_load_process import (
-    load_forcing_target_data,
+from src.utils.load_process import (
     Config,
 )
+from src.utils.log_results import save_plot_simulation
 
 from src.datasetzoo import get_dataset
 from src.modelzoo_concept import get_concept_model
@@ -56,12 +56,18 @@ def main(config_file):
                                     period=period
                                     )
             
-            # Plot the results
-            model_concept.plot_results(basin_data, 
-                                    q_bucket, 
-                                    basin,
-                                    period=period
-                                )
+            # Plot the results 
+            save_plot_simulation(ds=basin_data,
+                                q_bucket=q_bucket,
+                                basin=basin,
+                                period=period,
+                                model_name=cfg.concept_model,
+                                plots_dir=cfg.plots_dir,
+                                plot_prcp=False
+                            )
+            
+            
+            # aux = input("Press Enter to continue...")
     
 
     
