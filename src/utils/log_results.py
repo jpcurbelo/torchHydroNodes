@@ -34,7 +34,7 @@ def save_plot_simulation(ds, q_bucket, basin, period='train',
     ax1.set_xlabel('Period')
     ax1.set_ylabel('Discharge (mm/day)', color=color)
     ax1.plot(dates, q_obs, label='Observed', linewidth=3, color=color, zorder=2)
-    ax1.plot(dates, q_bucket, ':', linewidth=3, label='Simulated', color='tab:red', zorder=2)
+    ax1.plot(dates, q_bucket, ':', linewidth=2, label='Simulated', color='tab:red', zorder=2)
     ax1.tick_params(axis='y', labelcolor=color)
     
     # Set the major and minor locators and formatters for the x-axis

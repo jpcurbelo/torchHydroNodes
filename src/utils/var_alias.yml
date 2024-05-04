@@ -1,0 +1,10 @@
+
+# Precipitation
+precp:
+  - prcp(mm/day)
+
+# Temperature
+temp:
+  - tas(K)
+  - tasmax(K)
+  - tasmin(K)

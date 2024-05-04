@@ -65,6 +65,7 @@ class ExpHydro(BaseConceptModel):
         q_out = Qb(s1, f, smax, qmax, self.step_function) + Qs(s1, smax, self.step_function)
         m_out = M(s0, temp, df, tmax, self.step_function)
         
+        # print('s0', s0)
         # print('s1', s1)
         # print('f', f)
         # print('smax', smax)
@@ -78,7 +79,6 @@ class ExpHydro(BaseConceptModel):
         # print('q_out', q_out)
         # print('m_out', m_out)
         
-        
         # Eq 1 - Hoge_EtAl_HESS_2022
         ds0_dt = Ps(precp, temp, tmin, self.step_function) - m_out
         # Eq 2 - Hoge_EtAl_HESS_2022
@@ -86,7 +86,7 @@ class ExpHydro(BaseConceptModel):
         
         # print('ds0_dt', ds0_dt, type(ds0_dt))
         # print('ds1_dt', ds1_dt, type(ds1_dt))
-        # # aux = input('Press Enter to continue...')
+        # aux = input('Press Enter to continue...')
 
         return [ds0_dt, ds1_dt]
            
@@ -296,6 +296,8 @@ class ExpHydro(BaseConceptModel):
         
 ## Auxiliary functions
 # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
+# Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
+#                                         + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
 Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
                                         + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
                                         
@@ -309,7 +311,26 @@ Ps = lambda p, temp, tmin, step_fct: step_fct(tmin - temp) * p
 Pr = lambda p, temp, tmin, step_fct: step_fct(temp - tmin) * p
 
 # Melting (A4) - Hoge_EtAl_HESS_2022
-M = lambda temp, tmax, s0, df, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
+# M(S0, T, Df, Tmax) = step_fct(T-Tmax)*step_fct(S0)*minimum([S0, Df*(T-Tmax)])
+# M = lambda temp, tmax, s0, df, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
+def M(s0, temp, df, tmax, step_fct):
+    
+    if np.isscalar(temp) and np.isscalar(s0):
+        if temp > tmax and s0 > 0:
+            return  step_fct(np.minimum(s0, df * (temp - tmax)))
+        else:
+            return 0.0
+    else:
+        # If temp and s0 are arrays, perform element-wise calculation
+        result = np.zeros_like(temp)  # Initialize result array with zeros
+        
+        # Check condition for each element of the arrays
+        condition = np.logical_and(temp > tmax, s0 > 0)
+
+        # Calculate result for elements satisfying the condition
+        result[condition] = np.minimum(s0[condition], df * (temp[condition] - tmax))
+
+        return result
 
 # Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
 ET = lambda s1, temp, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(temp, lday)  \
