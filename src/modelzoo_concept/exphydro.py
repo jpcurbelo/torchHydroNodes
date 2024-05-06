@@ -38,8 +38,6 @@ class ExpHydro(BaseConceptModel):
         
     def conceptual_model(self, t, y, f, smax, qmax, df, tmax, tmin):
         
-        # print('t', t)
-        
         # Bucket parameters                   
         # f: Rate of decline in flow from catchment bucket   
         # Smax: Maximum storage of the catchment bucket     
@@ -58,35 +56,15 @@ class ExpHydro(BaseConceptModel):
         precp = self.precp_interp(t, extrapolate='periodic')
         temp = self.temp_interp(t, extrapolate='periodic')
         lday = self.lday_interp(t, extrapolate='periodic')
-        
-        # print(precp, temp, lday)
-        
+
         # Compute and substitute the 5 mechanistic processes
         q_out = Qb(s1, f, smax, qmax, self.step_function) + Qs(s1, smax, self.step_function)
         m_out = M(s0, temp, df, tmax, self.step_function)
-        
-        # print('s0', s0)
-        # print('s1', s1)
-        # print('f', f)
-        # print('smax', smax)
-        # print('qmax', qmax)
-        # print('df', df)
-        # print('tmax', tmax)
-        # print('tmin', tmin)
-        # print('precp', precp)
-        # print('temp', temp)
-        # print('lday', lday)
-        # print('q_out', q_out)
-        # print('m_out', m_out)
         
         # Eq 1 - Hoge_EtAl_HESS_2022
         ds0_dt = Ps(precp, temp, tmin, self.step_function) - m_out
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = Pr(precp, temp, tmin, self.step_function) + m_out - ET(s1, temp, lday, smax, self.step_function) - q_out
-        
-        # print('ds0_dt', ds0_dt, type(ds0_dt))
-        # print('ds1_dt', ds1_dt, type(ds1_dt))
-        # aux = input('Press Enter to continue...')
 
         return [ds0_dt, ds1_dt]
            
@@ -169,8 +147,7 @@ class ExpHydro(BaseConceptModel):
                     
                 # S0,S1,f,Smax,Qmax,Df,Tmax,Tmin
                 params_dict[basin] = params_opt[1:]
-                
-                
+      
             return params_dict
         
     def run(self, basin):
@@ -187,29 +164,12 @@ class ExpHydro(BaseConceptModel):
         self.temp_basin = self.temp.sel(basin=basin).values
         self.lday_basin = self.lday.sel(basin=basin).values
         
-
         # Set the initial conditions
         y0 = np.array([basin_params[0], basin_params[1]])
         
         # Set the parameters
         params = tuple(basin_params[2:])
-        
-        # print('Initial conditions:', y0)
-        # print('Parameters:', params)
-        # aux = input('Press any key to continue...')
-        
-        # print('len(precp_series)', len(self.time_series))
-        # print('len(time_series)', len(self.time_series))
-        # print('S_ic', y0)
-        # print('self.time_series', self.time_series)
-        # aux = input('Press Enter to continue...')
-        
-        # print('self.precp.shape[1] - 1', self.precp.shape[1] - 1)
-        # print('self.time_series', self.time_series)
-        # print('y0', y0)
-        # print('params', params)
-        # print('self.odesmethod', self.odesmethod)
-        
+
         # Run the model
         y = sp_solve_ivp(self.conceptual_model, t_span=(0, self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
                          args=params, 
@@ -218,21 +178,12 @@ class ExpHydro(BaseConceptModel):
                         # rtol=1e-9, atol=1e-12,
                     )
         
-        # # result_odeint = odeint(lorenz, y0, t, p, tfirst=True)
-        # y = odeint(self.conceptual_model, y0, self.time_series, args=params, tfirst=True)
-        
         # Extract snow and water series -> two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022
         s_snow = y.y[0]
         s_water = y.y[1]
-        # s_snow = y[:, 0]  # y.y[0]
-        # s_water = y[:, 1]   #y.y[1]
         s_snow = np.maximum(s_snow, 0)
         s_water = np.maximum(s_water, 0)
-        
-        # print('s_snow', s_snow)
-        # print('s_water', s_water)
-        # aux = input('Press Enter to continue...')
-        
+
         # Unpack the parameters to call the mechanistic processes
         f, smax, qmax, df, tmax, tmin = params
         
@@ -253,7 +204,8 @@ class ExpHydro(BaseConceptModel):
         pr_bucket = Pr(self.precp_basin, self.temp_basin, tmin, self.step_function)
         pr_bucket = np.maximum(pr_bucket, 0)
         
-        return s_snow, s_water, q_bucket, et_bucket, m_bucket, ps_bucket, pr_bucket
+        # Mind this order for 'save_results' method - the last element is the target variable (q_obs)
+        return s_snow, s_water, et_bucket, m_bucket, ps_bucket, pr_bucket, q_bucket
     
     def save_results(self, ds, results, basin, period='train'):
         '''
@@ -271,14 +223,15 @@ class ExpHydro(BaseConceptModel):
             'date': ds['date'],
             's_snow': results[0],
             's_water': results[1],
-            'et_bucket': results[3],
-            'm_bucket': results[4],
-            'ps_bucket': results[5],
-            'pr_bucket': results[6],
+            'et_bucket': results[2],
+            'm_bucket': results[3],
+            'ps_bucket': results[4],
+            'pr_bucket': results[5],
             'prcp(mm/day)': ds['prcp(mm/day)'],
             'tmean(c)': ds['tmean(c)'],
-            'dayl(s)': ds['dayl(s)'],            
-            'q_bucket': results[2],
+            'dayl(s)': ds['dayl(s)'],     
+            # the last element is the target variable (q_obs)       
+            'q_bucket': results[-1],
             'q_obs': ds['obs_runoff(mm/day)'],
         }
         
@@ -289,6 +242,40 @@ class ExpHydro(BaseConceptModel):
         results_file = os.path.join(self.cfg.results_dir, f'{basin}_results_{period}.csv')
         results_df.to_csv(results_file, index=False)
     
+    def shift_initial_states(self, start_and_end_dates, basin, period):
+
+        # Identify the previous period given the dates in 
+        if period == 'test' or period == 'valid':
+            
+            # Find the previous period
+            period_dates = start_and_end_dates[period]
+            current_start_date = period_dates['start_date']
+            previous_end_date = None
+            
+            # Loop to find the previous end date
+            for name, dates in start_and_end_dates.items():
+                if name != period:
+                    if dates['end_date'] < current_start_date:
+                        if previous_end_date is None or dates['end_date'] > previous_end_date:
+                            previous_end_date = dates['end_date']
+                  
+            # Find the previous period name          
+            if previous_end_date is not None:
+                for name, dates in start_and_end_dates.items():
+                    if dates['end_date'] == previous_end_date:
+                        previous_period = name
+                        break
+                    
+            # Load the last states of the model in the previous period
+            previous_results_file = os.path.join(self.cfg.results_dir, f'{basin}_results_{previous_period}.csv')
+            previous_results = pd.read_csv(previous_results_file)
+            
+            # Get the last states of the model in the previous period
+            previous_states = previous_results[['s_snow', 's_water']].values[-1]
+            
+            # Update the initial states for the model
+            self.params_dict[basin][0] = previous_states[0]
+            self.params_dict[basin][1] = previous_states[1]
         
     @property
     def interpolator_vars(self):

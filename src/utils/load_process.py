@@ -1,5 +1,4 @@
 import yaml
-import json
 import os
 from datetime import datetime
 import pandas as pd
@@ -20,7 +19,7 @@ def load_basin_file(basin_file: Path) -> List[str]:
     - Returns:
         basins: list, list of basins.
     '''
-    
+        
     with open(basin_file, 'r') as f:
         basins = f.read().splitlines()
     
@@ -49,6 +48,9 @@ class Config(object):
         # Create a folder to save the trained models
         if isinstance(yml_path_or_dict, Path):
             self.create_run_folder_tree()
+            
+        # Dump the configuration data to a ymal file
+        self.dump_config()
         
     def create_run_folder_tree(self):
         '''
@@ -61,8 +63,9 @@ class Config(object):
             None
         '''
         
-        if not os.path.exists('runs'):
-            os.mkdir('runs')
+        config_dir = self._cfg['config_dir']  
+        if not os.path.exists(config_dir / 'runs'):
+            os.mkdir(config_dir / 'runs')
             
         # Experiment name
         if "experiment_name" in self._cfg and self._cfg["experiment_name"]:
@@ -73,7 +76,7 @@ class Config(object):
         # Create a folder to save the trained models
         now = datetime.now()
         dt_string = now.strftime("%y%m%d %H%M%S")
-        run_dir = os.path.join('runs'  , f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}')
+        run_dir = config_dir / 'runs' / f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}'
         try:
             os.mkdir(run_dir)
             self._cfg['run_dir'] = run_dir
@@ -111,11 +114,37 @@ class Config(object):
             cfg_copy['precision'] = 'float32'
         else:
             cfg_copy['precision'] = 'float64'
-
-        # Save the configuration data to a JSON file   
-        config_data_file = run_dir + '/config_data.json'   
-        with open(config_data_file, 'w') as f:
-            json.dump(cfg_copy, f, indent=4)
+    
+    def dump_config(self, filename: str = 'config.yml'):
+        '''
+        Dump the configuration data to a ymal file.
+        
+        - Args:
+            None
+            
+        - Returns:
+            None
+        '''
+        
+        # Convert PosixPath objects to strings before serializing
+        cfg_copy = self._cfg.copy()
+        for key, value in cfg_copy.items():
+            if isinstance(value, Path):
+                cfg_copy[key] = str(value)
+            elif isinstance(value, Timestamp):
+                cfg_copy[key] = value.isoformat()
+                
+        # Convert precision to string
+        if cfg_copy['precision']['numpy'] == np.float32:
+            cfg_copy['precision'] = 'float32'
+        else:
+            cfg_copy['precision'] = 'float64'
+            
+        # Save the configuration data to a ymal file
+        config_path = self._cfg['run_dir'] / filename
+        with open(config_path, 'w') as f:
+            yaml.dump(cfg_copy, f)
+    
     
     def _get_property_value(self, key: str) -> Union[float, int, str, list, dict, Path, pd.Timestamp]:
         '''
@@ -157,7 +186,14 @@ class Config(object):
                 raise FileNotFoundError(f"File not found: {config_file}")
         else:
             cfg = config_file
+            
+        # Extract parent directory of the config file
+        cfg['config_dir'] = config_file.parent
         
+        # Define basin file directory
+        if 'basin_file_path' not in cfg:
+            cfg['basin_file_path'] = os.path.join(cfg['config_dir'], cfg['basin_file'])
+         
         # Parse the config dictionary
         for key, val in cfg.items():
             # Convert all path strings to PosixPath objects
@@ -224,6 +260,10 @@ class Config(object):
     @property
     def basin_file(self) -> Path:
         return self._get_property_value("basin_file")
+    
+    @property
+    def basin_file_path(self) -> Path:
+        return self._get_property_value("basin_file_path")
     
     @property
     def nn_dynamic_inputs(self) -> list:

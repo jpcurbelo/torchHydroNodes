@@ -2,7 +2,7 @@ import xarray
 
 from src.utils.load_process import Config
 from src.modelzoo_concept.basemodel import BaseConceptModel
-from src.modelzoo_concept.exhydro import ExpHydro
+from src.modelzoo_concept.exphydro import ExpHydro
 
 def get_concept_model(cfg: Config,
                       ds: xarray.Dataset,
