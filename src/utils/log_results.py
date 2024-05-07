@@ -1,14 +1,17 @@
 import os
 import matplotlib.pyplot as plt
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
+import pandas as pd
+import numpy as np
 
 from src.utils.metrics import (
     NSE_eval,
+    compute_all_metrics,
 )
 
 
 
-def save_plot_simulation(ds, q_bucket, basin, period='train', 
+def save_and_plot_simulation(ds, q_bucket, basin, period='train', 
                          model_name='exphydro',
                          plots_dir=None,
                          plot_prcp=False):
@@ -24,8 +27,8 @@ def save_plot_simulation(ds, q_bucket, basin, period='train',
         
     '''
     
-    dates = ds['date']
-    q_obs = ds['obs_runoff(mm/day)']            
+    dates = ds['date'].values
+    q_obs = ds['obs_runoff(mm/day)'].values            
         
     # Plot the simulated and actual values
     _, ax1 = plt.subplots(figsize=(16, 6))
@@ -75,7 +78,38 @@ def save_plot_simulation(ds, q_bucket, basin, period='train',
     plt.savefig(os.path.join(plots_dir, plot_file_name), bbox_inches='tight')
     plt.close()
 
-
+def compute_and_save_metrics(metrics, run_dir):
+    
+    metrics_dir = run_dir / 'model_metrics'
+    if not metrics_dir.exists():
+        metrics_dir.mkdir()
+        
+    # Load the results for each basin and period from the run directory / model results
+    results_dir = run_dir / 'model_results'
+    results_files = os.listdir(results_dir)
+    # Get basins and periods
+    basins = set([file.split('_')[0] for file in results_files])
+    periods = set([file.split('.')[0].split('_')[-1] for file in results_files])
+    
+    for period in periods:
+        metrics_dict = dict()
+        for basin in basins:
+            # Load the results from the file {basin}_results_{period}.csv
+            results = pd.read_csv(results_dir / f'{basin}_results_{period}.csv')
+            
+            # Last column is the observed runoff
+            q_obs = results.iloc[:, -1].values
+            # Before the last column are the model predictions
+            q_sim = results.iloc[:, -2].values
+            # Dates
+            dates = np.array(pd.to_datetime(results['date'].values))
+            
+            # Compute the metrics
+            metrics_dict[basin] = compute_all_metrics(q_obs, q_sim, dates, metrics)
+            
+        # Save the metrics for the period
+        metrics_df = pd.DataFrame(metrics_dict).T.rename_axis("basin_ID")
+        metrics_df.to_csv(metrics_dir / f'metrics_{period}.csv', float_format='%.4e')
 
 
 

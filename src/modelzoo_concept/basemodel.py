@@ -55,8 +55,7 @@ class BaseConceptModel:
     def shift_initial_states(self, start_and_end_dates, basin, period='valid'):
         '''This function should load the last states of the model in the previous period.
         To be used for the valid or test period after the train period'''
-        raise NotImplementedError("This function has to be implemented by the child class")
-  
+        raise NotImplementedError("This function has to be implemented by the child class")  
     
     # @property
     # def get_parameters(self):

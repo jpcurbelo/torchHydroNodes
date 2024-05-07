@@ -354,6 +354,10 @@ class Config(object):
     def disable_pbar(self) -> bool:
         return not self._cfg.get("verbose")
     
+    @property
+    def metrics(self) -> List[str]:
+        return self._as_default_list(self._get_property_value("metrics"))
+    
 
 if __name__ == "__main__":
     pass

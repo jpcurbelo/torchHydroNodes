@@ -13,7 +13,10 @@ from src.utils.load_process import (
 )
 from src.datasetzoo import get_dataset
 from src.modelzoo_concept import get_concept_model
-from src.utils.log_results import save_plot_simulation
+from src.utils.log_results import (
+    save_and_plot_simulation,
+    compute_and_save_metrics,
+)
 
 def _main():
     args = _get_args()
@@ -62,7 +65,7 @@ def start_run_m0(config_file: Path, gpu: int = None):
     # Load the forcing and target data 
     ds = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
     
-    print('-- Running the model anwith open(basin_file, 'r')d saving the results')
+    print('-- Running the model and saving the results')
     for basin in tqdm(ds.basins, disable=cfg .disable_pbar, file=sys.stdout):
 
         for period in ds.start_and_end_dates.keys():
@@ -91,7 +94,7 @@ def start_run_m0(config_file: Path, gpu: int = None):
             model_concept.save_results(basin_data, model_results, basin, period=period)
             
             # Plot the results 
-            save_plot_simulation(ds=basin_data,
+            save_and_plot_simulation(ds=basin_data,
                                 q_bucket=model_results[-1],
                                 basin=basin,
                                 period=period,
@@ -99,6 +102,12 @@ def start_run_m0(config_file: Path, gpu: int = None):
                                 plots_dir=cfg.plots_dir,
                                 plot_prcp=False
                             )
+            
+    run_dir = cfg.run_dir
+    # run_dir = Path('../examples/runs/concept_run_240506_183950')
+    ## After the model has been run for all basins and periods - Evaluate the model
+    # Compute the metrics
+    compute_and_save_metrics( metrics=cfg.metrics, run_dir=run_dir)
 
 # python thn_run.py train --config-file ../examples/config_run_m0.yml
 if __name__ == "__main__":
