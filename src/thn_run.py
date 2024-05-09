@@ -21,8 +21,6 @@ from src.utils.log_results import (
 def _main():
     args = _get_args()
     
-    print(args)
-    
     if args["mode"] == "train":
         start_run_m0(config_file=Path(args["config_file"]), gpu=args["gpu"])
 
@@ -52,7 +50,7 @@ def _get_args() -> dict:
     
     return args
 
-def start_run_m0(config_file: Path, gpu: int = None):
+def _load_cfg_and_ds(config_file: Path, gpu: int = None):
 
     cfg = Config(config_file)
     
@@ -65,27 +63,35 @@ def start_run_m0(config_file: Path, gpu: int = None):
     # Load the forcing and target data 
     ds = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
     
-    print('-- Running the model and saving the results')
-    for basin in tqdm(ds.basins, disable=cfg .disable_pbar, file=sys.stdout):
+    return cfg, ds
 
-        for period in ds.start_and_end_dates.keys():
+
+def start_run_m0(config_file: Path, gpu: int = None):
+
+    print('-- Loading the config file and the dataset')
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu)
+    
+    print('-- Running the model and saving the results')
+    for basin in tqdm(dataset.basins, disable=cfg .disable_pbar, file=sys.stdout):
+
+        for period in dataset.start_and_end_dates.keys():
             
             # Extract the basin data
             if period == 'train':
-                model_concept = get_concept_model(cfg, ds.xr_train)
-                basin_data = ds.xr_train.sel(basin=basin)
+                model_concept = get_concept_model(cfg, dataset.ds_train)
+                basin_data = dataset.ds_train.sel(basin=basin)
             elif period == 'test':
-                model_concept = get_concept_model(cfg, ds.xr_test)                
-                basin_data = ds.xr_test.sel(basin=basin)
+                model_concept = get_concept_model(cfg, dataset.ds_test)                
+                basin_data = dataset.ds_test.sel(basin=basin)
             elif period == 'valid':
-                model_concept = get_concept_model(cfg, ds.xr_valid)
-                basin_data = ds.xr_valid.sel(basin=basin)
+                model_concept = get_concept_model(cfg, dataset.ds_valid)
+                basin_data = dataset.ds_valid.sel(basin=basin)
             else:
                 raise ValueError("Invalid period. Please specify 'train', 'test', or 'valid'.")
 
             # Update Initial states for the model if period is not 'train'
             if period != 'train':
-                model_concept.shift_initial_states(ds.start_and_end_dates, basin, period=period)
+                model_concept.shift_initial_states(dataset.start_and_end_dates, basin, period=period)
                 
             # Run the model
             model_results = model_concept.run(basin=basin)

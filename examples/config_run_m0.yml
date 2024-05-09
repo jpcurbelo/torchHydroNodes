@@ -17,8 +17,8 @@ target_variables:
 
 # Files to specify training, validation and test basins
 # basin_file: 25_basin_file.txt
-# basin_file: 4_basin_file.txt
-basin_file: 569_basin_file.txt
+basin_file: 4_basin_file.txt
+# basin_file: 569_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
@@ -34,8 +34,6 @@ valid_end_date: "30/09/2010"
 # test_start_date: "01/10/2000"
 # test_end_date: "30/09/2010"
 
-# Loss function to use [mse, nse]
-loss: nse
 # Metrics to use for evaluation
 metrics:
   - NSE
@@ -49,14 +47,6 @@ metrics:
   - Peak-Timing
   - Peak-MAPE
   - Pearson-r
-
-# Hidden layers for the NN model
-hidden_layers: 
-  - 32
-  - 32
-  - 32
-  - 32
-  - 32
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name

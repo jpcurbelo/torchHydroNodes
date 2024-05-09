@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 from typing import Dict, Union
-import xarray
+import xarray as xr
 import pandas as pd
 from tqdm import tqdm
 import sys
@@ -18,7 +18,7 @@ class BaseDataset(Dataset):
     def __init__(self,
             cfg: Config,
             is_train: bool = True,
-            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = dict()):
+            scaler: Dict[str, Union[pd.Series, xr.DataArray]] = dict()):
         
         super(BaseDataset, self).__init__()
         self.cfg = cfg
@@ -87,32 +87,34 @@ class BaseDataset(Dataset):
         # # Load attributes first to sanity-check those features before doing the compute expensive time series loading
         # self._load_combined_attributes()
         
-        xr = self._load_or_create_xarray_dataset()
+        dataset = self._load_or_create_xarray_dataset()
         
         # If is_train, split the data into train and validation periods
         if self.is_train:
-            self.xr_train = xr.sel(date=slice(self.start_and_end_dates['train']['start_date'], self.start_and_end_dates['train']['end_date']))
-            self.xr_valid = xr.sel(date=slice(self.start_and_end_dates['valid']['start_date'], self.start_and_end_dates['valid']['end_date']))
+            self.ds_train = dataset.sel(date=slice(self.start_and_end_dates['train']['start_date'], self.start_and_end_dates['train']['end_date']))
+            self.ds_valid = dataset.sel(date=slice(self.start_and_end_dates['valid']['start_date'], self.start_and_end_dates['valid']['end_date']))
         else:
-            self.xr_test = xr.sel(date=slice(self.start_and_end_dates['test']['start_date'], self.start_and_end_dates['test']['end_date']))
+            self.ds_test = dataset.sel(date=slice(self.start_and_end_dates['test']['start_date'], self.start_and_end_dates['test']['end_date']))
         
-        if self.cfg.loss.lower() in ['nse', 'weightednse']:
-            # Get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.
-            self._calculate_per_basin_std(self.xr_train)
+        # Check if loss is in cfg and if it is NSE or weighted NSE
+        if 'loss' in self.cfg._cfg and self.cfg.loss:
+            if self.cfg.loss.lower() in ['nse', 'weightednse']:
+                # Get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.
+                self._calculate_per_basin_std(self.ds_train)
             
         if self._compute_scaler:
             # Get feature-wise center and scale values for the feature normalization
-            self._setup_normalization(self.xr_train)
+            self._setup_normalization(self.ds_train)
                         
         # Performs normalization
-        # xr = (xr - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"] 
+        # ds = (ds - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"] 
         
-    def _load_or_create_xarray_dataset(self) -> xarray.Dataset:
+    def _load_or_create_xarray_dataset(self) -> xr.Dataset:
         '''
         Load the data for all basins and create an xarray Dataset.
         
         - Returns:
-            xr: xarray.Dataset, the xarray Dataset containing the data for all basins.
+            ds: xarray.Dataset, the xarray Dataset containing the data for all basins.
         '''
         
         data_list = list()
@@ -147,17 +149,17 @@ class BaseDataset(Dataset):
             df = self._subset_df_by_periods(df)   
             
             # Convert to xarray Dataset and add basin string as additional coordinate
-            xr = xarray.Dataset.from_dataframe(df.astype(self.cfg.precision['numpy']))
-            xr = xr.assign_coords(basin=basin)
-            data_list.append(xr)
+            ds = xr.Dataset.from_dataframe(df.astype(self.cfg.precision['numpy']))
+            ds = ds.assign_coords(basin=basin)
+            data_list.append(ds)
             
         if not data_list:
             raise ValueError("No data loaded.")
         
         # Create one large dataset that has two coordinates: datetime and basin
-        xr = xarray.concat(data_list, dim='basin')
+        ds = xr.concat(data_list, dim='basin')
             
-        return xr
+        return ds
                
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
         """This function has to return the data for the specified basin as a time-indexed pandas DataFrame"""
@@ -250,15 +252,15 @@ class BaseDataset(Dataset):
 
         return subsetted_df
         
-    def _calculate_per_basin_std(self, xr: xarray.Dataset):
+    def _calculate_per_basin_std(self, ds: xr.Dataset):
 
-        basin_coordinates = xr["basin"].values.tolist()
+        basin_coordinates = ds["basin"].values.tolist()
         if self.cfg.verbose:
             print("-- Calculating target variable stds per basin")
         nan_basins = list()
         for basin in tqdm(self.basins, file=sys.stdout, disable=self._disable_pbar):
             
-            obs = xr.sel(basin=basin)[self.cfg.target_variables].to_array().values
+            obs = ds.sel(basin=basin)[self.cfg.target_variables].to_array().values
             if np.sum(~np.isnan(obs)) > 1:
                 # Calculate std for each target
                 per_basin_target_stds = torch.tensor(np.expand_dims(np.nanstd(obs, axis=1), 0), dtype=self.cfg.precision['torch'])
@@ -272,22 +274,20 @@ class BaseDataset(Dataset):
             print("Warning! (Data): The following basins had not enough valid target values to calculate a standard deviation: "
                            f"{', '.join(nan_basins)}. NSE loss values for this basin will be NaN.")
             
-    def _setup_normalization(self, xr: xarray.Dataset):
+    def _setup_normalization(self, ds: xr.Dataset):
         '''
         Setup the normalization for the xarray dataset. 
         The default center and scale values are the feature mean and std.
         
         - Args:
-            xr: xarray.Dataset, the xarray dataset to normalize.
+            ds: xarray.Dataset, the xarray dataset to normalize.
             
         - Returns:
             None
         '''
         
-        self.scaler["xarray_feature_scale"] = xr.std(skipna=True)
-        self.scaler["xarray_feature_center"] = xr.mean(skipna=True)   
-
-
-            
+        self.scaler["ds_feature_std"] = ds.groupby('basin').mean(dim='date')
+        self.scaler["ds_feature_mean"] = ds.groupby('basin').std(dim='date')
+  
             
 ###############################

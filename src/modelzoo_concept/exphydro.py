@@ -18,9 +18,10 @@ class ExpHydro(BaseConceptModel):
     def __init__(self, 
                  cfg: Config,
                  ds: xarray.Dataset,
+                 scaler=None,
                  odesmethod:str ='RK23'
                 ):
-        super().__init__(cfg, ds, odesmethod)
+        super().__init__(cfg, ds, scaler, odesmethod)
         
         # Interpolators
         self.interpolators = self.create_interpolator_dict()
@@ -280,6 +281,15 @@ class ExpHydro(BaseConceptModel):
     @property
     def interpolator_vars(self):
         return ['prcp(mm/day)', 'tmean(c)', 'dayl(s)']
+
+    @property
+    def nn_outputs(self):
+        return ['ps_bucket', 'pr_bucket', 'm_bucket', 'et_bucket', 'q_bucket']
+    
+    @property
+    def model_outputs(self):
+        return ['s_snow', 's_water']
+
         
 ## Auxiliary functions
 # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012

@@ -109,6 +109,10 @@ def compute_and_save_metrics(metrics, run_dir):
             
         # Save the metrics for the period
         metrics_df = pd.DataFrame(metrics_dict).T.rename_axis("basin_ID")
+        
+        # Sort by basin ID
+        metrics_df = metrics_df.sort_index()
+        
         metrics_df.to_csv(metrics_dir / f'metrics_{period}.csv', float_format='%.4e')
 
 

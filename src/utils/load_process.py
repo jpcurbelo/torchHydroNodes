@@ -145,7 +145,6 @@ class Config(object):
         with open(config_path, 'w') as f:
             yaml.dump(cfg_copy, f)
     
-    
     def _get_property_value(self, key: str) -> Union[float, int, str, list, dict, Path, pd.Timestamp]:
         '''
         Get the value of a property from the config.
@@ -292,6 +291,9 @@ class Config(object):
     def precision(self) -> dict:
         return self._get_property_value("precision")
     
+    def device(self) -> torch.device:
+        return self._get_property_value("device")
+
     @property
     def loss(self) -> str:
         return self._get_property_value("loss")
@@ -338,6 +340,14 @@ class Config(object):
     def concept_model(self) -> str:
         return self._get_property_value("concept_model")
     
+    @property
+    def nn_model(self) -> str:
+        return self._get_property_value("nn_model")
+    
+    @property
+    def hidden_layers(self) -> List[int]:
+        return self._get_property_value("hidden_layers")
+
     @property
     def run_dir(self) -> Path:
         return self._get_property_value("run_dir")

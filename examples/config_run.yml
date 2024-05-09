@@ -19,12 +19,20 @@ nn_static_inputs:
   # - lon
   # - elev
 
+nn_mech_outputs:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+
+
 target_variables: 
   - obs_runoff(mm/day)
 
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
-basin_file: 25_basin_file.txt
+basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
