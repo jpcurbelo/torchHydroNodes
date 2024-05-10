@@ -92,7 +92,7 @@ learning_rate:
   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
-hidden_layers: 
+hidden_size: 
   - 32
   - 32
   - 32

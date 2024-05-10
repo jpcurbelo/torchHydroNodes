@@ -24,7 +24,7 @@ class BaseNNModel(nn.Module):
 
         self.input_size = len(self.concept_model.cfg.nn_dynamic_inputs) + len(self.concept_model.cfg.nn_static_inputs)
         self.output_size = len(self.concept_model.nn_outputs)
-        self.hidden_layers = self.concept_model.cfg.hidden_layers
+        self.hidden_size = self.concept_model.cfg.hidden_size
 
         # Compute mean and std for variables by basin
         self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'])
@@ -50,19 +50,23 @@ class BaseNNModel(nn.Module):
 
 
     def xarray_to_torch(self, xr_dataset):
+
         basin_values = {}
         
         # Iterate over each basin
         for basin in xr_dataset['basin']:
-            basin_data = {}
+            basin_data = []
             
             # Iterate over each variable
-            for var_name in xr_dataset.data_vars:
-                var_values = xr_dataset[var_name].sel(basin=basin).values  # Get the variable's values for the current basin
-                torch_values = torch.tensor(var_values, dtype=self.dtype)  # Convert to torch tensor
-                basin_data[var_name] = torch_values  # Store the torch tensor in the basin's data
+            for var_name in self.concept_model.cfg.nn_dynamic_inputs:
+                var_value = xr_dataset[var_name.lower()].sel(basin=basin).values  # Get the variable's values for the current basin
+                torch_value = torch.tensor(var_value, dtype=self.dtype)  # Convert to torch tensor
+                basin_data.append(torch_value)  # Store the torch tensor in the basin's data
                 
             basin_values[basin.item()] = basin_data  # Store the basin's data in the dictionary
+
+            # List to torch tensor
+            basin_values[basin.item()] = torch.stack(basin_values[basin.item()], dim=0).reshape(1, -1).to(self.device)  
         
         return basin_values
 

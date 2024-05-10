@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 import argparse
 from tqdm import tqdm
+import torch
 
 # Make sure code directory is in path,
 # Add the parent directory of your project to the Python path
@@ -34,6 +35,16 @@ def main(config_file):
     model_nn = get_nn_model(model_concept)
 
     print(model_nn)
+
+
+
+    # Prepare data to test the model
+    basin = '01022500'
+    inputs = torch.cat([torch.tensor(dataset.ds_train[var.lower()].sel(basin=basin).values).unsqueeze(0) \
+                        for var in cfg.nn_dynamic_inputs], dim=0).t().to(model_nn.device)
+    output = model_nn(inputs, basin)
+
+    print(output)
     
 
 if __name__ == '__main__':

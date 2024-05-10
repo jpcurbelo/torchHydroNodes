@@ -145,7 +145,7 @@ class Config(object):
         with open(config_path, 'w') as f:
             yaml.dump(cfg_copy, f)
     
-    def _get_property_value(self, key: str) -> Union[float, int, str, list, dict, Path, pd.Timestamp]:
+    def _get_property_value(self, key: str) -> Union[float, int, str, list, dict, Path, pd.Timestamp, torch.device]:
         '''
         Get the value of a property from the config.
         
@@ -229,7 +229,26 @@ class Config(object):
                 'numpy': np.float32 if cfg['precision'] == 'float32' else np.float64,
                 'torch': torch.float32 if cfg['precision'] == 'float32' else torch.float64
             }
-            
+
+        # # check if a GPU has been specified as command line argument. If yes, overwrite config
+        # if gpu is not None and gpu >= 0:
+        #     config.device = f"cuda:{gpu}"
+        # if gpu is not None and gpu < 0:
+        #     config.device = "cpu"
+
+        # Set device (GPU or CPU)
+        try:
+            gpu = int(cfg['device'].split(':')[-1])
+        except:
+            gpu = None
+
+        if 'device' not in cfg or cfg['device'] is None:
+            cfg['device'] = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        elif gpu is not None and gpu >= 0:
+            cfg['device'] = torch.device(f"cuda:{gpu}")
+        else:
+            cfg['device'] = torch.device("cpu")
+        
         # Add more config parsing if necessary
         return cfg
          
@@ -291,6 +310,7 @@ class Config(object):
     def precision(self) -> dict:
         return self._get_property_value("precision")
     
+    @property
     def device(self) -> torch.device:
         return self._get_property_value("device")
 
@@ -345,8 +365,8 @@ class Config(object):
         return self._get_property_value("nn_model")
     
     @property
-    def hidden_layers(self) -> List[int]:
-        return self._get_property_value("hidden_layers")
+    def hidden_size(self) -> List[int]:
+        return self._get_property_value("hidden_size")
 
     @property
     def run_dir(self) -> Path:
