@@ -1,6 +1,7 @@
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_nn.basemodel import BaseNNModel
 from src.modelzoo_nn.mlp import MLP
+from src.modelzoo_nn.pretrainer import NNpretrainer
 
 
 def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
@@ -12,4 +13,9 @@ def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
         raise NotImplementedError(f"No model NN class implemented for model {concept_model.cfg.nn_model}")
     
     return Model(concept_model=concept_model)
+
+def get_nn_pretrainer(nnmodel: BaseNNModel, input_vars=None, output_vars=None):
+    '''Get the pretrainer for the neural network model'''
+    
+    return NNpretrainer(nnmodel, input_vars=input_vars, output_vars=output_vars)
                  

@@ -10,8 +10,9 @@ forcings:
   # - maurer_extended
 
 nn_dynamic_inputs:
+  - s_snow
+  - s_water
   - prcp(mm/day)
-  - dayl(s)
   - tmean(C)
 
 nn_static_inputs:
