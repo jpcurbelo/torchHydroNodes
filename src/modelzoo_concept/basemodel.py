@@ -11,11 +11,13 @@ class BaseConceptModel:
     def __init__(self, 
                  cfg: Config,
                  ds: xarray.Dataset,
+                 scaler: dict,
                  odesmethod:str ='RK23'
                 ):
         
         self.cfg = cfg
         self.ds = ds
+        self.scaler = scaler
         self.odesmethod = odesmethod
         
         # Set the data type attribute for the model

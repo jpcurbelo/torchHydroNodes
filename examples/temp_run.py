@@ -29,8 +29,10 @@ def main(config_file):
     # Load the forcing and target data 
     dataset = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
 
+    print(dataset.__dict__['scaler'])
+
     ### Conceptual model
-    model_concept = get_concept_model(cfg, dataset.ds_train, scaler=dataset.scaler)
+    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
 
     # print('\n')
     # print(model_concept.__dict__)

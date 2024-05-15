@@ -8,6 +8,9 @@ from typing import List, Union, Any
 import numpy as np
 import torch
 
+# Get the absolute path to the current script
+script_dir = Path(__file__).resolve().parent
+
 ## Functions      
 def load_basin_file(basin_file: Path) -> List[str]:
     '''
@@ -140,6 +143,9 @@ class Config(object):
         else:
             cfg_copy['precision'] = 'float64'
             
+        # Device to string
+        cfg_copy['device'] = str(cfg_copy['device'])
+        
         # Save the configuration data to a ymal file
         config_path = self._cfg['run_dir'] / filename
         with open(config_path, 'w') as f:
@@ -257,9 +263,9 @@ class Config(object):
     
     @staticmethod
     def _load_concept_model_vars(concept_model: str) -> dict:
-        
+
         # Load utils/concept_model_vars.yml
-        with open(Path('utils') / 'concept_model_vars.yml', 'r') as f:
+        with open(script_dir / 'concept_model_vars.yml', 'r') as f:
             var_alias = yaml.load(f, Loader=yaml.FullLoader)
 
         # Load the variables for the concept model

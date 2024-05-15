@@ -6,6 +6,7 @@ from src.modelzoo_concept.exphydro import ExpHydro
 
 def get_concept_model(cfg: Config,
                       ds: xarray.Dataset,
+                      scaler: dict,
                       odesmethod:str='RK23'    # 'RK45'     #'RK23'
                     ) -> BaseConceptModel:
     '''Get the concept model based on the configuration'''
@@ -15,4 +16,4 @@ def get_concept_model(cfg: Config,
     else:
         raise NotImplementedError(f"No conceptual model class implemented for model {cfg.concept_model}")
     
-    return Model(cfg=cfg, ds=ds, odesmethod=odesmethod)
+    return Model(cfg=cfg, ds=ds, scaler=scaler, odesmethod=odesmethod)

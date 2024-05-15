@@ -80,13 +80,13 @@ def start_run_m0(config_file: Path, gpu: int = None):
             
             # Extract the basin data
             if period == 'train':
-                model_concept = get_concept_model(cfg, dataset.ds_train)
+                model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
                 basin_data = dataset.ds_train.sel(basin=basin)
             elif period == 'test':
-                model_concept = get_concept_model(cfg, dataset.ds_test)                
+                model_concept = get_concept_model(cfg, dataset.ds_test, dataset.scaler)              
                 basin_data = dataset.ds_test.sel(basin=basin)
             elif period == 'valid':
-                model_concept = get_concept_model(cfg, dataset.ds_valid)
+                model_concept = get_concept_model(cfg, dataset.ds_valid, dataset.scaler)
                 basin_data = dataset.ds_valid.sel(basin=basin)
             else:
                 raise ValueError("Invalid period. Please specify 'train', 'test', or 'valid'.")
