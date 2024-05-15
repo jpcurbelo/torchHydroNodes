@@ -31,6 +31,7 @@ dayl:
 obs_runoff:
   - obs_runoff
   - obs_runoff(mm/day)
+  - q_obs
 
 # Snow water equivalent
 swe:
@@ -41,3 +42,41 @@ swe:
 vp:
   - vp
   - vp(pa)
+
+# Snow storage
+s_snow:
+  - s_snow
+  - s_snow(mm)
+
+# Water storage
+s_water:
+  - s_water
+  - s_water(mm)
+
+  # ps_bucket', 'pr_bucket', 'm_bucket', 'et_bucket', 'q_bucket'
+
+# Precipitation storage - snowfall
+ps_bucket:
+  - ps_bucket
+  - ps_bucket(mm)
+
+# Precipitation storage - rainfall
+pr_bucket:
+  - pr_bucket
+  - pr_bucket(mm)
+
+# Melting
+m_bucket:
+  - m_bucket
+  - m_bucket(mm)
+
+# Evapotranspiration
+et_bucket:
+  - et_bucket
+  - et_bucket(mm)
+
+# Runoff - bucket 
+# To be kept separated from the observed runoff (obs_runoff)
+q_bucket:
+  - q_bucket
+  - q_bucket(mm)

@@ -6,3 +6,9 @@ exphydro:
     - tmean
   model_target:
     - obs_runoff
+  nn_mech_targets:
+    - ps_bucket
+    - pr_bucket
+    - m_bucket
+    - et_bucket
+    - q_bucket

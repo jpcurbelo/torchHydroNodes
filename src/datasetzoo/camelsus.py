@@ -13,10 +13,11 @@ class CamelsUS(BaseDataset):
     
     def __init__(self,
             cfg: Config,
-            is_train: bool = True,
-            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = dict()):
+            scaler: Dict[str, Union[pd.Series, xarray.DataArray]] = dict(),
+            is_train: bool = True
+        ):
         
-        super(CamelsUS, self).__init__(cfg, is_train, scaler)
+        super(CamelsUS, self).__init__(cfg, scaler, is_train)
         
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
         # get forcings

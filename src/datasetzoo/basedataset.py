@@ -21,18 +21,20 @@ from src.utils.load_process_data import (
 possible_variables = [
     'nn_dynamic_inputs', 
     'nn_static_inputs', 
+    'nn_mech_targets',
     'target_variables',
     'concept_inputs',
     'concept_target',
-    ]
+]
 
 # Ref -> https://github.com/neuralhydrology/neuralhydrology/blob/master/neuralhydrology/datasetzoo/basedataset.py
 class BaseDataset(Dataset):
     
     def __init__(self,
             cfg: Config,
-            is_train: bool = True,
-            scaler: Dict[str, Union[pd.Series, xr.DataArray]] = dict()):
+            scaler: Dict[str, Union[pd.Series, xr.DataArray]] = dict(),
+            is_train: bool = True
+        ):
         
         super(BaseDataset, self).__init__()
         self.cfg = cfg
@@ -49,12 +51,12 @@ class BaseDataset(Dataset):
         self._disable_pbar = not self.cfg.verbose
         
         # Initialize class attributes that are filled in the data loading functions
-        self._x_d = dict()
-        self._x_h = dict()
-        self._x_f = dict()
-        self._x_s = dict()
-        self._attributes = dict()
-        self._y = dict()
+        # self._x_d = dict()
+        # self._x_h = dict()
+        # self._x_f = dict()
+        # self._x_s = dict()
+        # self._attributes = dict()
+        # self._y = dict()
         self._per_basin_target_stds = dict()
         self._dates = dict()
         self.start_and_end_dates = dict()
@@ -109,12 +111,6 @@ class BaseDataset(Dataset):
             self.ds_valid = dataset.sel(date=slice(self.start_and_end_dates['valid']['start_date'], self.start_and_end_dates['valid']['end_date']))
         else:
             self.ds_test = dataset.sel(date=slice(self.start_and_end_dates['test']['start_date'], self.start_and_end_dates['test']['end_date']))
-        
-        # Check if loss is in cfg and if it is NSE or weighted NSE
-        if 'loss' in self.cfg._cfg and self.cfg.loss:
-            if self.cfg.loss.lower() in ['nse', 'weightednse']:
-                # Get the std of the discharge for each basin, which is needed for the (weighted) NSE loss.
-                self._calculate_per_basin_std(self.ds_train)
             
         if self._compute_scaler:
             # Get feature-wise center and scale values for the feature normalization
@@ -142,8 +138,6 @@ class BaseDataset(Dataset):
         # Create keep_cols list dynamically
         keep_cols = []
         for attr in possible_variables:
-            print('attr:', attr, attr in self.cfg._cfg)
-
             if attr in self.cfg._cfg:
                 keep_cols.extend(getattr( self.cfg, attr))
         
@@ -153,6 +147,9 @@ class BaseDataset(Dataset):
 
         # Get the alias map
         self.alias_map = self._get_alias_map(keep_cols)
+
+        # print('keep_cols:', keep_cols)
+        # print('alias_map:', self.alias_map)
         
         if self.cfg.verbose:
             print("-- Loading basin data into xarray data set.")
@@ -160,6 +157,10 @@ class BaseDataset(Dataset):
         for basin in tqdm(self.basins, disable=self._disable_pbar, file=sys.stdout):
             
             df = self._load_basin_data(basin)
+
+            if df.empty:
+                print(f"Warning! (Data): No data loaded for basin {basin}. Skipping.")
+                continue
             
             # Make the columns to be lower case
             df.columns = [col.lower() for col in df.columns]
@@ -204,7 +205,10 @@ class BaseDataset(Dataset):
         Raises:
             KeyError: If no suitable min-max pairs are found for computing the mean.
         """
-        if any(col.startswith('tmean') for col in keep_cols):
+
+        if any(col.startswith('tmean') for col in keep_cols) and \
+            not any(col.startswith('tmean') for col in df.columns):
+
             # Loop through all available features and try to find min-max pairs
             for col in df.columns:
                 if col.startswith(('tmax', 'tmin')):
@@ -217,6 +221,8 @@ class BaseDataset(Dataset):
                     else:
                         # If no min-max pairs found, raise KeyError
                         raise KeyError(f"Cannot compute '{mean_col_name}'. No suitable min-max pairs found.")
+                    
+        return df
 
     @staticmethod
     def _get_alias_map(keep_cols):
@@ -263,6 +269,9 @@ class BaseDataset(Dataset):
         # Check if any of the specified columns are not found in the DataFrame
         updated_alias_map = {}
         not_available_columns  = []
+
+        # print(df.head())
+        # aux = input('Press any key to continue...')
         
         for key, aliases in self.alias_map.items():
             # Find the intersection of DataFrame columns and aliases
@@ -309,6 +318,7 @@ class BaseDataset(Dataset):
         for _, dates in self.start_and_end_dates.items():
             start_date = dates['start_date']
             end_date = dates['end_date']
+
             interval_subset = df[(df.index >= start_date) & (df.index <= end_date)]            
             subsetted_df = pd.concat([subsetted_df, interval_subset])
             
@@ -320,37 +330,6 @@ class BaseDataset(Dataset):
         # subsetted_df = subsetted_df.reindex(pd.date_range(subsetted_df.index[0], subsetted_df.index[-1], freq='D'))   ## freq=native_frequency
 
         return subsetted_df
-        
-    def _calculate_per_basin_std(self, ds: xr.Dataset):
-        '''
-        Calculate the standard deviation of the target variables for each basin.
-        
-        - Args:
-            ds: xarray.Dataset, the xarray dataset containing the target variables.
-            
-        - Returns:
-            None
-        '''
-
-        basin_coordinates = ds["basin"].values.tolist()
-        if self.cfg.verbose:
-            print("-- Calculating target variable stds per basin")
-        nan_basins = list()
-        for basin in tqdm(self.basins, file=sys.stdout, disable=self._disable_pbar):
-            
-            obs = ds.sel(basin=basin)[self.cfg.target_variables].to_array().values
-            if np.sum(~np.isnan(obs)) > 1:
-                # Calculate std for each target
-                per_basin_target_stds = torch.tensor(np.expand_dims(np.nanstd(obs, axis=1), 0), dtype=self.cfg.precision['torch'])
-            else:
-                nan_basins.append(basin)
-                per_basin_target_stds = torch.full((1, obs.shape[0]), np.nan, dtype=self.cfg.precision['torch'])
-
-            self._per_basin_target_stds[basin] = per_basin_target_stds
-            
-        if len(nan_basins) > 0:
-            print("Warning! (Data): The following basins had not enough valid target values to calculate a standard deviation: "
-                           f"{', '.join(nan_basins)}. NSE loss values for this basin will be NaN.")
             
     def _setup_normalization(self, ds: xr.Dataset):
         '''

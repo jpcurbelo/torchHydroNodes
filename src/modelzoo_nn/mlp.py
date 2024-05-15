@@ -8,8 +8,8 @@ from src.modelzoo_nn.basemodel import BaseNNModel
 
 class MLP(BaseNNModel):
     
-    def __init__(self, concept_model: BaseConceptModel):
-        super().__init__(concept_model)
+    def __init__(self, concept_model: BaseConceptModel, alias_map: dict):
+        super().__init__(concept_model, alias_map)
 
 
         # self.input_size = len(cfg.nn_dynamic_inputs) + len(cfg.nn_static_inputs)

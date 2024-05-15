@@ -14,7 +14,11 @@ from src.utils.load_process_data import (
     Config,
 )
 
-from src.datasetzoo import get_dataset
+from src.datasetzoo import (
+    get_dataset,
+    get_dataset_pretrainer,
+)
+
 from src.modelzoo_concept import get_concept_model
 from src.modelzoo_nn import (
     get_nn_model,
@@ -27,9 +31,10 @@ def main(config_file):
     cfg = Config(Path(config_file))
     
     # Load the forcing and target data 
-    dataset = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
+    dataset = get_dataset_pretrainer(cfg=cfg, scaler=dict()) 
 
-    print(dataset.__dict__['scaler'])
+    # print(dataset.__dict__)
+    # print(dataset.__dict__['alias_map_clean'])
 
     ### Conceptual model
     model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
@@ -43,7 +48,7 @@ def main(config_file):
     # print('model_outputs', model_concept.model_outputs)
 
     ### Neural network model
-    model_nn = get_nn_model(model_concept)
+    model_nn = get_nn_model(model_concept, dataset.__dict__['alias_map_clean'])
 
     # print(model_nn.__dict__)
 

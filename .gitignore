@@ -2,6 +2,7 @@
 # Folders
 venv-hydronodes/*
 examples/runs/*
+data/*
 
 
 # Files

@@ -56,8 +56,6 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None):
     
     # check if a GPU has been specified as command line argument. If yes, overwrite config
     if gpu is not None and gpu >= 0:
-        print('Using GPU:', gpu)
-        print('Device in config:', cfg.device)
         cfg.device = f"cuda:{gpu}"
     if gpu is not None and gpu < 0:
         cfg.device = "cpu"

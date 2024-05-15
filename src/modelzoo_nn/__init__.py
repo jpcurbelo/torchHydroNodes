@@ -4,7 +4,7 @@ from src.modelzoo_nn.mlp import MLP
 from src.modelzoo_nn.pretrainer import NNpretrainer
 
 
-def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
+def get_nn_model(concept_model: BaseConceptModel, alias_map:dict)-> BaseNNModel:
     '''Get the neural network model based on the configuration'''
     
     if concept_model.cfg.nn_model.lower() == "mlp":
@@ -12,7 +12,7 @@ def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
     else:
         raise NotImplementedError(f"No model NN class implemented for model {concept_model.cfg.nn_model}")
     
-    return Model(concept_model=concept_model)
+    return Model(concept_model=concept_model, alias_map=alias_map)
 
 def get_nn_pretrainer(nnmodel: BaseNNModel, input_vars=None, output_vars=None):
     '''Get the pretrainer for the neural network model'''

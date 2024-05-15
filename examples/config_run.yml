@@ -1,45 +1,32 @@
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+concept_model: exphydro
+nn_model: mlp
+
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-dataset: camelsus
-data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
-
-# Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
-forcings: 
-  - daymet
-  # - maurer
-  # - maurer_extended
+data_dir: M0_results_569basins_1980_2010
 
 nn_dynamic_inputs:
   - s_snow
   - s_water
-  - prcp(mm/day)
-  - tmean(C)
+  - prcp
+  - tmean
 
-nn_static_inputs:
-  # - lat
-  # - lon
-  # - elev
-
-nn_mech_outputs:
+nn_mech_targets:
   - ps_bucket
   - pr_bucket
   - m_bucket
   - et_bucket
   - q_bucket
 
-
 target_variables: 
-  - obs_runoff(mm/day)
+  - obs_runoff
 
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 basin_file: 4_basin_file.txt
-
-# --- Model configurations --- #
-# Conceptual model to use [exphydro, ...
-# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
-concept_model: exphydro
-nn_model: mlp
 
 # --- Training configurations --- #
 
@@ -108,7 +95,7 @@ clip_gradient_norm: 1.0
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: concept_run
+experiment_name: pretrainer_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0

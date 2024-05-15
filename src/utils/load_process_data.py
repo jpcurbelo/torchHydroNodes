@@ -97,9 +97,7 @@ class Config(object):
         self._cfg['results_dir'] = results_dir
             
         # Check if forcings are provided for camelus dataset
-        # if config_data['dataset'] == 'camelsus' and ('forcings' not in config_data or not config_data['forcings']):
-        #     config_data['forcings'] = ['daymet']
-        if self.dataset == 'camelsus' and not self.forcings:
+        if 'dataset' in self._cfg and self._cfg['dataset'] == 'camelsus' and 'forcings' not in self._cfg:
             self._cfg['forcings'] = ['daymet']
             # Raise a warning
             print('Warning! (Data): Forcing data not provided. Using Daymet data as default.')
@@ -317,6 +315,10 @@ class Config(object):
             return list()
     
     @property
+    def nn_mech_targets(self) -> list:
+        return self._get_property_value("nn_mech_targets")
+
+    @property
     def target_variables(self) -> list:
         return self._get_property_value("target_variables")
     
@@ -335,6 +337,10 @@ class Config(object):
     @property
     def data_dir(self) -> Path:
         return self._get_property_value("data_dir")
+
+    @data_dir.setter
+    def data_dir(self, value: Path):
+        self._cfg['data_dir'] = value
 
     @property
     def precision(self) -> dict:

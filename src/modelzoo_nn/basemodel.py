@@ -6,21 +6,16 @@ from src.modelzoo_concept.basemodel import BaseConceptModel
 
 class BaseNNModel(nn.Module):
     
-    def __init__(self, concept_model: BaseConceptModel):
+    def __init__(self, concept_model: BaseConceptModel, alias_map: dict):
         super(BaseNNModel, self).__init__()
 
         self.concept_model = concept_model
+        self.alias_map = alias_map
         
         # Extract quantities for easy access
         self.device = self.concept_model.cfg.device
         self.dtype = self.concept_model.cfg.precision['torch']
         self.scaler = self.concept_model.scaler
-
-        # print(self.scaler)
-
-        # print('nn_dynamic_inputs', self.cfg.nn_dynamic_inputs)
-        # print('nn_static_inputs', self.cfg.nn_static_inputs)
-        # print('nn_outputs', self.concept_model.nn_outputs)
 
         self.input_size = len(self.concept_model.cfg.nn_dynamic_inputs) + len(self.concept_model.cfg.nn_static_inputs)
         self.output_size = len(self.concept_model.nn_outputs)
@@ -45,20 +40,27 @@ class BaseNNModel(nn.Module):
         '''This function should implement the forward pass of the neural network'''
         raise NotImplementedError("This function has to be implemented by the child class")
 
-
-
-
-
     def xarray_to_torch(self, xr_dataset):
+        '''
+        Function to convert an xarray dataset to a dictionary of torch tensors
+        
+        - Args:
+            - xr_dataset: xarray dataset object
+            
+        - Returns:
+            - basin_values: Dictionary with the basin values as torch tensors
+        '''
+
+        # self.concept_model.cfg.nn_dynamic_inputs to their corresponding match in the alias_map
+        nn_dynamic_inputs = [self.alias_map[key] for key in self.alias_map.keys() if key in self.concept_model.cfg.nn_dynamic_inputs]
 
         basin_values = {}
-        
         # Iterate over each basin
         for basin in xr_dataset['basin']:
             basin_data = []
             
             # Iterate over each variable
-            for var_name in self.concept_model.cfg.nn_dynamic_inputs:
+            for var_name in nn_dynamic_inputs:
                 var_value = xr_dataset[var_name.lower()].sel(basin=basin).values  # Get the variable's values for the current basin
                 torch_value = torch.tensor(var_value, dtype=self.dtype)  # Convert to torch tensor
                 basin_data.append(torch_value)  # Store the torch tensor in the basin's data
