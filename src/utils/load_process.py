@@ -314,6 +314,10 @@ class Config(object):
     def device(self) -> torch.device:
         return self._get_property_value("device")
 
+    @device.setter
+    def device(self, value: torch.device):
+        self._device = value
+
     @property
     def loss(self) -> str:
         return self._get_property_value("loss")

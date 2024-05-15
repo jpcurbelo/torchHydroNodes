@@ -11,16 +11,12 @@ class BaseConceptModel:
     def __init__(self, 
                  cfg: Config,
                  ds: xarray.Dataset,
-                 scaler=None,
                  odesmethod:str ='RK23'
                 ):
         
         self.cfg = cfg
         self.ds = ds
         self.odesmethod = odesmethod
-
-        if scaler:
-            self.scaler = scaler
         
         # Set the data type attribute for the model
         self.data_type_np = cfg.precision['numpy']

@@ -18,10 +18,9 @@ class ExpHydro(BaseConceptModel):
     def __init__(self, 
                  cfg: Config,
                  ds: xarray.Dataset,
-                 scaler=None,
                  odesmethod:str ='RK23'
                 ):
-        super().__init__(cfg, ds, scaler, odesmethod)
+        super().__init__(cfg, ds, odesmethod)
         
         # Interpolators
         self.interpolators = self.create_interpolator_dict()
