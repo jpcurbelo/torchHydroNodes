@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
-from src.utils.load_process import Config
+from src.utils.load_process_data import Config
 
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 class ExpHydro(BaseConceptModel):

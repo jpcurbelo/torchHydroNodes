@@ -1,0 +1,43 @@
+# Description: This file contains the alias of the variables that can be used in the configuration file.
+# Add aliases as they might appear in the different datasets you are using.
+# Always use lower case for the aliases.!!!!!!!!!!!!!!!!!!!!!!
+
+# Precipitation
+prcp:
+  - prcp
+  - prcp(mm/day)
+
+# Temperature - mean
+tmean:
+  - tmean
+  - tmean(c)
+
+# Temperature - maximum
+tmax:
+  - tmax
+  - tmax(c)
+
+# Temperature - minimum
+tmin:
+  - tmin
+  - tmin(c)
+
+# Length of day
+dayl:
+  - dayl
+  - dayl(s)
+
+# Observed runoff
+obs_runoff:
+  - obs_runoff
+  - obs_runoff(mm/day)
+
+# Snow water equivalent
+swe:
+  - swe
+  - swe(mm)
+
+# Vapor pressure
+vp:
+  - vp
+  - vp(pa)

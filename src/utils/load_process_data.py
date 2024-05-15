@@ -164,8 +164,7 @@ class Config(object):
         else:
             return self._cfg[key]    
         
-    @staticmethod
-    def _parse_run_config(config_file):
+    def _parse_run_config(self, config_file):
         '''
         Parse the configuration data from a YAML file or a dictionary.
         
@@ -249,8 +248,25 @@ class Config(object):
         else:
             cfg['device'] = torch.device("cpu")
         
+        # Load variables for the concept model
+        if 'concept_model' in cfg:
+            cfg['concept_inputs'],  cfg['concept_target'] = self._load_concept_model_vars(cfg['concept_model'])
+       
         # Add more config parsing if necessary
         return cfg
+    
+    @staticmethod
+    def _load_concept_model_vars(concept_model: str) -> dict:
+        
+        # Load utils/concept_model_vars.yml
+        with open(Path('utils') / 'concept_model_vars.yml', 'r') as f:
+            var_alias = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Load the variables for the concept model
+        var_inputs = var_alias[concept_model]['model_inputs']
+        var_outputs = var_alias[concept_model]['model_target']
+
+        return var_inputs, var_outputs
          
     @staticmethod
     def _as_default_list(value: Any) -> list:
@@ -298,6 +314,14 @@ class Config(object):
     def target_variables(self) -> list:
         return self._get_property_value("target_variables")
     
+    @property
+    def concept_inputs(self) -> list:
+        return self._get_property_value("concept_inputs")
+    
+    @property
+    def concept_target(self) -> list:
+        return self._get_property_value("concept_target")
+
     @property
     def forcings(self) -> List[str]:
         return self._as_default_list(self._get_property_value("forcings"))

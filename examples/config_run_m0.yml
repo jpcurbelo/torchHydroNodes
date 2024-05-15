@@ -7,13 +7,13 @@ data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
 forcings: 
   - daymet
 
-nn_dynamic_inputs:
-  - prcp(mm/day)
-  - dayl(s)
-  - tmean(C)
+# nn_dynamic_inputs:
+#   - prcp(mm/day)
+#   - dayl(s)
+#   - tmean(C)
 
-target_variables: 
-  - obs_runoff(mm/day)
+# target_variables: 
+#   - obs_runoff(mm/day)
 
 # Files to specify training, validation and test basins
 # basin_file: 25_basin_file.txt

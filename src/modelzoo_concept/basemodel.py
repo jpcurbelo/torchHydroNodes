@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import xarray
 
-from src.utils.load_process import Config
+from src.utils.load_process_data import Config
 from src.datasetzoo.basedataset import BaseDataset
 
 # Classes

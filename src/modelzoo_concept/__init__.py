@@ -1,6 +1,6 @@
 import xarray
 
-from src.utils.load_process import Config
+from src.utils.load_process_data import Config
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_concept.exphydro import ExpHydro
 

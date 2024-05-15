@@ -10,7 +10,7 @@ import torch
 project_dir = str(Path(__file__).resolve().parent.parent)
 sys.path.append(project_dir)
 
-from src.utils.load_process import (
+from src.utils.load_process_data import (
     Config,
 )
 

@@ -1,0 +1,8 @@
+
+exphydro:
+  model_inputs:
+    - prcp
+    - dayl
+    - tmean
+  model_target:
+    - obs_runoff

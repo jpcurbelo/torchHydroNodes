@@ -6,11 +6,25 @@ from tqdm import tqdm
 import sys
 import numpy as np
 import torch
+import yaml
+from pathlib import Path
 
-from src.utils.load_process import (
+# Get the absolute path to the current script
+script_dir = Path(__file__).resolve().parent
+
+from src.utils.load_process_data import (
     Config, 
     load_basin_file,
 )
+
+# List of possible variables that can be passed to the model(s)
+possible_variables = [
+    'nn_dynamic_inputs', 
+    'nn_static_inputs', 
+    'target_variables',
+    'concept_inputs',
+    'concept_target',
+    ]
 
 # Ref -> https://github.com/neuralhydrology/neuralhydrology/blob/master/neuralhydrology/datasetzoo/basedataset.py
 class BaseDataset(Dataset):
@@ -119,15 +133,26 @@ class BaseDataset(Dataset):
         
         data_list = list()
         
-        # Check if static inputs are provided - it is assumed that dynamic inputs and target are always provided
-        if hasattr(self.cfg, 'nn_static_inputs') and self.cfg.nn_static_inputs:
-            self.cfg['nn_static_inputs'] = list()
+        # # # Check if static inputs are provided - it is assumed that dynamic inputs and target are always provided
+        # # if hasattr(self.cfg, 'nn_static_inputs') and self.cfg.nn_static_inputs:
+        # #     self.cfg['nn_static_inputs'] = list()
         
         # List of columns to keep, everything else will be removed to reduce memory footprint
-        keep_cols = self.cfg.nn_dynamic_inputs + self.cfg.nn_static_inputs + self.cfg.target_variables
+        # # keep_cols = self.cfg.nn_dynamic_inputs + self.cfg.nn_static_inputs + self.cfg.target_variables
+        # Create keep_cols list dynamically
+        keep_cols = []
+        for attr in possible_variables:
+            print('attr:', attr, attr in self.cfg._cfg)
+
+            if attr in self.cfg._cfg:
+                keep_cols.extend(getattr( self.cfg, attr))
+        
         keep_cols = list(sorted(set(keep_cols)))
         # Lowercase all columns
         keep_cols = [col.lower() for col in keep_cols]
+
+        # Get the alias map
+        self.alias_map = self._get_alias_map(keep_cols)
         
         if self.cfg.verbose:
             print("-- Loading basin data into xarray data set.")
@@ -141,10 +166,10 @@ class BaseDataset(Dataset):
 
             # Compute mean from min-max pairs if necessary
             df = self._compute_mean_from_min_max(df, keep_cols)
-            
+
             # Remove unnecessary columns
             df = self._remove_unnecessary_columns(df, keep_cols)
-     
+
             # Subset the DataFrame by existing periods
             df = self._subset_df_by_periods(df)   
             
@@ -193,6 +218,32 @@ class BaseDataset(Dataset):
                         # If no min-max pairs found, raise KeyError
                         raise KeyError(f"Cannot compute '{mean_col_name}'. No suitable min-max pairs found.")
 
+    @staticmethod
+    def _get_alias_map(keep_cols):
+        '''
+        Get the alias map for the specified columns.
+        
+        - Args:
+            keep_cols: list, a list of columns to keep.
+            
+        - Returns:
+            alias_map: dict, a dictionary mapping the original column names to the aliases.
+        '''
+
+        # Construct the path to the 'variable_aliases.yml' file
+        variable_aliases_path = script_dir / '..' / 'utils' / 'variable_aliases.yml'
+
+        # Open and read the 'variable_aliases.yml' file
+        with open(variable_aliases_path, 'r') as file:
+            aliases = yaml.safe_load(file)
+
+        alias_map = {}
+        for col in keep_cols:
+            if col in aliases:
+                alias_map[col] = aliases[col]
+                    
+        return alias_map
+
     def _remove_unnecessary_columns(self, df, keep_cols):
         """
         Remove unnecessary columns from DataFrame.
@@ -208,17 +259,35 @@ class BaseDataset(Dataset):
             KeyError: If any of the specified columns in keep_cols are not found in the DataFrame.
 
         """
+
         # Check if any of the specified columns are not found in the DataFrame
-        not_available_columns = [col for col in keep_cols if not any(df_col.startswith(col) for df_col in df.columns)]
+        updated_alias_map = {}
+        not_available_columns  = []
+        
+        for key, aliases in self.alias_map.items():
+            # Find the intersection of DataFrame columns and aliases
+            matched_columns = [alias for alias in aliases if alias in df.columns]
+            
+            if matched_columns:
+                # Update the alias map with only the matched columns
+                updated_alias_map[key] = matched_columns[0]  # This assumes that there is only one matched column
+            else:
+                # Record the key if no matched column is found
+                not_available_columns.append(key)
+
         if not_available_columns:
             msg = [
                 f"The following features are not available in the data: {not_available_columns}. ",
-                f"These are the available features: {df.columns.tolist()}"
+                f"These are the available features: {df.columns.tolist()}. ",
+                "Check the 'variable_aliases.yml' file for the correct column names."
             ]
             raise KeyError("".join(msg))
         
-        # Keep only columns that start with the specified columns in keep_cols
-        df = df[[col for col in df.columns if any(col.startswith(k) for k in keep_cols)]]
+        # Create the alias map with the matched columns
+        self.alias_map_clean = updated_alias_map
+
+        # Filter the DataFrame to keep only the matched columns
+        df = df[list(updated_alias_map.values())]
         
         return df
 
@@ -253,6 +322,15 @@ class BaseDataset(Dataset):
         return subsetted_df
         
     def _calculate_per_basin_std(self, ds: xr.Dataset):
+        '''
+        Calculate the standard deviation of the target variables for each basin.
+        
+        - Args:
+            ds: xarray.Dataset, the xarray dataset containing the target variables.
+            
+        - Returns:
+            None
+        '''
 
         basin_coordinates = ds["basin"].values.tolist()
         if self.cfg.verbose:
