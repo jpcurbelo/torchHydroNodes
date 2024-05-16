@@ -1,5 +1,7 @@
 import numpy as np
 from scipy import signal, stats
+import torch
+import torch.nn as nn
 
 ## Evaluation metircs - after training
 def NSE_eval(y_true, y_pred):
@@ -393,6 +395,26 @@ def compute_all_metrics(y_true, y_pred, dates, metrics):
     return metrics_dict
 
 
+class NSElossNH(nn.Module):
+    def __init__(self):
+        super(NSElossNH, self).__init__()
+
+    def forward(self, y_true, y_pred, y_true_std, eps=0.1):
+
+        squared_error = torch.square(y_true - y_pred)
+        weights = 1 / torch.square(y_true_std + eps)
+        scaled_loss = squared_error * weights
+        return torch.mean(scaled_loss)
+
+class NSEloss(nn.Module):
+    def __init__(self):
+        super(NSEloss, self).__init__()
+
+    def forward(self, y_true, y_pred):
+
+        loss = torch.sum(torch.square(y_true - y_pred)) / (torch.sum(torch.square(y_true - torch.mean(y_true))) + torch.finfo(float).eps)
+        return loss
+
 
 metric_name_func_dict = {
     'nse': NSE_eval,
@@ -406,6 +428,12 @@ metric_name_func_dict = {
     'peak-timing': MEAN_PEAK_TIMING_eval,
     'peak-mape':  MEAN_PEAK_MAPE_eval,
     'pearson-r': PEARSON_R_eval
+}
+
+loss_name_func_dict = {
+    'nse-nh': NSElossNH(),
+    'nse': NSEloss(),
+    'mse': nn.MSELoss(),
 }
 
 

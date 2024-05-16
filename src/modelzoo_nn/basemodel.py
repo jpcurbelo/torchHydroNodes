@@ -6,11 +6,10 @@ from src.modelzoo_concept.basemodel import BaseConceptModel
 
 class BaseNNModel(nn.Module):
     
-    def __init__(self, concept_model: BaseConceptModel, alias_map: dict):
+    def __init__(self, concept_model: BaseConceptModel):
         super(BaseNNModel, self).__init__()
 
         self.concept_model = concept_model
-        self.alias_map = alias_map
         
         # Extract quantities for easy access
         self.device = self.concept_model.cfg.device
@@ -29,8 +28,7 @@ class BaseNNModel(nn.Module):
         self.create_layers()
 
         # Move model to the specified device
-        self.to(self.device)
-
+        self.to(self.device) 
 
     def create_layers(self):
         '''This function should create the layers of the neural network'''
@@ -51,16 +49,13 @@ class BaseNNModel(nn.Module):
             - basin_values: Dictionary with the basin values as torch tensors
         '''
 
-        # self.concept_model.cfg.nn_dynamic_inputs to their corresponding match in the alias_map
-        nn_dynamic_inputs = [self.alias_map[key] for key in self.alias_map.keys() if key in self.concept_model.cfg.nn_dynamic_inputs]
-
         basin_values = {}
         # Iterate over each basin
         for basin in xr_dataset['basin']:
             basin_data = []
             
             # Iterate over each variable
-            for var_name in nn_dynamic_inputs:
+            for var_name in self.concept_model.cfg.nn_dynamic_inputs:
                 var_value = xr_dataset[var_name.lower()].sel(basin=basin).values  # Get the variable's values for the current basin
                 torch_value = torch.tensor(var_value, dtype=self.dtype)  # Convert to torch tensor
                 basin_data.append(torch_value)  # Store the torch tensor in the basin's data

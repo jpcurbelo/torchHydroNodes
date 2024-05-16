@@ -27,9 +27,9 @@ class ExpHydro(BaseConceptModel):
         self.interpolators = self.create_interpolator_dict()
         
         # Input variables
-        self.precp = ds['prcp(mm/day)']
-        self.temp = ds['tmean(c)']
-        self.lday = ds['dayl(s)']
+        self.precp = ds['prcp']
+        self.temp = ds['tmean']
+        self.lday = ds['dayl']
         
         # print('precp.shape', self.precp.shape)
         # aux = input('Press Enter to continue...')
@@ -156,9 +156,9 @@ class ExpHydro(BaseConceptModel):
         basin_params = self.params_dict[basin]
         
         # Get the interpolator functions for the basin
-        self.precp_interp = self.interpolators[basin]['prcp(mm/day)']
-        self.temp_interp = self.interpolators[basin]['tmean(c)']
-        self.lday_interp = self.interpolators[basin]['dayl(s)']
+        self.precp_interp = self.interpolators[basin]['prcp']
+        self.temp_interp = self.interpolators[basin]['tmean']
+        self.lday_interp = self.interpolators[basin]['dayl']
         
         # Get input variables for the basin
         self.precp_basin = self.precp.sel(basin=basin).values
@@ -228,12 +228,12 @@ class ExpHydro(BaseConceptModel):
             'm_bucket': results[3],
             'ps_bucket': results[4],
             'pr_bucket': results[5],
-            'prcp(mm/day)': ds['prcp(mm/day)'],
-            'tmean(c)': ds['tmean(c)'],
-            'dayl(s)': ds['dayl(s)'],     
+            'prcp(mm/day)': ds['prcp'],
+            'tmean(c)': ds['tmean'],
+            'dayl(s)': ds['dayl'],     
             # the last element is the target variable (q_obs)       
             'q_bucket': results[-1],
-            'q_obs': ds['obs_runoff(mm/day)'],
+            'q_obs': ds['obs_runoff'],
         }
         
         # Create a DataFrame from the results dictionary
@@ -280,7 +280,7 @@ class ExpHydro(BaseConceptModel):
         
     @property
     def interpolator_vars(self):
-        return ['prcp(mm/day)', 'tmean(c)', 'dayl(s)']
+        return ['prcp', 'tmean', 'dayl']
 
     @property
     def nn_outputs(self):

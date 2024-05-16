@@ -46,9 +46,6 @@ def get_dataset_pretrainer(cfg: Config,
         - ds: BaseDataset object
     '''
 
-    print('script_dir', script_dir) 
-    print('script_dir.parent.parent', script_dir.parent.parent)
-
     data_path = script_dir.parent.parent / 'data' / cfg.data_dir
     
     # Check if datadir exists

@@ -28,7 +28,7 @@ def save_and_plot_simulation(ds, q_bucket, basin, period='train',
     '''
     
     dates = ds['date'].values
-    q_obs = ds['obs_runoff(mm/day)'].values            
+    q_obs = ds['obs_runoff'].values            
         
     # Plot the simulated and actual values
     _, ax1 = plt.subplots(figsize=(16, 6))

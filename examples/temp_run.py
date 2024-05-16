@@ -48,9 +48,7 @@ def main(config_file):
     # print('model_outputs', model_concept.model_outputs)
 
     ### Neural network model
-    model_nn = get_nn_model(model_concept, dataset.__dict__['alias_map_clean'])
-
-    # print(model_nn.__dict__)
+    model_nn = get_nn_model(model_concept)
 
     # # Prepare data to test the model
     # basin = '01022500'
@@ -58,17 +56,15 @@ def main(config_file):
     #                     for var in cfg.nn_dynamic_inputs], dim=0).t().to(model_nn.device)
     # output = model_nn(inputs, basin)
 
+    # print(output)
+
     ### Pretrainer
     nn_dynamic_inputs = cfg.nn_dynamic_inputs
     nn_outputs = model_concept.nn_outputs
-    pretrainer = get_nn_pretrainer(model_nn, input_vars=nn_dynamic_inputs, output_vars=nn_outputs)
+    pretrainer = get_nn_pretrainer(model_nn)
 
-    # print(pretrainer.nnmodel.__dict__.keys())
-    # print(pretrainer.nnmodel.concept_model.__dict__.keys())
-    # print(pretrainer.nnmodel.concept_model.ds)
-    # print(pretrainer.nnmodel.concept_model.ds.basin.values)
-
-    print(pretrainer.__dict__)
+    ## Train the model
+    pretrainer.train()
 
 
 

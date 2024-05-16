@@ -1,10 +1,10 @@
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_nn.basemodel import BaseNNModel
 from src.modelzoo_nn.mlp import MLP
-from src.modelzoo_nn.pretrainer import NNpretrainer
+from src.modelzoo_nn.basepretrainer import NNpretrainer
 
 
-def get_nn_model(concept_model: BaseConceptModel, alias_map:dict)-> BaseNNModel:
+def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
     '''Get the neural network model based on the configuration'''
     
     if concept_model.cfg.nn_model.lower() == "mlp":
@@ -12,10 +12,10 @@ def get_nn_model(concept_model: BaseConceptModel, alias_map:dict)-> BaseNNModel:
     else:
         raise NotImplementedError(f"No model NN class implemented for model {concept_model.cfg.nn_model}")
     
-    return Model(concept_model=concept_model, alias_map=alias_map)
+    return Model(concept_model=concept_model)
 
-def get_nn_pretrainer(nnmodel: BaseNNModel, input_vars=None, output_vars=None):
+def get_nn_pretrainer(nnmodel: BaseNNModel):
     '''Get the pretrainer for the neural network model'''
     
-    return NNpretrainer(nnmodel, input_vars=input_vars, output_vars=output_vars)
+    return NNpretrainer(nnmodel)
                  

@@ -8,17 +8,8 @@ from src.modelzoo_nn.basemodel import BaseNNModel
 
 class MLP(BaseNNModel):
     
-    def __init__(self, concept_model: BaseConceptModel, alias_map: dict):
-        super().__init__(concept_model, alias_map)
-
-
-        # self.input_size = len(cfg.nn_dynamic_inputs) + len(cfg.nn_static_inputs)
-        # self.output_size = len(cfg.nn_outputs)
-
-        # self.hidden_size = hidden_size
-        # self.input_means = torch.tensor(input_means, dtype=DTYPE).to(DEVICE)
-        # self.input_stds = torch.tensor(input_stds, dtype=DTYPE).to(DEVICE)
-        # self.submodelID = submodelID
+    def __init__(self, concept_model: BaseConceptModel):
+        super().__init__(concept_model)
 
     def create_layers(self):
 
@@ -37,12 +28,14 @@ class MLP(BaseNNModel):
         self.output_layer.name = 'output_layer'
 
     def forward(self, inputs, basin):
-        
+
         # Normalize the inputs
-        inputs = (inputs - self.torch_input_means[basin]) / self.torch_input_stds[basin]
+        normalized_inputs = torch.zeros_like(inputs, device=inputs.device)
+        for i, b in enumerate(basin):
+            normalized_inputs[i] = (inputs[i] - self.torch_input_means[b].to(inputs.device)) / self.torch_input_stds[b].to(inputs.device)
 
         # Pass through the input layer
-        x = F.tanh(self.input_layer(inputs))
+        x = F.tanh(self.input_layer(normalized_inputs))
 
         # Hidden Layers
         for hidden in self.hidden:

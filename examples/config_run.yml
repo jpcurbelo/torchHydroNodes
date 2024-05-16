@@ -48,24 +48,24 @@ test_end_date: "30/09/2010"
 # Set if the NN model should be pre-trained
 pretrain_nn: False
 
-# Loss function to use [mse, nse]
-loss: nse
-# Metrics to use for evaluation
-metrics:
-  - NSE
-  # - Alpha-NSE
-  # - Beta-NSE
-  # - FHV
-  # - FMS
-  # - FLV
-  # - KGE
-  # - Beta-KGE
-  # - Peak-Timing
-  # - Peak-MAPE
-  # - Pearson-r
+# # Loss function to use [mse, nse, nse-nh]
+# loss: mse
+# # Metrics to use for evaluation
+# metrics:
+#   - NSE
+#   # - Alpha-NSE
+#   # - Beta-NSE
+#   # - FHV
+#   # - FMS
+#   # - FLV
+#   # - KGE
+#   # - Beta-KGE
+#   # - Peak-Timing
+#   # - Peak-MAPE
+#   # - Pearson-r
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 1000
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 batch_size: 256

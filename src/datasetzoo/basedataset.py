@@ -104,7 +104,10 @@ class BaseDataset(Dataset):
         # self._load_combined_attributes()
         
         dataset = self._load_or_create_xarray_dataset()
-        
+
+        # Rename the variables back given the alias_map_clean
+        dataset = dataset.rename(self.alias_map_clean)
+
         # If is_train, split the data into train and validation periods
         if self.is_train:
             self.ds_train = dataset.sel(date=slice(self.start_and_end_dates['train']['start_date'], self.start_and_end_dates['train']['end_date']))
@@ -118,7 +121,7 @@ class BaseDataset(Dataset):
                         
         # Performs normalization
         # ds = (ds - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"] 
-        
+
     def _load_or_create_xarray_dataset(self) -> xr.Dataset:
         '''
         Load the data for all basins and create an xarray Dataset.
@@ -292,8 +295,8 @@ class BaseDataset(Dataset):
             ]
             raise KeyError("".join(msg))
         
-        # Create the alias map with the matched columns
-        self.alias_map_clean = updated_alias_map
+        # Create the alias map with the matched columns (inverted)
+        self.alias_map_clean = {v: k for k, v in updated_alias_map.items()}
 
         # Filter the DataFrame to keep only the matched columns
         df = df[list(updated_alias_map.values())]

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Union, Any
 import numpy as np
 import torch
+from torch.utils.data import Sampler, Dataset
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -428,6 +429,56 @@ class Config(object):
     def metrics(self) -> List[str]:
         return self._as_default_list(self._get_property_value("metrics"))
     
+    @property
+    def batch_size(self) -> int:
+        return self._get_property_value("batch_size")
+
+    @property
+    def num_workers(self) -> int:
+        return self._get_property_value("num_workers")
+    
+    @property
+    def epochs(self) -> int:
+        return self._get_property_value("epochs")
+    
+    @property
+    def optimizer(self) -> str:
+        return self._get_property_value("optimizer")
+    
+    @property
+    def learning_rate(self) -> float:
+        return self._get_property_value("learning_rate")
+
+class BatchSampler(Sampler):
+    def __init__(self, dataset_len, batch_size, shuffle=True):
+        self.dataset_len = dataset_len
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.num_batches = (dataset_len + batch_size - 1) // batch_size
+
+    def __iter__(self):
+        indices = np.arange(self.dataset_len)
+        if self.shuffle:
+            np.random.shuffle(indices)
+        batches = [indices[i * self.batch_size:(i + 1) * self.batch_size] for i in range(self.num_batches)]
+        return iter(batches)
+
+    def __len__(self):
+        return self.num_batches
+
+class CustomDatasetToNN(Dataset):
+    def __init__(self, input_tensor, output_tensor, basin_ids):
+        self.input_tensor = input_tensor
+        self.output_tensor = output_tensor
+        self.basin_ids = basin_ids
+
+    def __len__(self):
+        return len(self.input_tensor)
+
+    def __getitem__(self, idx):
+        return self.input_tensor[idx], self.output_tensor[idx], self.basin_ids[idx]
+
+
 
 if __name__ == "__main__":
     pass
