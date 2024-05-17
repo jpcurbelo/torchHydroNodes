@@ -2,6 +2,7 @@ import xarray as xr
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import sys
+from tqdm import tqdm
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.load_process_data import BatchSampler, CustomDatasetToNN
@@ -122,10 +123,18 @@ class NNpretrainer:
 
     def train(self):
 
+        if self.cfg.verbose:
+            print("-- Pretraining the neural network model --")
+
+        # for epoch in tqdm(range(self.epochs), disable=self.cfg.disable_pbar, file=sys.stdout):
         for epoch in range(self.epochs):
 
             epoch_loss = 0
-            for bi, (inputs, targets, basin_ids) in enumerate(self.dataloader):
+            pbar = tqdm(self.dataloader, disable=self.cfg.disable_pbar, file=sys.stdout)
+            pbar.set_description(f'# Epoch {epoch + 1:05d}')
+
+            num_batches_seen = 0
+            for (inputs, targets, basin_ids) in pbar:
 
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
@@ -134,10 +143,7 @@ class NNpretrainer:
                 predictions = self.nnmodel(inputs.to(self.device), basin_ids)
 
                 # Compute the loss
-                loss = self.loss(predictions.to(self.device), targets.to(self.device))
-
-                # sys.stdout.write(f'epoch {epoch + 1:3d}/{self.epochs:3d} batch {bi + 1:3d}/{self.num_batches:3d} loss {loss:6.4e}\r')
-                # sys.stdout.flush()   
+                loss = self.loss(predictions.to(self.device), targets.to(self.device)) 
 
                 # Backward pass
                 loss.backward()
@@ -147,10 +153,13 @@ class NNpretrainer:
 
                 # Accumulate the loss
                 epoch_loss += loss.item()
+                num_batches_seen += 1
+
+                # Update progress bar with current average loss
+                avg_loss = epoch_loss / num_batches_seen
+                pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
             # Learning rate scheduler
             if self.scheduler is not None:
                 self.scheduler.step()
-
-            print(f'Epoch {epoch+1:5d}, Loss: {epoch_loss / self.num_batches:6.4e}')
 
