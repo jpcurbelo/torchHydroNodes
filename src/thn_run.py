@@ -11,8 +11,15 @@ sys.path.append(project_dir)
 from src.utils.load_process_data import (
     Config,
 )
-from src.datasetzoo import get_dataset
+from src.datasetzoo import (
+    get_dataset, 
+    get_dataset_pretrainer
+)
 from src.modelzoo_concept import get_concept_model
+from src.modelzoo_nn import (
+    get_nn_model,
+    get_nn_pretrainer,
+)
 from src.utils.log_results import (
     save_and_plot_simulation,
     compute_and_save_metrics,
@@ -21,14 +28,20 @@ from src.utils.log_results import (
 def _main():
     args = _get_args()
     
-    if args["mode"] == "train":
-        start_run_m0(config_file=Path(args["config_file"]), gpu=args["gpu"])
+    if args["mode"] == "conceptual":
+        run_conceptual_model(config_file=Path(args["config_file"]), gpu=args["gpu"])
+    elif args["mode"] == "pretrain":
+        pretrain_nn_model(config_file=Path(args["config_file"]), gpu=args["gpu"])
+    elif args["mode"] == "train":
+        train_hybrid_model(config_file=Path(args["config_file"]), gpu=args["gpu"])
+    elif args["mode"] == "evaluate":
+        evaluate_model(run_dir=Path(args["run_dir"]), epoch=args["epoch"], period=args["period"], gpu=args["gpu"])
+    elif args["mode"] == "resume_training":
+        resume_training(run_dir=Path(args["run_dir"]), epoch=args["epoch"], gpu=args["gpu"])
 
 def _get_args() -> dict:
-    
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", type=str, default="train", 
-                        choices=["train", "evaluate", "resume_training"],
+    parser.add_argument("mode", type=str, choices=["conceptual", "pretrain", "train", "evaluate", "resume_training"],
                         help="Mode to run the model")
     parser.add_argument('--config-file', type=str, default='config_run.yml', 
                         help='Path to the config file')
@@ -43,14 +56,16 @@ def _get_args() -> dict:
                         help="GPU id to use. Overrides config argument 'device'. Use a value < 0 for CPU.")
     args = vars(parser.parse_args())
     
-    if args["mode"] == "train" and (args["config_file"] is None):
-        raise ValueError("The config file is required to train the model.")
-    elif args["mode"] in ["evaluate", "resume_training"] and (args["run_dir"] is None):
+    if args["mode"] in ["conceptual", "pretrain", "train"] and not args["config_file"]:
+        raise ValueError("The config file is required to run the conceptual, pretrain, or train modes.")
+    elif args["mode"] in ["evaluate", "resume_training"] and not args["run_dir"]:
         raise ValueError("The run directory is required to evaluate or resume training the model.")
     
     return args
 
-def _load_cfg_and_ds(config_file: Path, gpu: int = None):
+def _load_cfg_and_ds(config_file: Path, gpu: int = None, mode: str = 'conceptual'):
+
+    print('-- Loading the config file and the dataset')
 
     cfg = Config(config_file)
     
@@ -61,15 +76,19 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None):
         cfg.device = "cpu"
 
     # Load the forcing and target data 
-    ds = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
+    if mode == 'conceptual':
+        ds = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
+    elif mode == 'pretrain':
+        ds = get_dataset_pretrainer(cfg=cfg, scaler=dict()) 
+    else:
+        raise ValueError("Invalid mode. Please specify 'conceptual' or 'pretrain'.")
     
     return cfg, ds
 
 
-def start_run_m0(config_file: Path, gpu: int = None):
+def run_conceptual_model(config_file: Path, gpu: int = None):
 
-    print('-- Loading the config file and the dataset')
-    cfg, dataset = _load_cfg_and_ds(config_file, gpu)
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu, mode='conceptual')
     
     print('-- Running the model and saving the results')
     for basin in tqdm(dataset.basins, disable=cfg .disable_pbar, file=sys.stdout):
@@ -115,6 +134,37 @@ def start_run_m0(config_file: Path, gpu: int = None):
     # Compute the metrics
     compute_and_save_metrics( metrics=cfg.metrics, run_dir=run_dir)
 
-# python thn_run.py train --config-file ../examples/config_run_m0.yml
+def pretrain_nn_model(config_file: Path, gpu: int = None):
+    
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu, mode='pretrain')
+
+    # Conceptual model
+    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+
+    # Neural network model
+    model_nn = get_nn_model(model_concept)
+
+    # Pretrainer
+    pretrainer = get_nn_pretrainer(model_nn, dataset)
+
+    # Train the model
+    pretrainer.train()
+
+def train_hybrid_model(config_file: Path, gpu: int = None):
+        
+    pass
+
+def evaluate_model(run_dir: Path, epoch: int, period: str, gpu: int = None):
+        
+    pass
+
+def resume_training(run_dir: Path, epoch: int, gpu: int = None):
+
+    pass
+
+# Example usage:
+# python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
+# python thn_run.py pretrain --config-file ../examples/config_run_nn_pre.yml
+
 if __name__ == "__main__":
     _main()

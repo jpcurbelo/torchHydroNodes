@@ -50,14 +50,6 @@ def main(config_file):
     ### Neural network model
     model_nn = get_nn_model(model_concept)
 
-    # # Prepare data to test the model
-    # basin = '01022500'
-    # inputs = torch.cat([torch.tensor(dataset.ds_train[var.lower()].sel(basin=basin).values).unsqueeze(0) \
-    #                     for var in cfg.nn_dynamic_inputs], dim=0).t().to(model_nn.device)
-    # output = model_nn(inputs, basin)
-
-    # print(output)
-
     ### Pretrainer
     nn_dynamic_inputs = cfg.nn_dynamic_inputs
     nn_outputs = model_concept.nn_outputs
@@ -65,9 +57,6 @@ def main(config_file):
 
     ## Train the model
     pretrainer.train()
-
-
-
 
 if __name__ == '__main__':
     

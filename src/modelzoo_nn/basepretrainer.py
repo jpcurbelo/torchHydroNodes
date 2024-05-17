@@ -210,6 +210,11 @@ class NNpretrainer:
             random_basins = random.sample(list(self.basins), sample_size)
 
             for basin in random_basins:
+
+                # Create a directory to save the plots if it does not exist
+                basin_dir = Path(self.cfg.plots_dir) / basin
+                basin_dir.mkdir(parents=True, exist_ok=True)
+
                 for dsp in ds_periods:
                     ds_period = getattr(self.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
@@ -239,9 +244,9 @@ class NNpretrainer:
                                 plt.title(f'{var} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
                         else:
                             plt.title(f'{var} - {basin} - {period_name}')
-                            
+
                         plt.tight_layout()
-                        plt.savefig(Path(self.cfg.plots_dir) / f'{var}_{basin}_{period_name}.png')
+                        plt.savefig(basin_dir / f'{var}_{basin}_{period_name}.png', dpi=75)
                         
 
 
