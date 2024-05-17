@@ -61,7 +61,7 @@ def main(config_file):
     ### Pretrainer
     nn_dynamic_inputs = cfg.nn_dynamic_inputs
     nn_outputs = model_concept.nn_outputs
-    pretrainer = get_nn_pretrainer(model_nn)
+    pretrainer = get_nn_pretrainer(model_nn, dataset)
 
     ## Train the model
     pretrainer.train()
@@ -71,7 +71,7 @@ def main(config_file):
 
 if __name__ == '__main__':
     
-    # python temp_run.py --config-file config_run.yml
+    # python temp_run.py --config-file config_run_nn_pre.yml
     parser = argparse.ArgumentParser(description='Run file to test temporary code')
     parser.add_argument('--config-file', type=str, default='config_run.yml', help='Path to the config file')
     args = parser.parse_args()

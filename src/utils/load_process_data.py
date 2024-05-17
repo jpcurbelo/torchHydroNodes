@@ -150,24 +150,25 @@ class Config(object):
         with open(config_path, 'w') as f:
             yaml.dump(cfg_copy, f)
     
-    def _get_property_value(self, key: str) -> Union[float, int, str, list, dict, Path, pd.Timestamp, torch.device]:
+    def _get_property_value(self, key: str, default=None) -> Union[float, int, str, list, dict, Path, pd.Timestamp, torch.device]:
         '''
         Get the value of a property from the config.
-        
+
         - Args:
             key: str, key of the property.
+            default: value to return if key is not found.
             
         - Returns:
             value: float, int, str, list, dict, Path, pd.Timestamp, value of the property.
         '''
-        
-        """Use this function internally to return attributes of the config that are mandatory"""
         if key not in self._cfg.keys():
+            if default is not None:
+                return default
             raise ValueError(f"{key} is not specified in the config (.yml).")
         elif self._cfg[key] is None:
             raise ValueError(f"{key} is mandatory but 'None' in the config.")
         else:
-            return self._cfg[key]    
+            return self._cfg[key] 
         
     def _parse_run_config(self, config_file):
         '''
@@ -257,6 +258,16 @@ class Config(object):
         if 'concept_model' in cfg:
             cfg['concept_inputs'],  cfg['concept_target'] = self._load_concept_model_vars(cfg['concept_model'])
        
+        # Get periods from config file
+        periods = []
+        for period in ['train', 'valid', 'test']:
+            start_key = f"{period}_start_date"
+            end_key = f"{period}_end_date"
+            if start_key in cfg and end_key in cfg:
+                periods.append(period)
+
+        cfg['periods'] = periods
+
         # Add more config parsing if necessary
         return cfg
     
@@ -345,11 +356,11 @@ class Config(object):
 
     @property
     def precision(self) -> dict:
-        return self._get_property_value("precision")
+        return self._get_property_value("precision", default={'numpy': np.float32, 'torch': torch.float32})
     
     @property
     def device(self) -> torch.device:
-        return self._get_property_value("device")
+        return self._get_property_value("device", default=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
 
     @device.setter
     def device(self, value: torch.device):
@@ -357,7 +368,7 @@ class Config(object):
 
     @property
     def loss(self) -> str:
-        return self._get_property_value("loss")
+        return self._get_property_value("loss", default="MSE")
     
     @property
     def verbose(self) -> int:
@@ -371,7 +382,8 @@ class Config(object):
         int
             Level of verbosity.
         """
-        return self._cfg.get("verbose", 1)
+        # return self._cfg.get("verbose", 1)
+        return self._get_property_value("verbose", default=1)
 
     @property
     def train_start_date(self) -> pd.Timestamp:
@@ -403,7 +415,7 @@ class Config(object):
     
     @property
     def nn_model(self) -> str:
-        return self._get_property_value("nn_model")
+        return self._get_property_value("nn_model", default="mlp")
     
     @property
     def hidden_size(self) -> List[int]:
@@ -413,6 +425,10 @@ class Config(object):
     def run_dir(self) -> Path:
         return self._get_property_value("run_dir")
     
+    @property
+    def config_dir(self) -> Path:
+        return self._get_property_value("config_dir")
+
     @property
     def plots_dir(self) -> Path:
         return self._get_property_value("plots_dir")
@@ -431,23 +447,35 @@ class Config(object):
     
     @property
     def batch_size(self) -> int:
-        return self._get_property_value("batch_size")
+        return self._get_property_value("batch_size", default=256)
 
     @property
     def num_workers(self) -> int:
-        return self._get_property_value("num_workers")
+        return self._get_property_value("num_workers", default=8)
     
     @property
     def epochs(self) -> int:
-        return self._get_property_value("epochs")
+        return self._get_property_value("epochs", default=10)
     
     @property
     def optimizer(self) -> str:
-        return self._get_property_value("optimizer")
+        return self._get_property_value("optimizer", default="Adam")
     
     @property
     def learning_rate(self) -> float:
         return self._get_property_value("learning_rate")
+
+    @property
+    def log_n_figures(self) -> int:
+        return self._get_property_value("log_n_figures", default=0)
+
+    @property
+    def periods(self) -> List[str]:
+        return self._get_property_value("periods")
+
+    @property
+    def seed(self) -> int:
+        return self._get_property_value("seed", default=1111)
 
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size, shuffle=True):

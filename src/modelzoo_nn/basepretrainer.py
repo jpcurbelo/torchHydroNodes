@@ -1,16 +1,23 @@
-import xarray as xr
 import torch
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader
 import sys
 from tqdm import tqdm
+import random
+import matplotlib.pyplot as plt
+from pathlib import Path
 
+from src.modelzoo_nn.basemodel import BaseNNModel
+from src.datasetzoo.basedataset import BaseDataset
 from src.utils.metrics import loss_name_func_dict
 from src.utils.load_process_data import BatchSampler, CustomDatasetToNN
+from src.utils.metrics import NSE_eval
+
 
 class NNpretrainer:
 
-    def __init__(self, nnmodel) -> None:
+    def __init__(self, nnmodel: BaseNNModel, fulldataset: BaseDataset):
         
+        self.fulldataset = fulldataset
         self.nnmodel = nnmodel
         self.cfg = self.nnmodel.concept_model.cfg
 
@@ -120,7 +127,6 @@ class NNpretrainer:
 
         return dataloader
     
-
     def train(self):
 
         if self.cfg.verbose:
@@ -162,4 +168,83 @@ class NNpretrainer:
             # Learning rate scheduler
             if self.scheduler is not None:
                 self.scheduler.step()
+
+
+        if self.cfg.verbose:
+            print("-- Saving the model weights and plots --")
+        # Save the model weights
+        # torch.save(self.model.state_dict(), os.path.join(self.model_save_path, f'{self.basinID}_modelM100.pth'))
+        self.save_model()
+        self.save_plots()
+
+    def save_model(self):
+        '''Save the model weights'''
+
+        # # torch.save(self.nnmodel.state_dict(), model_path)
+        # print(self.cfg._cfg.keys())
+        # print(self.cfg.periods)
+        # print('run_dir', self.cfg.run_dir)
+        # print('config_dir', self.cfg.config_dir)
+        # print('results_dir', self.cfg.results_dir)
+        # print('plots_dir', self.cfg.plots_dir)
+
+        # Create a directory to save the model weights if it does not exist
+        model_dir = 'model_weights'
+        model_path = self.cfg.run_dir / model_dir
+        model_path.mkdir(parents=True, exist_ok=True)
+
+        # Save the model weights
+        torch.save(self.nnmodel.state_dict(), model_path / f'pretrained_{self.cfg.nn_model}_{len(self.basins)}basins.pth')
+
+    def save_plots(self):
+
+        # Extract keys that start with 'ds_'
+        ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_')]
+
+        # Check if log_n_figures exists and is greater than 0
+        if hasattr(self.cfg, 'log_n_figures') and self.cfg.log_n_figures > 0:
+
+            # Generate a list of random basin IDs to plot
+            random.seed(self.cfg.seed)
+            sample_size = min(len(self.basins), self.cfg.log_n_figures)
+            random_basins = random.sample(list(self.basins), sample_size)
+
+            for basin in random_basins:
+                for dsp in ds_periods:
+                    ds_period = getattr(self.fulldataset, dsp)
+                    ds_basin = ds_period.sel(basin=basin)
+
+                    inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
+                        for var in self.input_var_names], dim=0).t().to(self.device)
+
+                    basin_list = [basin for _ in range(inputs.shape[0])]
+                    outputs = self.nnmodel(inputs, basin_list)
+
+                    # Save the results as a CSV file
+                    period_name = dsp.split('_')[-1]
+                    for vi, var in enumerate(self.output_var_names):
+
+                        q_obs = ds_basin[var.lower()].values
+                        q_bucket = outputs[:, vi].detach().cpu().numpy()
+
+                        plt.figure(figsize=(10, 6))
+                        plt.plot(ds_basin.date, q_obs, label='Observed')
+                        plt.plot(ds_basin.date, q_bucket, label='Predicted')
+                        plt.xlabel('Date')
+                        plt.ylabel(var)
+                        plt.legend()
+
+                        if vi == len(self.output_var_names) - 1:
+                                nse_val = NSE_eval(q_obs, q_bucket)
+                                plt.title(f'{var} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
+                        else:
+                            plt.title(f'{var} - {basin} - {period_name}')
+                            
+                        plt.tight_layout()
+                        plt.savefig(Path(self.cfg.plots_dir) / f'{var}_{basin}_{period_name}.png')
+                        
+
+
+
+
 

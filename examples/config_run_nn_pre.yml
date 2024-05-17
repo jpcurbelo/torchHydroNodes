@@ -1,0 +1,87 @@
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+concept_model: exphydro
+nn_model: mlp
+
+# --- Data configurations --- #
+# Dataset to use for training and testing [camelsus, summaca]
+data_dir: M0_results_569basins_1980_2010
+
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  - tmean
+
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+
+target_variables: 
+  - obs_runoff
+
+# Files to specify training, validation and test basins
+# basin_file: 569_basin_file.txt
+basin_file: 4_basin_file.txt
+
+# --- Training configurations --- #
+
+# Period to train, validate and test the model (they should be consecutive)
+train_start_date: "01/10/1980"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2010"
+# test_start_date: "01/10/2000"
+# test_end_date: "30/09/2010"
+
+# Loss function to use [mse, nse, nse-nh]
+loss: mse
+
+# Number of epochs to train the model
+epochs: 50
+
+# Batch size for training (if -1, it will be only one batch for the whole dataset)
+batch_size: 256
+
+# Optimizer to use [adam, sgd]
+optimizer: adam
+
+# Learning rate for the optimizer
+learning_rate:
+  initial: 0.01
+  decay: 0.5
+  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+
+# Hidden layers for the NN model
+hidden_size: 
+  - 32
+  - 32
+  - 32
+  - 32
+  - 32
+
+## --- Run configurations --- ##
+# Experiment name, used as folder name
+experiment_name: pretrainer_run
+
+# which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
+device: cuda:0
+
+# Set seed for reproducibility
+seed: 1111
+
+# Set precision for the model [float32, float64]
+precision: float32
+
+# Number of parallel workers used in the data pipeline
+num_workers: 8
+
+# Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
+verbose: 1
+
+# If a value and greater than 0, logs n random basins as figures after pretraining the NN model
+log_n_figures: 2
