@@ -55,13 +55,15 @@ class Config(object):
             self._cfg = self._parse_run_config(yml_path_or_dict)
         else:
             raise ValueError(f'Cannot create a config from input of type {type(yml_path_or_dict)}.')
+
+        if 'run_dir' not in self._cfg:
         
-        # Create a folder to save the trained models
-        if isinstance(yml_path_or_dict, Path):
-            self.create_run_folder_tree()
-            
-        # Dump the configuration data to a ymal file
-        self.dump_config()
+            # Create a folder to save the trained models
+            if isinstance(yml_path_or_dict, Path):
+                self.create_run_folder_tree()
+                
+            # Dump the configuration data to a ymal file
+            self.dump_config()
         
     def create_run_folder_tree(self):
         '''
@@ -141,7 +143,9 @@ class Config(object):
             if isinstance(value, Path):
                 cfg_copy[key] = str(value)
             elif isinstance(value, Timestamp):
-                cfg_copy[key] = value.isoformat()
+                # cfg_copy[key] = value.isoformat()
+                # To string this format 01/10/1980 (DD/MM/YYYY)
+                cfg_copy[key] = value.strftime('%d/%m/%Y')
                 
         # Convert precision to string
         if cfg_copy['precision']['numpy'] == np.float32:
@@ -241,12 +245,6 @@ class Config(object):
                 'numpy': np.float32 if cfg['precision'] == 'float32' else np.float64,
                 'torch': torch.float32 if cfg['precision'] == 'float32' else torch.float64
             }
-
-        # # check if a GPU has been specified as command line argument. If yes, overwrite config
-        # if gpu is not None and gpu >= 0:
-        #     config.device = f"cuda:{gpu}"
-        # if gpu is not None and gpu < 0:
-        #     config.device = "cpu"
 
         # Set device (GPU or CPU)
         try:
@@ -477,6 +475,10 @@ class Config(object):
     def learning_rate(self) -> float:
         return self._get_property_value("learning_rate", default=0.001)
 
+
+
+
+
     @property
     def log_n_basins(self) -> int:
         return self._get_property_value("log_n_basins", default=0)
@@ -513,7 +515,6 @@ class Config(object):
     def metrics(self) -> List[str]:
         return self._as_default_list(self._get_property_value("metrics"))
     
-
 ## Classes for data loading
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size, shuffle=False):

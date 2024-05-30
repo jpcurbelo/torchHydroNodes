@@ -280,7 +280,7 @@ class NNpretrainer:
         self.save_plots()
         if self.cfg.verbose:
             print("-- Evaluating the model --")
-        self.evaluate_save_results()
+        self.evaluate()
 
     def save_model(self):
         '''Save the model weights'''
@@ -291,7 +291,7 @@ class NNpretrainer:
         model_path.mkdir(parents=True, exist_ok=True)
 
         # Save the model weights
-        torch.save(self.nnmodel.state_dict(), model_path / f'pretrained_{self.cfg.nn_model}_{len(self.basins)}basins.pth')
+        torch.save(self.nnmodel.state_dict(), model_path / f'pretrainer_{self.cfg.nn_model}_{len(self.basins)}basins.pth')
 
     def save_plots(self, epoch=None):
         '''
@@ -381,7 +381,7 @@ class NNpretrainer:
                             plt.savefig(basin_dir / f'{var}_{basin}_{period_name}.png', dpi=75)
                         plt.close('all')
 
-    def evaluate_save_results(self):
+    def evaluate(self):
         # Extract keys that start with 'ds_'
         ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_')]
 
@@ -429,8 +429,9 @@ class NNpretrainer:
             output_file = f'evaluation_metrics_{period_name}.csv'
             output_file_path = Path(self.cfg.results_dir) / output_file
 
+            
+            print(f"Saving evaluation metrics to {output_file_path}")
             df_results.to_csv(output_file_path, index=False)
-
 
     def _set_random_seeds(self):
         '''
