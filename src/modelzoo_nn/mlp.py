@@ -40,8 +40,14 @@ class MLP(BaseNNModel):
         # Hidden Layers
         for hidden in self.hidden:
             x = F.leaky_relu(hidden(x))
+        
         # Output Layer
-        return self.output_layer(x)
+        x = self.output_layer(x)
+
+        # Clip negative values in the last dimension to 0
+        x[:, -1] = F.relu(x[:, -1])
+
+        return x
 
         
 

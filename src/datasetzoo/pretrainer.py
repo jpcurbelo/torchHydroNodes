@@ -22,22 +22,25 @@ class Pretrainer(BaseDataset):
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
 
         df = pd.DataFrame()
-        for period in ['train', 'valid', 'test']:
-            file_path = self.cfg.data_dir / 'model_results' / f'{basin}_results_{period}.csv'
-            # Check if file exists
-            if not file_path.exists():
-                break
-            else:
-                df_period = pd.read_csv(file_path)
-                df = pd.concat([df, df_period], axis=0)
+        try:
+            for period in ['train', 'valid', 'test']:
+                file_path = self.cfg.data_dir / 'model_results' / f'{basin}_results_{period}.csv'
+                # Check if file exists
+                if not file_path.exists():
+                    break
+                else:
+                    df_period = pd.read_csv(file_path)
+                    df = pd.concat([df, df_period], axis=0)
 
-        # Drop equal columns and sort by date
-        df = df.loc[:, ~df.columns.duplicated()]
-        df = df.sort_values(by='date')
+            # Drop equal columns and sort by date
+            df = df.loc[:, ~df.columns.duplicated()]
+            df = df.sort_values(by='date')
 
-        # Convert date to datetime
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.set_index("date")
+            # Convert date to datetime
+            df['date'] = pd.to_datetime(df['date'])
+            df = df.set_index("date")
+        except:
+            pass
 
         return df
 

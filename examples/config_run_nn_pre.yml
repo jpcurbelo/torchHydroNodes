@@ -25,8 +25,12 @@ target_variables:
   - obs_runoff
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file.txt
+# basin_file: 569_basin_file.txt
+basin_file: 569_basin_file_hydronodes.txt
 # basin_file: 4_basin_file.txt
+# basin_file: 25_basin_file.txt
+# n_first_basins: 10
+n_random_basins: 10
 
 # --- Training configurations --- #
 
@@ -44,17 +48,21 @@ loss: mse
 # Number of epochs to train the model
 epochs: 100
 
+# If a value, clips the gradients during training to that norm.
+clip_gradient_norm: 1.0
+
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 256
+batch_size: 512
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
 
-# Learning rate for the optimizer
+# # Learning rate for the optimizer
+# learning_rate: 0.001
 learning_rate:
-  initial: 0.01
+  initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
@@ -66,7 +74,7 @@ hidden_size:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: pretrainer_run
+experiment_name: ZZpretrainer_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
@@ -84,4 +92,25 @@ num_workers: 8
 verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
-log_n_figures: 20
+# If list of basins, logs the specified basins: format is either '01013500' or 1013500
+log_n_basins:
+  # - 1013500
+  # - 6431500
+  5
+
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 1
+
+# Metrics to use for evaluation (after training)
+metrics:
+- NSE
+- Alpha-NSE
+- Beta-NSE
+- FHV
+- FMS
+- FLV
+- KGE
+- Beta-KGE
+- Peak-Timing
+- Peak-MAPE
+- Pearson-r

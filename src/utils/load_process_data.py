@@ -13,7 +13,7 @@ from torch.utils.data import Sampler, Dataset
 script_dir = Path(__file__).resolve().parent
 
 ## Functions      
-def load_basin_file(basin_file: Path) -> List[str]:
+def load_basin_file(basin_file: Path, n_first_basins: int = -1, n_random_basins: int = -1) -> list:
     '''
     Load the basin file and return the list of basins.
     
@@ -28,7 +28,14 @@ def load_basin_file(basin_file: Path) -> List[str]:
         basins = f.read().splitlines()
     
     # Convert basins to strings of 8 characters with leading zeros if needed
-    basins = [f"{int(basin):08d}" if basin.isdigit() else basin for basin in basins]
+    if n_first_basins > 0:
+        basins = [f"{int(basin):08d}" if basin.isdigit() else basin for basin in basins][:n_first_basins]
+    else:
+        basins = [f"{int(basin):08d}" if basin.isdigit() else basin for basin in basins]
+
+    # Select a random subset of basins
+    if n_random_basins > 0:
+        basins = np.random.choice(basins, n_random_basins, replace=False)
 
     return basins    
                             
@@ -268,6 +275,11 @@ class Config(object):
 
         cfg['periods'] = periods
 
+        # Check log_n_basins and convert to a list of str with 8 characters and leading zeros if necessary
+        if 'log_n_basins' in cfg and isinstance(cfg['log_n_basins'], list):
+            # Convert log_n_basins to a list of str with 8 characters and leading zeros
+            cfg['log_n_basins'] = [f"{int(basin):08d}" if isinstance(basin, int) else basin for basin in cfg['log_n_basins']]
+
         # Add more config parsing if necessary
         return cfg
     
@@ -463,11 +475,15 @@ class Config(object):
     
     @property
     def learning_rate(self) -> float:
-        return self._get_property_value("learning_rate")
+        return self._get_property_value("learning_rate", default=0.001)
 
     @property
-    def log_n_figures(self) -> int:
-        return self._get_property_value("log_n_figures", default=0)
+    def log_n_basins(self) -> int:
+        return self._get_property_value("log_n_basins", default=0)
+
+    @property
+    def log_every_n_epochs(self) -> int:
+        return self._get_property_value("log_every_n_epochs", default=10)
 
     @property
     def periods(self) -> List[str]:
@@ -477,8 +493,30 @@ class Config(object):
     def seed(self) -> int:
         return self._get_property_value("seed", default=1111)
 
+    @property
+    def n_first_basins(self) -> int:
+        return self._get_property_value("n_first_basins", default=-1)
+    
+    @property
+    def n_random_basins(self) -> int:
+        return self._get_property_value("n_random_basins", default=-1)
+
+    @property
+    def clip_gradient_norm(self) -> float:
+        return self._get_property_value("clip_gradient_norm", default=1.0)
+
+    @clip_gradient_norm.setter
+    def clip_gradient_norm(self, value: float):
+        self._cfg['clip_gradient_norm'] = value
+
+    @property
+    def metrics(self) -> List[str]:
+        return self._as_default_list(self._get_property_value("metrics"))
+    
+
+## Classes for data loading
 class BatchSampler(Sampler):
-    def __init__(self, dataset_len, batch_size, shuffle=True):
+    def __init__(self, dataset_len, batch_size, shuffle=False):
         self.dataset_len = dataset_len
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -506,6 +544,40 @@ class CustomDatasetToNN(Dataset):
     def __getitem__(self, idx):
         return self.input_tensor[idx], self.output_tensor[idx], self.basin_ids[idx]
 
+class BasinBatchSampler(Sampler):
+    def __init__(self, basin_ids, batch_size, shuffle=True):
+        self.basin_ids = basin_ids
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        
+        # Create a mapping from basin_id to indices
+        self.basin_to_indices = {}
+        for idx, basin in enumerate(basin_ids):
+            if basin not in self.basin_to_indices:
+                self.basin_to_indices[basin] = []
+            self.basin_to_indices[basin].append(idx)
+        
+        # Generate batches
+        self.batches = self._create_batches()
+
+    def _create_batches(self):
+        batches = []
+        for _, indices in self.basin_to_indices.items():
+            if self.shuffle:
+                np.random.shuffle(indices)
+            for i in range(0, len(indices), self.batch_size):
+                batch = indices[i:i + self.batch_size]
+                if len(batch) == self.batch_size:
+                    batches.append(batch)
+        if self.shuffle:
+            np.random.shuffle(batches)
+        return batches
+
+    def __iter__(self):
+        return iter(self.batches)
+
+    def __len__(self):
+        return len(self.batches)
 
 
 if __name__ == "__main__":

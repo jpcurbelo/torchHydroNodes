@@ -45,7 +45,7 @@ class BaseDataset(Dataset):
             raise ValueError("During evaluation of validation or test period, scaler dictionary has to be passed")
         self.scaler = scaler
         
-        self.basins = load_basin_file(cfg.basin_file_path)
+        self.basins = load_basin_file(cfg.basin_file_path, self.cfg.n_first_basins, self.cfg.n_random_basins)
         
         # During training we log data processing with progress bars, but not during validation/testing
         self._disable_pbar = not self.cfg.verbose
