@@ -8,6 +8,7 @@ from typing import List, Union, Any
 import numpy as np
 import torch
 from torch.utils.data import Sampler, Dataset
+import random
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -56,6 +57,10 @@ class Config(object):
         else:
             raise ValueError(f'Cannot create a config from input of type {type(yml_path_or_dict)}.')
 
+        # Set seed for reproducibility
+        self.set_random_seeds()
+
+        # Create a folder to save the trained models and dump the configuration data to a ymal file
         if 'run_dir' not in self._cfg:
         
             # Create a folder to save the trained models
@@ -64,6 +69,22 @@ class Config(object):
                 
             # Dump the configuration data to a ymal file
             self.dump_config()
+
+    def set_random_seeds(self):
+        '''
+        Set random seeds for reproducibility
+        '''
+        if 'seed' not in self._cfg or self._cfg['seed'] is None:
+            seed = int(np.random.uniform(low=0, high=1e6))
+            self._cfg['seed'] = seed
+        else:
+            seed = self._cfg['seed']
+
+        # fix random seeds for various packages
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.manual_seed(seed)
         
     def create_run_folder_tree(self):
         '''
@@ -514,7 +535,7 @@ class Config(object):
     @property
     def metrics(self) -> List[str]:
         return self._as_default_list(self._get_property_value("metrics"))
-    
+
 ## Classes for data loading
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size, shuffle=False):

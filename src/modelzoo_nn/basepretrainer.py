@@ -29,11 +29,31 @@ class NNpretrainer:
         self.fulldataset = fulldataset
         self.nnmodel = nnmodel
         self.cfg = self.nnmodel.concept_model.cfg
-
-        # print(pretrainer.nnmodel.concept_model.ds)
-        # print(pretrainer.nnmodel.concept_model.ds.basin.values)
+        
         self.dataset = self.nnmodel.concept_model.ds
         self.basins = self.dataset.basin.values
+
+        # # Set random seeds
+        # self._set_random_seeds()
+
+        # Check if log_n_basins exists and is either a positive integer or a non-empty list
+        if hasattr(self.cfg, 'log_n_basins') and (
+            (isinstance(self.cfg.log_n_basins, int) and self.cfg.log_n_basins > 0) or
+            (isinstance(self.cfg.log_n_basins, list) and len(self.cfg.log_n_basins) > 0)
+        ):
+
+            # # Generate a list of random basin IDs to plot
+            # random.seed(self.cfg.seed)
+
+            if isinstance(self.cfg.log_n_basins, int):
+                sample_size = min(len(self.basins), self.cfg.log_n_basins)
+                self.basins_to_log = random.sample(list(self.basins), sample_size)
+            elif isinstance(self.cfg.log_n_basins, list):
+                self.basins_to_log = self.cfg.log_n_basins
+        else:
+            self.basins_to_log = None
+        
+        self.log_every_n_epochs = self.cfg.log_every_n_epochs
 
         # Batch size
         self.batch_size = self.cfg.batch_size
@@ -49,9 +69,6 @@ class NNpretrainer:
 
         # Data type
         self.dtype = self.cfg.precision['torch']
-
-        # Set random seeds
-        self._set_random_seeds()
 
         # Number of workers
         if hasattr(self.cfg, 'num_workers'):
@@ -254,7 +271,9 @@ class NNpretrainer:
                 avg_loss = epoch_loss / num_batches_seen
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
-            if (epoch == 0 or ((epoch + 1) % 10 == 0)):
+            pbar.close()
+
+            if (epoch == 0 or ((epoch + 1) % self.log_every_n_epochs == 0)):
                 if self.cfg.verbose:
                     print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
                 # Save the model weights
@@ -270,6 +289,7 @@ class NNpretrainer:
                 new_lr = self.optimizer.param_groups[0]['lr']
                 if self.cfg.verbose and current_lr != new_lr:
                     print(f"Learning rate updated to {new_lr}")
+
 
         # Save the final model weights and plots
         if self.cfg.verbose:
@@ -309,21 +329,12 @@ class NNpretrainer:
         ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_')]
 
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
-        if hasattr(self.cfg, 'log_n_basins') and (
-            (isinstance(self.cfg.log_n_basins, int) and self.cfg.log_n_basins > 0) or
-            (isinstance(self.cfg.log_n_basins, list) and len(self.cfg.log_n_basins) > 0)
-        ):
+        if self.basins_to_log is not None:
 
-            # Generate a list of random basin IDs to plot
-            random.seed(self.cfg.seed)
-
-            if isinstance(self.cfg.log_n_basins, int):
-                sample_size = min(len(self.basins), self.cfg.log_n_basins)
-                random_basins = random.sample(list(self.basins), sample_size)
-            elif isinstance(self.cfg.log_n_basins, list):
-                random_basins = self.cfg.log_n_basins
-
-            for basin in random_basins:
+            # Progress bar for basins
+            pbar_basins = tqdm(self.basins_to_log, disable=self.cfg.disable_pbar, file=sys.stdout)
+            for basin in pbar_basins:
+                pbar_basins.set_description(f'* Plotting basin {basin}')
 
                 if basin not in self.basins:
                     print(f"Basin {basin} not found in the dataset. Skipping...")
@@ -380,6 +391,8 @@ class NNpretrainer:
                         else:
                             plt.savefig(basin_dir / f'{var}_{basin}_{period_name}.png', dpi=75)
                         plt.close('all')
+            
+            pbar_basins.close()
 
     def evaluate(self):
         # Extract keys that start with 'ds_'
@@ -391,7 +404,11 @@ class NNpretrainer:
             
             results = []
             
-            for basin in ds_basins:
+            # Progress bar for basins
+            pbar_basins = tqdm(ds_basins, disable=self.cfg.disable_pbar, file=sys.stdout)
+            for basin in pbar_basins:
+                pbar_basins.set_description(f'* Evaluating basin {basin} ({dsp})')
+
                 if basin not in self.basins:
                     print(f"Basin {basin} not found in the dataset. Skipping...")
                     continue
@@ -429,21 +446,20 @@ class NNpretrainer:
             output_file = f'evaluation_metrics_{period_name}.csv'
             output_file_path = Path(self.cfg.results_dir) / output_file
 
-            
-            print(f"Saving evaluation metrics to {output_file_path}")
+            # Save the results to a CSV file
             df_results.to_csv(output_file_path, index=False)
 
-    def _set_random_seeds(self):
-        '''
-        Set random seeds for reproducibility
-        '''
-        if self.cfg.seed is None:
-            self.cfg.seed = int(np.random.uniform(low=0, high=1e6))
+    # def _set_random_seeds(self):
+    #     '''
+    #     Set random seeds for reproducibility
+    #     '''
+    #     if self.cfg.seed is None:
+    #         self.cfg.seed = int(np.random.uniform(low=0, high=1e6))
 
-        # fix random seeds for various packages
-        random.seed(self.cfg.seed)
-        np.random.seed(self.cfg.seed)
-        torch.cuda.manual_seed(self.cfg.seed)
-        torch.manual_seed(self.cfg.seed)
+    #     # fix random seeds for various packages
+    #     random.seed(self.cfg.seed)
+    #     np.random.seed(self.cfg.seed)
+    #     torch.cuda.manual_seed(self.cfg.seed)
+    #     torch.manual_seed(self.cfg.seed)
 
 

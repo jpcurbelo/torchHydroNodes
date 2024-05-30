@@ -193,7 +193,7 @@ def resume_training(run_dir: Path, epoch: int, gpu: int = None):
 
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
-# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre_testing.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 if __name__ == "__main__":
     _main()
