@@ -35,15 +35,7 @@ class BaseConceptModel:
         raise NotImplementedError("This function has to be implemented by the child class")
     
     def step_function(self, x):
-        '''This function should implement the step function to be used for the task'''
-        raise NotImplementedError("This function has to be implemented by the child class")
-    
-    def create_interpolator_dict(self, t):
-        '''This function should return the interpolator dictionary for the input variables'''
-        raise NotImplementedError("This function has to be implemented by the child class")
-    
-    def get_parameters(self):
-        '''This function should return the model parameters'''
+        '''This function shoulparams_dird implement the step function to be used for the task'''
         raise NotImplementedError("This function has to be implemented by the child class")
     
     def run (self, basin):
@@ -58,18 +50,3 @@ class BaseConceptModel:
         '''This function should load the last states of the model in the previous period.
         To be used for the valid or test period after the train period'''
         raise NotImplementedError("This function has to be implemented by the child class")  
-    
-    # @property
-    # def get_parameters(self):
-    #     '''This function should return the model parameters'''
-    #     raise NotImplementedError("This function has to be implemented by the child class")
-    
-    # @property
-    # def get_input_variables(self):
-    #     '''This function should return the input variables for the model'''
-    #     raise NotImplementedError("This function has to be implemented by the child class")
-    
-    # @property
-    # def get_output_variables(self):
-    #     '''This function should return the output variables for the model'''
-    #     raise NotImplementedError("This function has to be implemented by the child class")

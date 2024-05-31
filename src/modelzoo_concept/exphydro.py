@@ -10,10 +10,13 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
-from src.utils.load_process_data import Config
+from src.utils.load_process_data import (
+    Config,
+    ExpHydroCommon,
+)
 
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
-class ExpHydro(BaseConceptModel):
+class ExpHydro(BaseConceptModel, ExpHydroCommon):
     
     def __init__(self, 
                  cfg: Config,
@@ -28,8 +31,8 @@ class ExpHydro(BaseConceptModel):
         
         # Input variables
         self.precp = ds['prcp']
-        self.temp = ds['tmean']
-        self.lday = ds['dayl']
+        # self.temp = ds['tmean']
+        # self.lday = ds['dayl']
         
         # print('precp.shape', self.precp.shape)
         # aux = input('Press Enter to continue...')
@@ -80,76 +83,6 @@ class ExpHydro(BaseConceptModel):
             array_like, step function applied to input value(s).
         '''
         return (np.tanh(5.0 * x) + 1.0) * 0.5
-    
-    def create_interpolator_dict(self):
-        '''
-        Create interpolator functions for the input variables.
-        
-        - Returns:
-            interpolators: dict, dictionary with the interpolator functions for each basin and variable.
-        '''
-        
-        # Create a dictionary to store interpolator functions for each basin and variable
-        interpolators = dict()
-        
-        # Loop over the basis and variables
-        for basin in self.ds['basin'].values:
-    
-            interpolators[basin] = dict()
-            for var in self.interpolator_vars:
-                                
-                # Get the variable values
-                var_values = self.ds[var].sel(basin=basin).values
-                
-                # Interpolate the variable values
-                interpolators[basin][var] = Akima1DInterpolator(self.time_series, var_values)
-                # interpolators[basin][var] = CubicSpline(self.time_series, var_values, extrapolate='periodic')
-                
-        return interpolators
-    
-    def get_parameters(self):
-        '''
-        Get the parameters for the model from the parameter file.
-        
-        - Returns:
-            params_dict: dict, dictionary with the parameters for each basin.
-            
-        '''
-        
-        params_dir = Path(__file__).resolve().parent / 'bucket_parameter_files' / f'bucket_{self.cfg.concept_model}.csv'
-        try:
-            params_df = pd.read_csv(params_dir)
-            
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File '{params_dir}' not found. Check the file path.")
-        else:
-            
-            # Remove UNKNOWN column if it exists
-            if 'UNKNOWN' in params_df.columns:
-                params_df = params_df.drop(columns=['UNKNOWN'])
-                
-            # Make basinID to be integer if it is not
-            if params_df['basinID'].dtype == 'float':
-                params_df['basinID'] = params_df['basinID'].astype(int)
-                
-            params_dict = dict()
-            # Loop over the basins and extract the parameters
-            for basin in self.ds['basin'].values:
-                
-                # Convert basin to int to match the parameter file
-                basin_int = int(basin)
-                    
-                try:
-                    params_opt = params_df[params_df['basinID'] == basin_int].values[0]
-                except IndexError:
-                    # Raise warning but continue
-                    # raise ValueError(f"Basin {basin} not found in the parameter file.")
-                    print(f"Warning! (Data): Basin {basin} not found in the parameter file.")
-                    
-                # S0,S1,f,Smax,Qmax,Df,Tmax,Tmin
-                params_dict[basin] = params_opt[1:]
-      
-            return params_dict
         
     def run(self, basin):
         
@@ -160,10 +93,10 @@ class ExpHydro(BaseConceptModel):
         self.temp_interp = self.interpolators[basin]['tmean']
         self.lday_interp = self.interpolators[basin]['dayl']
         
-        # Get input variables for the basin
-        self.precp_basin = self.precp.sel(basin=basin).values
-        self.temp_basin = self.temp.sel(basin=basin).values
-        self.lday_basin = self.lday.sel(basin=basin).values
+        # # Get input variables for the basin
+        # self.precp_basin = self.precp.sel(basin=basin).values
+        # self.temp_basin = self.temp.sel(basin=basin).values
+        # self.lday_basin = self.lday.sel(basin=basin).values
         
         # Set the initial conditions
         y0 = np.array([basin_params[0], basin_params[1]])
@@ -277,10 +210,6 @@ class ExpHydro(BaseConceptModel):
             # Update the initial states for the model
             self.params_dict[basin][0] = previous_states[0]
             self.params_dict[basin][1] = previous_states[1]
-        
-    @property
-    def interpolator_vars(self):
-        return ['prcp', 'tmean', 'dayl']
 
     @property
     def nn_outputs(self):

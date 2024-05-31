@@ -122,7 +122,7 @@ class NNpretrainer:
         try:
             # Try to get the loss function name from configuration
             loss_name = self.cfg.loss
-            self.loss = loss_name_func_dict[loss_name]
+            self.loss = loss_name_func_dict[loss_name.lower()]
         except KeyError:
             # Handle the case where the loss name is not recognized
             raise NotImplementedError(f"Loss function {loss_name} not implemented")
@@ -290,14 +290,13 @@ class NNpretrainer:
                 if self.cfg.verbose and current_lr != new_lr:
                     print(f"Learning rate updated to {new_lr}")
 
-
-        # Save the final model weights and plots
-        if self.cfg.verbose:
-            print("-- Saving final model weights --")
-        self.save_model()
-        if self.cfg.verbose:
-            print("-- Saving final plots --")
-        self.save_plots()
+        # # Save the final model weights and plots
+        # if self.cfg.verbose:
+        #     print("-- Saving final model weights --")
+        # self.save_model()
+        # if self.cfg.verbose:
+        #     print("-- Saving final plots --")
+        # self.save_plots()
         if self.cfg.verbose:
             print("-- Evaluating the model --")
         self.evaluate()

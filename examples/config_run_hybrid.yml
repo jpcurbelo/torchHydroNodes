@@ -1,0 +1,40 @@
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# Hybrid model: exphydro + mlp -> M100
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+hybrid_model: exphydroM100
+concept_model: exphydro
+
+# Files to specify training, validation and test basins
+basin_file: 4_basin_file.txt
+
+# --- Data configurations --- #
+# Dataset to use for training and testing [camelsus, summaca]
+data_dir: M0_results_569basins_1980_2010
+nn_model_dir: NNpretrainer_250basins_1980_2010
+
+# --- Training configurations --- #
+
+# Period to train, validate and test the model (they should be consecutive)
+train_start_date: "01/10/1980"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2010"
+test_start_date: "01/10/2000"
+test_end_date: "30/09/2010"
+
+## --- Run configurations --- ##
+# Experiment name, used as folder name
+experiment_name: train_hybrid_run
+
+# which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
+device: cuda:0
+
+# Set seed for reproducibility
+seed: 1111
+
+# Set precision for the model [float32, float64]
+precision: float32
+
+# Number of parallel workers used in the data pipeline
+num_workers: 8

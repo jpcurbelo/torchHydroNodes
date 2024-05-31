@@ -9,9 +9,11 @@ import numpy as np
 import torch
 from torch.utils.data import Sampler, Dataset
 import random
+from scipy.interpolate import Akima1DInterpolator
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
+project_dir = script_dir.parent.parent
 
 ## Functions      
 def load_basin_file(basin_file: Path, n_first_basins: int = -1, n_random_basins: int = -1) -> list:
@@ -43,6 +45,26 @@ def load_basin_file(basin_file: Path, n_first_basins: int = -1, n_random_basins:
 def load_forcing_target_data(run_config):
     
     pass
+
+def update_hybrid_cfg(cfg):
+
+    # Load vars from the nn_model
+    nn_cgf_dir = project_dir / 'data' / cfg.nn_model_dir / 'config.yml'
+    
+    # Load the nn_model config file
+    if nn_cgf_dir.exists():
+        with open(nn_cgf_dir, 'r') as ymlfile:
+            cfg_nn = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    else:
+        raise FileNotFoundError(f"File not found: {nn_cgf_dir}")
+    
+    cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
+    cfg.hidden_size = cfg_nn['hidden_size']
+    cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
+
+
+    return cfg
+
 
 ## Classes
 class Config(object):
@@ -217,7 +239,7 @@ class Config(object):
         if isinstance(config_file, Path):
             if config_file.exists():
                 with open(config_file, 'r') as ymlfile:
-                    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)                    
+                    cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)           
             else:
                 raise FileNotFoundError(f"File not found: {config_file}")
         else:
@@ -350,6 +372,10 @@ class Config(object):
     def nn_dynamic_inputs(self) -> list:
         return self._get_property_value("nn_dynamic_inputs")
     
+    @nn_dynamic_inputs.setter
+    def nn_dynamic_inputs(self, value: list):
+        self._cfg['nn_dynamic_inputs'] = value
+        
     @property
     def nn_static_inputs(self) -> list:
         if "static_attributes" in self._cfg.keys():
@@ -360,6 +386,10 @@ class Config(object):
     @property
     def nn_mech_targets(self) -> list:
         return self._get_property_value("nn_mech_targets")
+
+    @nn_mech_targets.setter
+    def nn_mech_targets(self, value: list):
+        self._cfg['nn_mech_targets'] = value
 
     @property
     def target_variables(self) -> list:
@@ -384,6 +414,10 @@ class Config(object):
     @data_dir.setter
     def data_dir(self, value: Path):
         self._cfg['data_dir'] = value
+
+    @property
+    def nn_model_dir(self) -> Path:
+        return self._get_property_value("nn_model_dir", default=None)
 
     @property
     def precision(self) -> dict:
@@ -449,8 +483,16 @@ class Config(object):
         return self._get_property_value("nn_model", default="mlp")
     
     @property
+    def hybrid_model(self) -> str:
+        return self._get_property_value("hybrid_model", default="exphydroM100")
+
+    @property
     def hidden_size(self) -> List[int]:
         return self._get_property_value("hidden_size")
+
+    @hidden_size.setter
+    def hidden_size(self, value: List[int]):
+        self._cfg['hidden_size'] = value
 
     @property
     def run_dir(self) -> Path:
@@ -600,6 +642,86 @@ class BasinBatchSampler(Sampler):
 
     def __len__(self):
         return len(self.batches)
+
+class ExpHydroCommon:
+    
+    def create_interpolator_dict(self):
+        '''
+        Create interpolator functions for the input variables.
+        
+        - Returns:
+            interpolators: dict, dictionary with the interpolator functions for each basin and variable.
+        '''
+        
+        # Create a dictionary to store interpolator functions for each basin and variable
+        interpolators = dict()
+        
+        # Loop over the basins and variables
+        for basin in self.ds['basin'].values:
+    
+            interpolators[basin] = dict()
+            for var in self.interpolator_vars:
+                                
+                # Get the variable values
+                var_values = self.ds[var].sel(basin=basin).values
+                
+                # Interpolate the variable values
+                interpolators[basin][var] = Akima1DInterpolator(self.time_series, var_values)
+                # interpolators[basin][var] = CubicSpline(self.time_series, var_values, extrapolate='periodic')
+                
+        return interpolators
+    
+    def get_parameters(self):
+        '''
+        Get the parameters for the model from the parameter file.
+        
+        - Returns:
+            params_dict: dict, dictionary with the parameters for each basin.
+            
+        '''
+        
+        params_dir = Path(__file__).resolve().parent.parent / 'modelzoo_concept' \
+            / 'bucket_parameter_files' / f'bucket_{self.cfg.concept_model}.csv'
+        
+        try:
+            params_df = pd.read_csv(params_dir)
+
+
+            
+        except FileNotFoundError:
+            raise FileNotFoundError(f"File '{params_dir}' not found. Check the file path.")
+        else:
+            
+            # Remove UNKNOWN column if it exists
+            if 'UNKNOWN' in params_df.columns:
+                params_df = params_df.drop(columns=['UNKNOWN'])
+                
+            # Make basinID to be integer if it is not
+            if params_df['basinID'].dtype == 'float':
+                params_df['basinID'] = params_df['basinID'].astype(int)
+                
+            params_dict = dict()
+            # Loop over the basins and extract the parameters
+            for basin in self.ds['basin'].values:
+                
+                # Convert basin to int to match the parameter file
+                basin_int = int(basin)
+                    
+                try:
+                    params_opt = params_df[params_df['basinID'] == basin_int].values[0]
+                except IndexError:
+                    # Raise warning but continue
+                    # raise ValueError(f"Basin {basin} not found in the parameter file.")
+                    print(f"Warning! (Data): Basin {basin} not found in the parameter file.")
+                    
+                # S0,S1,f,Smax,Qmax,Df,Tmax,Tmin
+                params_dict[basin] = params_opt[1:]
+      
+            return params_dict
+
+    @property
+    def interpolator_vars(self):
+        return ['prcp', 'tmean', 'dayl']
 
 
 if __name__ == "__main__":

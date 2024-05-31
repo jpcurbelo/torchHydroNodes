@@ -56,6 +56,7 @@ class BaseNNModel(nn.Module):
             
             # Iterate over each variable
             for var_name in self.concept_model.cfg.nn_dynamic_inputs:
+
                 var_value = xr_dataset[var_name.lower()].sel(basin=basin).values  # Get the variable's values for the current basin
                 torch_value = torch.tensor(var_value, dtype=self.dtype)  # Convert to torch tensor
                 basin_data.append(torch_value)  # Store the torch tensor in the basin's data

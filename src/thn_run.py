@@ -1,3 +1,4 @@
+import os
 import sys
 import argparse
 from pathlib import Path
@@ -11,6 +12,7 @@ sys.path.append(project_dir)
 
 from src.utils.load_process_data import (
     Config,
+    update_hybrid_cfg,
 )
 from src.datasetzoo import (
     get_dataset, 
@@ -21,6 +23,7 @@ from src.modelzoo_nn import (
     get_nn_model,
     get_nn_pretrainer,
 )
+from src.modelzoo_hybrid import get_hybrid_model
 from src.utils.log_results import (
     save_and_plot_simulation,
     compute_and_save_metrics,
@@ -73,6 +76,10 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptua
     print('-- Loading the config file and the dataset')
 
     cfg = Config(config_file)
+
+    if model == 'hybrid':
+        # Update the config file given the nn_model_dir
+        cfg = update_hybrid_cfg(cfg)
     
     # check if a GPU has been specified as command line argument. If yes, overwrite config
     if gpu is not None and gpu >= 0:
@@ -84,6 +91,8 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptua
     if model == 'conceptual':
         ds = get_dataset(cfg=cfg, is_train=True, scaler=dict()) 
     elif model == 'pretrainer':
+        ds = get_dataset_pretrainer(cfg=cfg, scaler=dict()) 
+    elif model == 'hybrid':
         ds = get_dataset_pretrainer(cfg=cfg, scaler=dict()) 
     else:
         raise ValueError("Invalid mode. Please specify 'conceptual' or 'pretrain'.")
@@ -156,7 +165,41 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
 
 def train_hybrid_model(config_file: Path, gpu: int = None):
         
-    pass
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='hybrid')
+
+    # Conceptual model
+    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+
+    print(f'-- Conceptual model: {model_concept.__class__.__name__}')
+
+    # Neural network model
+    model_nn = get_nn_model(model_concept)
+
+    print(f'-- Neural network model: {model_nn.__class__.__name__}')
+
+    # Load the neural network model state dictionary if cfg.nn_model_dir exists
+    if cfg.nn_model_dir is not None:
+
+        pattern = 'pretrainer_*basins.pth'
+        model_path = Path(project_dir) / 'data' / cfg.nn_model_dir / 'model_weights'
+        # Find the file(s) matching the pattern
+        matching_files = list(model_path.glob(pattern))
+        model_file = matching_files[0]
+        # Load the neural network model state dictionary
+        model_file = model_path / model_file
+        # Load the state dictionary from the saved model
+        state_dict = torch.load(model_file)
+        # Load the state dictionary into the model
+        model_nn.load_state_dict(state_dict)
+
+    # Pretrainer
+    pretrainer = get_nn_pretrainer(model_nn, dataset)
+
+    # Build the hybrid model
+    model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
+
+    model_hybrid.train()
+
 
 def evaluate_model(run_dir: Path, period: str, gpu: int=None, 
                    config_file=None, model='pretrainer', epoch: int=-1):
@@ -195,5 +238,6 @@ def resume_training(run_dir: Path, epoch: int, gpu: int = None):
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre_testing.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 if __name__ == "__main__":
     _main()
