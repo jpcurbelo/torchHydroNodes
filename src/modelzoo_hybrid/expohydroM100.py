@@ -7,6 +7,7 @@ from scipy.integrate import solve_ivp as sp_solve_ivp
 import torch
 from tqdm import tqdm
 import sys
+import torch.nn as nn
 
 from src.utils.metrics import loss_name_func_dict
 from src.modelzoo_hybrid.basemodel import BaseHybridModel
@@ -17,24 +18,22 @@ from src.utils.load_process_data import (
 )
 
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
-class ExpHydroM100(BaseHybridModel, ExpHydroCommon):
+class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def __init__(self,
                  cfg: Config,
                  pretrainer: NNpretrainer,
                  ds: xarray.Dataset,
     ):
-        super().__init__(cfg, pretrainer.nnmodel, ds)
+        BaseHybridModel.__init__(self, cfg, pretrainer, ds)  # Initialize BaseHybridModel
+        ExpHydroCommon.__init__(self)  # Initialize ExpHydroCommon
+        nn.Module.__init__(self)  # Initialize nn.Module
 
         # Interpolators
         self.interpolators = self.create_interpolator_dict()
 
         # Parameters per basin
         self.params_dict = self.get_parameters()
-
-        # # Create the dataloader
-        # self.dataloader = self.pretrainer.create_dataloaders()
-        # self.num_batches = len(self.dataloader)
 
         # # Optimizer and scheduler
         # if hasattr(self.cfg, 'optimizer'):
@@ -167,53 +166,3 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon):
         ds1_dt = p_rain + m - et - q
 
         return [ds0_dt, ds1_dt]
-
-    
-    # def run(self, inputs, basin):
-
-    #     # Get the interpolator functions for the basin
-    #     self.precp_interp = self.interpolators[basin]['prcp']
-    #     self.temp_interp = self.interpolators[basin]['tmean']
-    #     self.lday_interp = self.interpolators[basin]['dayl']
-
-    #     # Get the parameters for the basin
-    #     basin_params = self.get_parameters(basin)
-
-    #     # Set the initial conditions
-    #     y0 = np.array([basin_params[0], basin_params[1]])
-
-    #     # Set the parameters
-    #     params = tuple(basin_params[2:])
-
-    #     print(self.time_series)
-
-    #     # # Run the model
-    #     # y = sp_solve_ivp(self.hydro_odes_M100, t_span=(0, self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
-    #     #                  args=params, 
-    #     #                  method=self.odesmethod,
-    #     #                 #  method='DOP853',
-    #     #                 # rtol=1e-9, atol=1e-12,
-    #     #             )
-
-    # def train(self):
-
-    #     if self.cfg.verbose:
-    #         print("-- Training the hybrid model --")
-
-    #     for epoch in range(self.epochs):
-
-    #         pbar = tqdm(self.dataloader, disable=self.cfg.disable_pbar, file=sys.stdout)
-    #         pbar.set_description(f'# Epoch {epoch + 1:05d}')
-
-    #         for (inputs, targets, basin_ids) in pbar:
-
-    #             # Zero the parameter gradients
-    #             self.optimizer.zero_grad()
-
-    #             # Forward pass
-    #             Q_model = self.model(inputs.to(self.device))
-
-    #             print(Q_model)
-
-
-    #         pbar.close()

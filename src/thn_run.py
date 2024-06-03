@@ -23,7 +23,10 @@ from src.modelzoo_nn import (
     get_nn_model,
     get_nn_pretrainer,
 )
-from src.modelzoo_hybrid import get_hybrid_model
+from src.modelzoo_hybrid import (
+    get_hybrid_model,
+    get_trainer,
+)
 from src.utils.log_results import (
     save_and_plot_simulation,
     compute_and_save_metrics,
@@ -198,7 +201,10 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     # Build the hybrid model
     model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
 
-    model_hybrid.train()
+    # Build the trainer 
+    trainer = get_trainer(model_hybrid)
+    # Train the model
+    trainer.train()
 
 
 def evaluate_model(run_dir: Path, period: str, gpu: int=None, 

@@ -25,8 +25,8 @@ target_variables:
   - obs_runoff
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file.txt
-# basin_file: 569_basin_file_hydronod1es.txt
+# basin_file: 569_basin_file.txt
+basin_file: 569_basin_file_hydronodes.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 10

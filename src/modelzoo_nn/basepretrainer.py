@@ -15,7 +15,8 @@ from src.utils.metrics import loss_name_func_dict
 from src.utils.load_process_data import (
     BatchSampler, 
     CustomDatasetToNN,
-    BasinBatchSampler
+    BasinBatchSampler,
+    ExpHydroCommon,
 )
 from src.utils.metrics import (
     NSE_eval,
@@ -23,7 +24,7 @@ from src.utils.metrics import (
 )
 
 
-class NNpretrainer:
+class NNpretrainer(ExpHydroCommon):
 
     def __init__(self, nnmodel: BaseNNModel, fulldataset: BaseDataset):
         
@@ -132,38 +133,19 @@ class NNpretrainer:
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
 
-
-    def scale_target_vars(self):
-        epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
-
-        # Scale the target variables
-        # Psnow -> arcsinh
-        self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
-        # Prain -> arcsinh
-        self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
-        # M -> arcsinh
-        self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
-        # ET -> log(ET / dayl)
-        et_values = self.dataset['et_bucket'].values
-        dayl_values = self.dataset['dayl'].values
-        et_dayl_ratio = np.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))  # Avoid division by zero
-        self.dataset['et_bucket'] = (('basin', 'date'), np.log(np.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio)))  # Avoid log(0)
-        # Q -> log(Q)
-        q_values = self.dataset['q_bucket'].values
-        self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
-
-        return self.dataset
-
-
-    def create_dataloaders(self):
+    def create_dataloaders(self, trainer=False):
         '''Create the dataloaders for the pretrainer'''
 
         # Convert xarray DataArrays to PyTorch tensors and store in a dictionary
         tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
 
+        print(self.dataset)
+
+        print(self.input_var_names)
 
         # Create a list of input and output tensors based on the variable names
-        input_tensors = [tensor_dict[var] for var in self.input_var_names]
+        input_var_names = self.input_var_names + ['time_series'] if trainer else self.input_var_names
+        input_tensors = [tensor_dict[var] for var in input_var_names]
         output_tensors = [tensor_dict[var] for var in self.output_var_names]
 
         # Keep basin IDs as a list of strings
@@ -476,56 +458,6 @@ class NNpretrainer:
 
             # Save the results to a CSV file
             df_results.to_csv(output_file_path, index=False)
-
-    def scale_back_simulated(self, outputs, ds_basin):
-        # Transfer outputs to CPU if necessary
-        if outputs.is_cuda:
-            outputs = outputs.cpu()
-
-        # Scale back the output variables
-        # Psnow -> arcsinh
-        outputs[:, 0] = torch.sinh(outputs[:, 0])
-        # Prain -> arcsinh
-        outputs[:, 1] = torch.sinh(outputs[:, 1])
-        # M -> arcsinh
-        outputs[:, 2] = torch.sinh(outputs[:, 2])
-        # ET -> log(ET / dayl)
-        outputs[:, 3] = torch.exp(outputs[:, 3]) * torch.tensor(ds_basin.dayl.values, dtype=torch.float32)
-        # Q -> log(Q)
-        outputs[:, 4] = torch.exp(outputs[:, 4])
-
-        return outputs
-
-    @staticmethod
-    def scale_back_observed(ds_basin):
-
-        # Psnow -> arcsinh
-        ps_values = np.sinh(ds_basin['ps_bucket'].values)
-        ds_basin['ps_bucket'] = xr.DataArray(ps_values, dims=['date'])
-
-        # Prain -> arcsinh
-        pr_values = np.sinh(ds_basin['pr_bucket'].values)
-        ds_basin['pr_bucket'] = xr.DataArray(pr_values, dims=['date'])
-
-        # M -> arcsinh
-        m_values = np.sinh(ds_basin['m_bucket'].values)
-        ds_basin['m_bucket'] = xr.DataArray(m_values, dims=['date'])
-
-        # ET -> log(ET / dayl)
-        epsilon = 1e-10  # Small constant to avoid division by zero
-        et_values = ds_basin['et_bucket'].values
-        dayl_values = ds_basin['dayl'].values
-        et_bucket_values = np.exp(et_values) * (dayl_values + epsilon)  # Scale back using exp and dayl
-        ds_basin['et_bucket'] = xr.DataArray(et_bucket_values, dims=['date'])
-        
-        # Q -> log(Q)
-        q_values = np.where(ds_basin['q_bucket'].values == 0, epsilon, ds_basin['q_bucket'].values)
-        q_bucket_values = np.exp(q_values)
-        ds_basin['q_bucket'] = xr.DataArray(q_bucket_values, dims=['date'])
-
-        return ds_basin
-
-
 
     # def _set_random_seeds(self):
     #     '''
