@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from src.modelzoo_nn.basemodel import BaseNNModel
 from src.datasetzoo.basedataset import BaseDataset
@@ -41,10 +42,6 @@ class NNpretrainer:
             (isinstance(self.cfg.log_n_basins, int) and self.cfg.log_n_basins > 0) or
             (isinstance(self.cfg.log_n_basins, list) and len(self.cfg.log_n_basins) > 0)
         ):
-
-            # # Generate a list of random basin IDs to plot
-            # random.seed(self.cfg.seed)
-
             if isinstance(self.cfg.log_n_basins, int):
                 sample_size = min(len(self.basins), self.cfg.log_n_basins)
                 self.basins_to_log = random.sample(list(self.basins), sample_size)
@@ -79,6 +76,9 @@ class NNpretrainer:
         # Input/output variables
         self.input_var_names = self.cfg.nn_dynamic_inputs
         self.output_var_names = self.cfg.nn_mech_targets
+
+        # Scale the target variables
+        self.dataset = self.scale_target_vars()
 
         # Create the dataloader
         self.dataloader = self.create_dataloaders()
@@ -132,11 +132,35 @@ class NNpretrainer:
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
 
+
+    def scale_target_vars(self):
+        epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
+
+        # Scale the target variables
+        # Psnow -> arcsinh
+        self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
+        # Prain -> arcsinh
+        self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
+        # M -> arcsinh
+        self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
+        # ET -> log(ET / dayl)
+        et_values = self.dataset['et_bucket'].values
+        dayl_values = self.dataset['dayl'].values
+        et_dayl_ratio = np.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))  # Avoid division by zero
+        self.dataset['et_bucket'] = (('basin', 'date'), np.log(np.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio)))  # Avoid log(0)
+        # Q -> log(Q)
+        q_values = self.dataset['q_bucket'].values
+        self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+
+        return self.dataset
+
+
     def create_dataloaders(self):
         '''Create the dataloaders for the pretrainer'''
 
         # Convert xarray DataArrays to PyTorch tensors and store in a dictionary
-        tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=torch.float32) for var in self.dataset.data_vars}
+        tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
+
 
         # Create a list of input and output tensors based on the variable names
         input_tensors = [tensor_dict[var] for var in self.input_var_names]
@@ -161,8 +185,8 @@ class NNpretrainer:
         pin_memory = True if 'cuda' in str(self.device) else False
 
         # Create custom batch sampler
-        # batch_sampler = BatchSampler(len(dataset), self.batch_size, shuffle=False)
-        batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
+        batch_sampler = BatchSampler(len(dataset), self.batch_size, shuffle=False)
+        # batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
 
         # Create DataLoader with custom batch sampler
         dataloader = DataLoader(dataset, batch_sampler=batch_sampler, 
@@ -184,6 +208,9 @@ class NNpretrainer:
 
             num_batches_seen = 0
             for (inputs, targets, basin_ids) in pbar:
+
+                # Zero the parameter gradients
+                self.optimizer.zero_grad()
 
                 # Forward pass
                 predictions = self.nnmodel(inputs.to(self.device), basin_ids)
@@ -247,11 +274,6 @@ class NNpretrainer:
                     
                 #     num_batches_seen += 1
                 #     continue
-
-                
-                
-                # Zero the parameter gradients
-                self.optimizer.zero_grad()
 
                 # Backward pass
                 loss.backward()
@@ -354,6 +376,13 @@ class NNpretrainer:
                     basin_list = [basin for _ in range(inputs.shape[0])]
                     outputs = self.nnmodel(inputs, basin_list)
 
+                    # Scale back outputs
+                    outputs = self.scale_back_simulated(outputs, ds_basin)
+
+                    # If period is ds_train, also scale back the observed variables
+                    if dsp == 'ds_train':
+                        ds_basin = self.scale_back_observed(ds_basin)
+                    
                     # Save the results as a CSV file
                     period_name = dsp.split('_')[-1]
 
@@ -447,6 +476,56 @@ class NNpretrainer:
 
             # Save the results to a CSV file
             df_results.to_csv(output_file_path, index=False)
+
+    def scale_back_simulated(self, outputs, ds_basin):
+        # Transfer outputs to CPU if necessary
+        if outputs.is_cuda:
+            outputs = outputs.cpu()
+
+        # Scale back the output variables
+        # Psnow -> arcsinh
+        outputs[:, 0] = torch.sinh(outputs[:, 0])
+        # Prain -> arcsinh
+        outputs[:, 1] = torch.sinh(outputs[:, 1])
+        # M -> arcsinh
+        outputs[:, 2] = torch.sinh(outputs[:, 2])
+        # ET -> log(ET / dayl)
+        outputs[:, 3] = torch.exp(outputs[:, 3]) * torch.tensor(ds_basin.dayl.values, dtype=torch.float32)
+        # Q -> log(Q)
+        outputs[:, 4] = torch.exp(outputs[:, 4])
+
+        return outputs
+
+    @staticmethod
+    def scale_back_observed(ds_basin):
+
+        # Psnow -> arcsinh
+        ps_values = np.sinh(ds_basin['ps_bucket'].values)
+        ds_basin['ps_bucket'] = xr.DataArray(ps_values, dims=['date'])
+
+        # Prain -> arcsinh
+        pr_values = np.sinh(ds_basin['pr_bucket'].values)
+        ds_basin['pr_bucket'] = xr.DataArray(pr_values, dims=['date'])
+
+        # M -> arcsinh
+        m_values = np.sinh(ds_basin['m_bucket'].values)
+        ds_basin['m_bucket'] = xr.DataArray(m_values, dims=['date'])
+
+        # ET -> log(ET / dayl)
+        epsilon = 1e-10  # Small constant to avoid division by zero
+        et_values = ds_basin['et_bucket'].values
+        dayl_values = ds_basin['dayl'].values
+        et_bucket_values = np.exp(et_values) * (dayl_values + epsilon)  # Scale back using exp and dayl
+        ds_basin['et_bucket'] = xr.DataArray(et_bucket_values, dims=['date'])
+        
+        # Q -> log(Q)
+        q_values = np.where(ds_basin['q_bucket'].values == 0, epsilon, ds_basin['q_bucket'].values)
+        q_bucket_values = np.exp(q_values)
+        ds_basin['q_bucket'] = xr.DataArray(q_bucket_values, dims=['date'])
+
+        return ds_basin
+
+
 
     # def _set_random_seeds(self):
     #     '''

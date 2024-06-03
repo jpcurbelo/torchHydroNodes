@@ -23,6 +23,12 @@ valid_end_date: "30/09/2010"
 test_start_date: "01/10/2000"
 test_end_date: "30/09/2010"
 
+# Loss function to use [mse, nse, nse-nh]
+loss: nse-nh
+
+# Number of epochs to train the model
+epochs: 500
+
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 experiment_name: train_hybrid_run
@@ -37,4 +43,4 @@ seed: 1111
 precision: float32
 
 # Number of parallel workers used in the data pipeline
-num_workers: 8
+num_workers: 16

@@ -25,12 +25,12 @@ target_variables:
   - obs_runoff
 
 # Files to specify training, validation and test basins
-# basin_file: 569_basin_file.txt
-basin_file: 569_basin_file_hydronodes.txt
+basin_file: 569_basin_file.txt
+# basin_file: 569_basin_file_hydronod1es.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 10
-n_random_basins: 250
+n_random_basins: -1
 
 # --- Training configurations --- #
 
@@ -46,7 +46,7 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 500
+epochs: 100
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -99,7 +99,7 @@ log_n_basins:
   5
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 5
 
 # Metrics to use for evaluation (after training)
 metrics:

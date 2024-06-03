@@ -44,9 +44,9 @@ class MLP(BaseNNModel):
         # Output Layer
         x = self.output_layer(x)
 
-        # Clip negative values in the last dimension to 0
-        # x[:, -1] = F.relu(x[:, -1])
-        x = F.relu(x) + 1e-6
+        # # Clip negative values in the last dimension to 0
+        # # x[:, -1] = F.relu(x[:, -1])
+        # x = F.relu(x) + 1e-6
 
         return x
 
