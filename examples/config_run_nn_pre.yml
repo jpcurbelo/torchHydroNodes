@@ -21,6 +21,8 @@ nn_mech_targets:
   - et_bucket
   - q_bucket
 
+scale_target_vars: False
+
 target_variables: 
   - obs_runoff
 

@@ -14,19 +14,25 @@ class BaseHybridModel():
                 #  scaler: dict,
                 # odesmethod:str ='RK23'
                 ):
-        
+               
         self.cfg = cfg
+        # print(dir(self.cfg))
+        # aux = input("Press Enter to continue...")
         self.pretrainer = pretrainer
+        # print(dir(self.pretrainer))
+        # aux = input("Press Enter to continue...")
         self.ds = ds
+        # print(dir(self.ds))
+        # aux = input("Press Enter to continue...")
 
         # Method to solve ODEs
-        if hasattr(self.cfg, 'odesmethod'):
-            self.odesmethod = self.cfg.odesmethod
+        if hasattr(cfg, 'odesmethod'):
+            self.odesmethod = cfg.odesmethod
         else:
             self.odesmethod = 'RK23'
 
         # Create the dataloader
-        self.dataloader = self.pretrainer.create_dataloaders()
+        self.dataloader = self.pretrainer.create_dataloaders(trainer=True)
         self.num_batches = len(self.dataloader)
 
         # Device
@@ -40,7 +46,7 @@ class BaseHybridModel():
         self.data_type_torch = cfg.precision['torch']
 
         # Time series
-        self.time_series = np.linspace(0, len(ds['date'].values) - 1, len(ds['date'].values))
+        self.time_series = np.linspace(0, len(self.ds['date'].values) - 1, len(self.ds['date'].values))
 
         # # Interpolators
         # self.interpolators = self.create_interpolator_dict()
@@ -50,8 +56,8 @@ class BaseHybridModel():
         # self.nn_output_var_names = self.cfg.nn_mech_targets
 
         # Epochs
-        if hasattr(self.cfg, 'epochs'):
-            self.epochs = self.cfg.epochs
+        if hasattr(cfg, 'epochs'):
+            self.epochs = cfg.epochs
         else:
             self.epochs = 100
 

@@ -8,8 +8,6 @@ class BaseHybridModelTrainer:
         
         self.model = model
 
-
-
     def train(self):
 
         if self.model.cfg.verbose:
@@ -25,12 +23,10 @@ class BaseHybridModelTrainer:
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
 
-                print(inputs.shape)
-
                 # Forward pass
-                Q_model = self.model(inputs.to(self.model.device), basin_ids)
+                Q_model = self.model(inputs.to(self.model.device), basin_ids[0])
 
-                print(Q_model)
+                # print('Q_model', Q_model)
 
 
             pbar.close()

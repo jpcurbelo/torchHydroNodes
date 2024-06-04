@@ -44,3 +44,6 @@ precision: float32
 
 # Number of parallel workers used in the data pipeline
 num_workers: 16
+
+# Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
+verbose: 1

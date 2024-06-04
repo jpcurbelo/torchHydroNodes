@@ -199,7 +199,13 @@ class Config(object):
             
         # Device to string
         cfg_copy['device'] = str(cfg_copy['device'])
-        
+
+        # Number of basins
+        n_first_basins = cfg_copy['n_first_basins'] if 'n_first_basins' in cfg_copy else -1
+        n_random_basins = cfg_copy['n_random_basins'] if 'n_random_basins' in cfg_copy else -1
+        cfg_copy['number_of_basins'] = len(load_basin_file(cfg_copy['basin_file_path'], n_first_basins, n_random_basins))
+        self._cfg['number_of_basins'] = cfg_copy['number_of_basins']
+
         # Save the configuration data to a ymal file
         config_path = self._cfg['run_dir'] / filename
         with open(config_path, 'w') as f:
@@ -393,6 +399,10 @@ class Config(object):
         self._cfg['nn_mech_targets'] = value
 
     @property
+    def scale_target_vars(self) -> bool:
+        return self._get_property_value("scale_target_vars", default=False)
+
+    @property
     def target_variables(self) -> list:
         return self._get_property_value("target_variables")
     
@@ -513,7 +523,7 @@ class Config(object):
     
     @property
     def disable_pbar(self) -> bool:
-        return not self._cfg.get("verbose")
+        return self._get_property_value("verbose", default=False) == False
     
     @property
     def metrics(self) -> List[str]:
@@ -539,10 +549,6 @@ class Config(object):
     def learning_rate(self) -> float:
         return self._get_property_value("learning_rate", default=0.001)
 
-
-
-
-
     @property
     def log_n_basins(self) -> int:
         return self._get_property_value("log_n_basins", default=0)
@@ -566,6 +572,10 @@ class Config(object):
     @property
     def n_random_basins(self) -> int:
         return self._get_property_value("n_random_basins", default=-1)
+
+    @property
+    def number_of_basins(self) -> int:
+        return self._get_property_value("number_of_basins")
 
     @property
     def clip_gradient_norm(self) -> float:
