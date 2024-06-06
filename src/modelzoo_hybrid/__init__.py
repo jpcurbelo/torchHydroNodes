@@ -15,7 +15,8 @@ def get_hybrid_model(cfg: Config, pretrainer: NNpretrainer, dataset: BaseDataset
     else:
         raise NotImplementedError(f"No hybrid model class implemented for model {cfg.hybrid_model.lower()}")
 
-    return Model(cfg=cfg, pretrainer=pretrainer, ds=dataset.ds_train)
+    model_instance = Model(cfg=cfg, pretrainer=pretrainer, ds=dataset.ds_train, scaler=dataset.scaler)
+    return model_instance
 
 def get_trainer(model: BaseHybridModel):
     '''Get the trainer for the hybrid model'''

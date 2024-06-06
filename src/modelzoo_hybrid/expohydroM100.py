@@ -9,7 +9,6 @@ from tqdm import tqdm
 import sys
 import torch.nn as nn
 
-from src.utils.metrics import loss_name_func_dict
 from src.modelzoo_hybrid.basemodel import BaseHybridModel
 from src.modelzoo_nn.basepretrainer import NNpretrainer
 from src.utils.load_process_data import (
@@ -21,11 +20,12 @@ from src.utils.load_process_data import (
 class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def __init__(self,
-                 cfg: Config,
-                 pretrainer: NNpretrainer,
-                 ds: xarray.Dataset,
+                cfg: Config,
+                pretrainer: NNpretrainer,
+                ds: xarray.Dataset,
+                scaler: dict,
     ):
-        BaseHybridModel.__init__(self, cfg, pretrainer, ds)  # Initialize BaseHybridModel
+        BaseHybridModel.__init__(self, cfg, pretrainer, ds, scaler)  # Initialize BaseHybridModel
         ExpHydroCommon.__init__(self)  # Initialize ExpHydroCommon
         nn.Module.__init__(self)  # Initialize nn.Module
 
@@ -34,54 +34,6 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Parameters per basin
         self.params_dict = self.get_parameters()
-
-        # # Optimizer and scheduler
-        # if hasattr(self.cfg, 'optimizer'):
-        #     if self.cfg.optimizer.lower() == 'adam':
-        #         optimizer_class = torch.optim.Adam
-        #     elif self.cfg.optimizer.lower() == 'sgd':
-        #         optimizer_class = torch.optim.SGD
-        #     else:
-        #         raise NotImplementedError(f"Optimizer {self.cfg.optimizer} not implemented")
-
-        #     if hasattr(self.cfg, 'learning_rate'):
-        #         if isinstance(self.cfg.learning_rate, float):
-        #             self.optimizer = optimizer_class(self.pretrainer.nnmodel.parameters(), lr=self.cfg.learning_rate)
-        #             self.scheduler = None
-        #         elif isinstance(self.cfg.learning_rate, dict) and \
-        #             'initial' in self.cfg.learning_rate and \
-        #             'decay' in self.cfg.learning_rate and \
-        #             ('decay_step_fraction' in self.cfg.learning_rate and \
-        #                 self.cfg.learning_rate['decay_step_fraction'] <= self.epochs):
-        #                 self.optimizer = optimizer_class(self.pretrainer.nnmodel.parameters(), lr=self.cfg.learning_rate['initial'])
-        #                 # Learning rate scheduler
-        #                 self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 
-        #                                                                 step_size=self.epochs // self.cfg.learning_rate['decay_step_fraction'],
-        #                                                                 gamma=self.cfg.learning_rate['decay'])
-        #         else:
-        #             raise ValueError("Learning rate not specified correctly in the config (should be a float or a dictionary" +
-        #                 "with 'initial', 'decay', and 'decay_step_fraction' keys) and " +
-        #                 "'decay_step_fraction' can be at most equal to the number of epochs")
-        #     else:
-        #         self.optimizer = optimizer_class(self.pretrainer.nnmodel.parameters(), lr=0.001)
-        #         self.scheduler = None
-        # else:
-        #     self.optimizer = torch.optim.Adam(self.pretrainer.nnmodel.parameters(), lr=0.001)
-        #     self.scheduler = None
-
-        # # Loss function setup
-        # try:
-        #     # Try to get the loss function name from configuration
-        #     loss_name = self.cfg.loss
-        #     self.loss = loss_name_func_dict[loss_name.lower()]
-        # except KeyError:
-        #     # Handle the case where the loss name is not recognized
-        #     raise NotImplementedError(f"Loss function {loss_name} not implemented")
-        # except ValueError:
-        #     # Handle the case where 'loss' is not specified in the config
-        #     # Optionally, set a default loss function
-        #     print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
-        #     self.loss = torch.nn.MSELoss()
     
 
     def forward(self, inputs, basin):
@@ -134,7 +86,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
         basin = [basin] if not isinstance(basin, list) else basin
-        q_output = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin).to(self.device)[0]
+        q_output = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin).to(self.device)[-1]
 
         return q_output
 

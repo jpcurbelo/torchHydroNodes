@@ -1,29 +1,27 @@
 import xarray
 import numpy as np
+import torch
+import torch.nn as nn
 
 from src.utils.load_process_data import Config
 from src.modelzoo_nn.basepretrainer import NNpretrainer
 
 # Classes
-class BaseHybridModel():
+class BaseHybridModel(nn.Module):
 
     def __init__(self,
-                 cfg: Config,
-                 pretrainer: NNpretrainer,
-                 ds: xarray.Dataset,
-                #  scaler: dict,
+                cfg: Config,
+                pretrainer: NNpretrainer,
+                ds: xarray.Dataset,
+                scaler: dict,
                 # odesmethod:str ='RK23'
                 ):
+        nn.Module.__init__(self)  # Initialize nn.Module
                
         self.cfg = cfg
-        # print(dir(self.cfg))
-        # aux = input("Press Enter to continue...")
         self.pretrainer = pretrainer
-        # print(dir(self.pretrainer))
-        # aux = input("Press Enter to continue...")
         self.ds = ds
-        # print(dir(self.ds))
-        # aux = input("Press Enter to continue...")
+        self.scaler = scaler
 
         # Method to solve ODEs
         if hasattr(cfg, 'odesmethod'):
@@ -38,9 +36,6 @@ class BaseHybridModel():
         # Device
         self.device = self.pretrainer.nnmodel.device
 
-        # # Basins
-        # self.basins = self.ds.basin.values
-
         # Set the data type attribute for the model
         self.data_type_np = cfg.precision['numpy']
         self.data_type_torch = cfg.precision['torch']
@@ -48,24 +43,11 @@ class BaseHybridModel():
         # Time series
         self.time_series = np.linspace(0, len(self.ds['date'].values) - 1, len(self.ds['date'].values))
 
-        # # Interpolators
-        # self.interpolators = self.create_interpolator_dict()
-
-        # # Input/output variables to NN model
-        # self.nn_input_var_names = self.cfg.nn_dynamic_inputs
-        # self.nn_output_var_names = self.cfg.nn_mech_targets
-
         # Epochs
         if hasattr(cfg, 'epochs'):
             self.epochs = cfg.epochs
         else:
             self.epochs = 100
-
-        # # Number of workers
-        # if hasattr(self.cfg, 'num_workers'):
-        #     self.num_workers = self.cfg.num_workers
-        # else:
-        #     self.num_workers = 8
 
         self.optimizer = self.pretrainer.optimizer
     
