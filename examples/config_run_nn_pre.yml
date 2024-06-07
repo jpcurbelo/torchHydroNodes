@@ -21,16 +21,17 @@ nn_mech_targets:
   - et_bucket
   - q_bucket
 
-scale_target_vars: False
+scale_target_vars: True
 
 target_variables: 
   - obs_runoff
 
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
-basin_file: 569_basin_file_hydronodes.txt
-# basin_file: 4_basin_file.txt
+# basin_file: 569_basin_file_hydronodes.txt
+# basin_file: 1_basin_fileB.txt
 # basin_file: 25_basin_file.txt
+basin_file: 4_basin_file.txt
 # n_first_basins: 10
 n_random_basins: -1
 
@@ -48,13 +49,14 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 5000
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 512
+# batch_size: 512
+batch_size: 32
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -64,7 +66,7 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 8  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
@@ -96,12 +98,12 @@ verbose: 1
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins:
-  # - 1013500
-  # - 6431500
-  5
+  - 1013500
+  - 6431500
+  # 5
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 5
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

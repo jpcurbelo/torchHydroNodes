@@ -16,7 +16,7 @@ class BaseConceptModel:
                 ):
         
         self.cfg = cfg
-        self.ds = ds
+        self.dataset = ds
         self.scaler = scaler
         self.odesmethod = odesmethod
         

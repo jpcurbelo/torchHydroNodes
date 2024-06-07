@@ -20,7 +20,7 @@ class BaseHybridModel(nn.Module):
                
         self.cfg = cfg
         self.pretrainer = pretrainer
-        self.ds = ds
+        self.dataset = ds
         self.scaler = scaler
 
         # Method to solve ODEs
@@ -29,8 +29,11 @@ class BaseHybridModel(nn.Module):
         else:
             self.odesmethod = 'RK23'
 
+        if self.cfg.scale_target_vars:
+            self.dataset = self.scale_target_vars(is_trainer=True)
+
         # Create the dataloader
-        self.dataloader = self.pretrainer.create_dataloaders(trainer=True)
+        self.dataloader = self.pretrainer.create_dataloaders(is_trainer=True)
         self.num_batches = len(self.dataloader)
 
         # Device
@@ -41,7 +44,7 @@ class BaseHybridModel(nn.Module):
         self.data_type_torch = cfg.precision['torch']
 
         # Time series
-        self.time_series = np.linspace(0, len(self.ds['date'].values) - 1, len(self.ds['date'].values))
+        self.time_series = np.linspace(0, len(self.dataset['date'].values) - 1, len(self.dataset['date'].values))
 
         # Epochs
         if hasattr(cfg, 'epochs'):
@@ -50,6 +53,7 @@ class BaseHybridModel(nn.Module):
             self.epochs = 100
 
         self.optimizer = self.pretrainer.optimizer
+        self.scheduler = self.pretrainer.scheduler
     
     def forward(self, inputs, basin):
         '''This function should execute the model'''

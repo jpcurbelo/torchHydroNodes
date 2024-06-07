@@ -85,8 +85,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         inputs_nn = torch.stack([s_snow_new, s_water_new, tmean_series_tensor, precp_series_tensor], dim=-1)
 
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
-        basin = [basin] if not isinstance(basin, list) else basin
-        q_output = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin).to(self.device)[-1]
+        # Assuming nnmodel returns a tensor of shape (batch_size, numOfVars)
+        output = self.pretrainer.nnmodel(inputs_nn.to(self.device), [basin]).to(self.device)
+
+        # Extract the last variable (last column) from the output
+        q_output = output[:, -1]
 
         return q_output
 
@@ -95,6 +98,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # # Flush time
         # sys.stdout.write(f"t \r{t}")
         # sys.stdout.flush()
+        # # print((f"t \r{t}"))
 
         # Bucket parameters                   
         # f: Rate of decline in flow from catchment bucket   

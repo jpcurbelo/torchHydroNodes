@@ -32,7 +32,7 @@ class NNpretrainer(ExpHydroCommon):
         self.nnmodel = nnmodel
         self.cfg = self.nnmodel.concept_model.cfg
         
-        self.dataset = self.nnmodel.concept_model.ds
+        self.dataset = self.nnmodel.concept_model.dataset
         self.basins = self.dataset.basin.values
 
         # # Set random seeds
@@ -80,7 +80,7 @@ class NNpretrainer(ExpHydroCommon):
 
         # Scale the target variables
         if self.cfg.scale_target_vars:
-            self.dataset = self.scale_target_vars()
+            self.dataset = self.scale_target_vars(is_trainer=False)
 
         # Create the dataloader
         self.dataloader = self.create_dataloaders()
@@ -134,14 +134,18 @@ class NNpretrainer(ExpHydroCommon):
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
 
-    def create_dataloaders(self, trainer=False):
+    def create_dataloaders(self, is_trainer=False):
         '''Create the dataloaders for the pretrainer'''
 
         # Convert xarray DataArrays to PyTorch tensors and store in a dictionary
         tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
 
+        # # If scale_target_vars: True
+        # if self.cfg.scale_target_vars:
+        #     tensor_dict = self.scale_target_vars(tensor_dict, is_trainer)
+
         # Create a list of input and output tensors based on the variable names
-        if trainer:
+        if is_trainer:
             time_series = self.dataset['date'].values
             time_idx = torch.linspace(0, len(time_series) - 1, len(time_series), dtype=self.dtype)
             # Reshape time_idx to match the shape of other tensors (number_of_basins, time_idx)
@@ -173,7 +177,7 @@ class NNpretrainer(ExpHydroCommon):
         pin_memory = True if 'cuda' in str(self.device) else False
 
         # Create custom batch sampler
-        if trainer:
+        if is_trainer:
             batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
         else:
             batch_sampler = BatchSampler(len(dataset), self.batch_size, shuffle=False)
@@ -468,18 +472,4 @@ class NNpretrainer(ExpHydroCommon):
 
             # Save the results to a CSV file
             df_results.to_csv(output_file_path, index=False)
-
-    # def _set_random_seeds(self):
-    #     '''
-    #     Set random seeds for reproducibility
-    #     '''
-    #     if self.cfg.seed is None:
-    #         self.cfg.seed = int(np.random.uniform(low=0, high=1e6))
-
-    #     # fix random seeds for various packages
-    #     random.seed(self.cfg.seed)
-    #     np.random.seed(self.cfg.seed)
-    #     torch.cuda.manual_seed(self.cfg.seed)
-    #     torch.manual_seed(self.cfg.seed)
-
 

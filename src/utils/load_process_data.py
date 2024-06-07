@@ -668,13 +668,13 @@ class ExpHydroCommon:
         interpolators = dict()
         
         # Loop over the basins and variables
-        for basin in self.ds['basin'].values:
+        for basin in self.dataset['basin'].values:
     
             interpolators[basin] = dict()
             for var in self.interpolator_vars:
                                 
                 # Get the variable values
-                var_values = self.ds[var].sel(basin=basin).values
+                var_values = self.dataset[var].sel(basin=basin).values
                 
                 # Interpolate the variable values
                 interpolators[basin][var] = Akima1DInterpolator(self.time_series, var_values)
@@ -711,7 +711,7 @@ class ExpHydroCommon:
                 
             params_dict = dict()
             # Loop over the basins and extract the parameters
-            for basin in self.ds['basin'].values:
+            for basin in self.dataset['basin'].values:
                 
                 # Convert basin to int to match the parameter file
                 basin_int = int(basin)
@@ -728,48 +728,68 @@ class ExpHydroCommon:
       
             return params_dict
 
-    def scale_target_vars(self):
+    def scale_target_vars(self, is_trainer=False):
+       
         epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
 
         # Scale the target variables
         # Psnow -> arcsinh
         self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
+        # tensor_dict['ps_bucket'] = torch.asinh(tensor_dict['ps_bucket'])
         # Prain -> arcsinh
         self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
+        # tensor_dict['pr_bucket'] = torch.asinh(tensor_dict['pr_bucket'])
         # M -> arcsinh
         self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
+        # tensor_dict['m_bucket'] = torch.asinh(tensor_dict['m_bucket'])
         # ET -> log(ET / dayl)
         et_values = self.dataset['et_bucket'].values
         dayl_values = self.dataset['dayl'].values
         et_dayl_ratio = np.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))  # Avoid division by zero
         self.dataset['et_bucket'] = (('basin', 'date'), np.log(np.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio)))  # Avoid log(0)
+        # et_values = tensor_dict['et_bucket']
+        # dayl_values = tensor_dict['dayl']
+        # et_dayl_ratio = torch.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))
+        # tensor_dict['et_bucket'] = torch.log(torch.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio))
         # Q -> log(Q)
-        q_values = self.dataset['q_bucket'].values
-        self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+        if not is_trainer:
+            q_values = self.dataset['q_bucket'].values
+            self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+            # q_values = tensor_dict['q_bucket']
+            # tensor_dict['q_bucket'] = torch.log(torch.where(q_values == 0, epsilon, q_values))
+        else:
+            q_values = self.dataset['obs_runoff'].values
+            self.dataset['obs_runoff'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+            # q_values = tensor_dict['obs_runoff']
+            # tensor_dict['obs_runoff'] = torch.log(torch.where(q_values == 0, epsilon, q_values))
 
         return self.dataset
+        # return tensor_dict
 
-    def scale_back_simulated(self, outputs, ds_basin):
+    def scale_back_simulated(self, outputs, ds_basin, is_trainer=False):
         # Transfer outputs to CPU if necessary
         if outputs.is_cuda:
             outputs = outputs.cpu()
 
         # Scale back the output variables
-        # Psnow -> arcsinh
-        outputs[:, 0] = torch.sinh(outputs[:, 0])
-        # Prain -> arcsinh
-        outputs[:, 1] = torch.sinh(outputs[:, 1])
-        # M -> arcsinh
-        outputs[:, 2] = torch.sinh(outputs[:, 2])
-        # ET -> log(ET / dayl)
-        outputs[:, 3] = torch.exp(outputs[:, 3]) * torch.tensor(ds_basin.dayl.values, dtype=torch.float32)
-        # Q -> log(Q)
-        outputs[:, 4] = torch.exp(outputs[:, 4])
+        if not is_trainer:
+            # Psnow -> arcsinh
+            outputs[:, 0] = torch.sinh(outputs[:, 0])
+            # Prain -> arcsinh
+            outputs[:, 1] = torch.sinh(outputs[:, 1])
+            # M -> arcsinh
+            outputs[:, 2] = torch.sinh(outputs[:, 2])
+            # ET -> log(ET / dayl)
+            outputs[:, 3] = torch.exp(outputs[:, 3]) * torch.tensor(ds_basin.dayl.values, dtype=torch.float32)
+            # Q -> log(Q)
+            outputs[:, 4] = torch.exp(outputs[:, 4])
+        else:
+            outputs = torch.exp(outputs)
 
         return outputs
 
     @staticmethod
-    def scale_back_observed(ds_basin):
+    def scale_back_observed(ds_basin, is_trainer=False):
 
         # Psnow -> arcsinh
         ps_values = np.sinh(ds_basin['ps_bucket'].values)
@@ -791,9 +811,14 @@ class ExpHydroCommon:
         ds_basin['et_bucket'] = xr.DataArray(et_bucket_values, dims=['date'])
         
         # Q -> log(Q)
-        q_values = np.where(ds_basin['q_bucket'].values == 0, epsilon, ds_basin['q_bucket'].values)
-        q_bucket_values = np.exp(q_values)
-        ds_basin['q_bucket'] = xr.DataArray(q_bucket_values, dims=['date'])
+        if not is_trainer:
+            q_values = np.where(ds_basin['q_bucket'].values == 0, epsilon, ds_basin['q_bucket'].values)
+            q_bucket_values = np.exp(q_values)
+            ds_basin['q_bucket'] = xr.DataArray(q_bucket_values, dims=['date'])
+        else:
+            q_values = np.where(ds_basin['obs_runoff'].values == 0, epsilon, ds_basin['obs_runoff'].values)
+            q_bucket_values = np.exp(q_values)
+            ds_basin['obs_runoff'] = xr.DataArray(q_bucket_values, dims=['date'])
 
         return ds_basin
 

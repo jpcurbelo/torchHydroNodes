@@ -1,10 +1,14 @@
 from tqdm import tqdm
 import sys
 import torch
+from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
     NSElossNH,
+    NSE_eval,
 )
 
 
@@ -13,7 +17,15 @@ class BaseHybridModelTrainer:
     def __init__(self, model):
         
         self.model = model
+
         self.target = self.model.cfg.concept_target[0]
+        self.hybrid_model = (self.model.cfg.hybrid_model).lower()
+        self.nnmodel = (self.model.pretrainer.nnmodel.__class__.__name__).lower()
+        self.basins = self.model.dataset.basin.values
+        self.number_of_basins = self.model.cfg.number_of_basins
+
+        # Extract keys that start with 'ds_'
+        self.ds_periods = [key for key in self.model.pretrainer.fulldataset.__dict__.keys() if key.startswith('ds_')]
 
         # Loss function setup
         try:
@@ -53,9 +65,9 @@ class BaseHybridModelTrainer:
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
                     # To tensor
                     std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.model.device)
-                    loss = self.loss(q_sim, targets.to(self.model.device), std_val)
+                    loss = self.loss(q_sim, targets[:, -1].to(self.model.device), std_val)
                 else:
-                    loss = self.loss(q_sim, targets.to(self.model.device))
+                    loss = self.loss(q_sim, targets[:, -1].to(self.model.device))
 
                 # Backward pass
                 loss.backward()
@@ -75,5 +87,107 @@ class BaseHybridModelTrainer:
                 avg_loss = epoch_loss / num_batches_seen
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
-
             pbar.close()
+
+            if (epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0)):
+                if self.model.cfg.verbose:
+                    print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
+                # Save the model weights
+                self.save_model()
+                self.save_plots(epoch=epoch+1)
+
+            # Learning rate scheduler
+            if (self.model.scheduler is not None) and epoch < self.model.epochs - 1:
+                current_lr = self.model.optimizer.param_groups[0]['lr']
+                self.model.scheduler.step()
+
+                # Check if learning rate has changed
+                new_lr = self.model.optimizer.param_groups[0]['lr']
+                if self.model.cfg.verbose and new_lr != current_lr:
+                    print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
+
+    def save_model(self):
+        '''Save the model weights and plots'''
+
+        # Create a directory to save the model weights if it does not exist
+        model_dir = 'model_weights'
+        model_path = self.model.cfg.run_dir / model_dir
+        model_path.mkdir(parents=True, exist_ok=True)
+
+        # Save the model weights
+        torch.save(self.model.pretrainer.nnmodel.state_dict(), model_path / f'trainer_{self.hybrid_model}_{self.nnmodel}_{self.number_of_basins}basins.pth')
+
+    def save_plots(self, epoch=None):
+        '''
+        Save the plots of the observed and predicted values for a random subset of basins
+        and for each dataset period
+        '''
+
+        # Check if log_n_basins exists and is either a positive integer or a non-empty list
+        if self.model.pretrainer.basins_to_log is not None:
+
+            # Progress bar for basins
+            pbar_basins = tqdm(self.model.pretrainer.basins_to_log, disable=self.model.cfg.disable_pbar, file=sys.stdout)
+            for basin in pbar_basins:
+                pbar_basins.set_description(f'* Plotting basin {basin}')
+
+                if basin not in self.basins:
+                    print(f"Basin {basin} not found in the dataset. Skipping...")
+                    continue
+
+                # Create a directory to save the plots if it does not exist
+                basin_dir = Path(self.model.cfg.plots_dir) / basin
+                basin_dir.mkdir(parents=True, exist_ok=True)
+
+                for dsp in self.ds_periods:
+
+                    period_name = dsp.split('_')[-1]
+
+                    ds_period = getattr(self.model.pretrainer.fulldataset, dsp)
+                    ds_basin = ds_period.sel(basin=basin)
+
+                    time_series = ds_basin['date'].values
+                    # time_idx = torch.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_torch)
+                    time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
+                    input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
+
+                    # Add time_idx to the dataset, making sure to match the correct dimensions
+                    ds_basin['time_idx'] = (('date',), time_idx)
+
+                    # Get the inputs in the correct format
+                    inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
+                        for var in input_var_names], dim=0).t().to(self.model.device)
+                    
+                    # Get the outputs from the hybrid model
+                    outputs = self.model(inputs, basin)
+
+                    # Scale back outputs
+                    if self.model.cfg.scale_target_vars:
+                        outputs = self.model.scale_back_simulated(outputs, ds_basin, is_trainer=True)
+
+                        # If period is ds_train, also scale back the observed variables
+                        if dsp == 'ds_train':
+                            ds_basin = self.model.scale_back_observed(ds_basin, is_trainer=True)
+
+                    # Get the simulated values in numpy format
+                    y_sim = outputs.detach().cpu().numpy()
+
+                    # Get the observed values
+                    y_obs = ds_basin[self.target.lower()].values
+
+                    # Plot the observed and predicted values
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(ds_basin.date, y_obs, label='Observed')
+                    plt.plot(ds_basin.date, y_sim, label='Predicted', alpha=0.7)
+                    plt.xlabel('Date')
+                    plt.ylabel(self.target)
+                    plt.legend()
+
+                    nse_val = NSE_eval(y_obs, y_sim)
+                    plt.title(f'{self.target} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
+
+                    plt.tight_layout()
+                    plt.savefig(basin_dir / f'{self.target}_{basin}_{period_name}_epoch{epoch}.png', dpi=75)
+                    plt.close('all')
+
+            pbar_basins.close()
