@@ -589,10 +589,16 @@ class Config(object):
     def metrics(self) -> List[str]:
         return self._as_default_list(self._get_property_value("metrics"))
 
+    @property
+    def odesmethod(self) -> str:
+        return self._get_property_value("odesmethod", default="RK23")
+
 ## Classes for data loading
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size, shuffle=False):
         self.dataset_len = dataset_len
+        if batch_size == -1:
+            batch_size = dataset_len
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.num_batches = (dataset_len + batch_size - 1) // batch_size
@@ -620,8 +626,10 @@ class CustomDatasetToNN(Dataset):
         return self.input_tensor[idx], self.output_tensor[idx], self.basin_ids[idx]
 
 class BasinBatchSampler(Sampler):
-    def __init__(self, basin_ids, batch_size, shuffle=True):
+    def __init__(self, basin_ids, batch_size, shuffle=False):
         self.basin_ids = basin_ids
+        if batch_size == -1:
+            batch_size = len(basin_ids)
         self.batch_size = batch_size
         self.shuffle = shuffle
         
@@ -733,25 +741,30 @@ class ExpHydroCommon:
         epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
 
         # Scale the target variables
-        # Psnow -> arcsinh
+        ## Psnow -> arcsinh
         self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
         # tensor_dict['ps_bucket'] = torch.asinh(tensor_dict['ps_bucket'])
-        # Prain -> arcsinh
+        ## Prain -> arcsinh
         self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
         # tensor_dict['pr_bucket'] = torch.asinh(tensor_dict['pr_bucket'])
-        # M -> arcsinh
+        ## M -> arcsinh
         self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
         # tensor_dict['m_bucket'] = torch.asinh(tensor_dict['m_bucket'])
-        # ET -> log(ET / dayl)
+        ## ET -> log(ET / dayl)
+        # Retrieve ET and daylength values from the dataset
         et_values = self.dataset['et_bucket'].values
         dayl_values = self.dataset['dayl'].values
-        et_dayl_ratio = np.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))  # Avoid division by zero
-        self.dataset['et_bucket'] = (('basin', 'date'), np.log(np.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio)))  # Avoid log(0)
+        # Calculate the ratio while avoiding division by zero
+        et_dayl_ratio = np.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))
+        # Ensure no zero or negative values before applying log
+        et_dayl_ratio = np.where(et_dayl_ratio <= 0, epsilon, et_dayl_ratio)
+        # Apply the logarithm transformation
+        self.dataset['et_bucket'] = (('basin', 'date'), np.log(et_dayl_ratio))
         # et_values = tensor_dict['et_bucket']
         # dayl_values = tensor_dict['dayl']
         # et_dayl_ratio = torch.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))
         # tensor_dict['et_bucket'] = torch.log(torch.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio))
-        # Q -> log(Q)
+        ## Q -> log(Q)
         if not is_trainer:
             q_values = self.dataset['q_bucket'].values
             self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)

@@ -346,8 +346,8 @@ class BaseDataset(Dataset):
             None
         '''
         
-        self.scaler["ds_feature_std"] = ds.groupby('basin').mean(dim='date')
-        self.scaler["ds_feature_mean"] = ds.groupby('basin').std(dim='date')
+        self.scaler["ds_feature_std"] = ds.groupby('basin').std(dim='date')
+        self.scaler["ds_feature_mean"] = ds.groupby('basin').mean(dim='date')
   
             
 ###############################

@@ -22,6 +22,7 @@ class Pretrainer(BaseDataset):
     def _load_basin_data(self, basin: str) -> pd.DataFrame:
 
         df = pd.DataFrame()
+        
         try:
             for period in ['train', 'valid', 'test']:
                 file_path = self.cfg.data_dir / 'model_results' / f'{basin}_results_{period}.csv'

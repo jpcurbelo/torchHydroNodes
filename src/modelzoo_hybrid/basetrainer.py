@@ -46,10 +46,17 @@ class BaseHybridModelTrainer:
         if self.model.cfg.verbose:
             print("-- Training the hybrid model --")
 
+        # Save the model weights - Epoch 0
+        self.save_model()
+        self.save_plots(epoch=0)
+
         for epoch in range(self.model.epochs):
 
+            # Clear CUDA cache at the beginning of each epoch
+            torch.cuda.empty_cache()
+
             pbar = tqdm(self.model.dataloader, disable=self.model.cfg.disable_pbar, file=sys.stdout)
-            pbar.set_description(f'# Epoch {epoch + 1:05d}')
+            pbar.set_description(f'# Epoch {epoch + 1:05d} ')
 
             epoch_loss = 0.0
             num_batches_seen = 0
@@ -59,15 +66,23 @@ class BaseHybridModelTrainer:
                 self.model.optimizer.zero_grad()
 
                 # Forward pass
-                q_sim = self.model(inputs.to(self.model.device), basin_ids[0])
+                q_sim = self.model(inputs, basin_ids[0])
+
+                # print('inputs:', inputs)
+                # print('targets:', targets[:, -1])
+                # print('q_sim:', q_sim)
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
                     # To tensor
-                    std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.model.device)
-                    loss = self.loss(q_sim, targets[:, -1].to(self.model.device), std_val)
+                    std_val = torch.tensor(std_val, dtype=self.model.data_type_torch)  #.to(self.model.device)
+                    loss = self.loss(q_sim, targets[:, -1],   # .to(self.model.device), 
+                                     std_val)
                 else:
-                    loss = self.loss(q_sim, targets[:, -1].to(self.model.device))
+                    if self.model.cfg.scale_target_vars:
+                        loss = self.loss(torch.exp(q_sim), torch.exp(targets[:, -1]))   #.to(self.model.device))
+                    else:
+                        loss = self.loss(q_sim, targets[:, -1])   #.to(self.model.device))
 
                 # Backward pass
                 loss.backward()
@@ -168,7 +183,7 @@ class BaseHybridModelTrainer:
                         # If period is ds_train, also scale back the observed variables
                         if dsp == 'ds_train':
                             ds_basin = self.model.scale_back_observed(ds_basin, is_trainer=True)
-
+                            
                     # Get the simulated values in numpy format
                     y_sim = outputs.detach().cpu().numpy()
 

@@ -27,15 +27,23 @@ class MLP(BaseNNModel):
         self.output_layer = nn.Linear(self.hidden_size[-1], self.output_size)
         self.output_layer.name = 'output_layer'
 
-    def forward(self, inputs, basin):
+    def forward(self, inputs, basin_list):
+
+        # Gather means and stds for the batch
+        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(inputs.device)
+        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(inputs.device)
 
         # Normalize the inputs
-        normalized_inputs = torch.zeros_like(inputs, device=inputs.device)
-        for i, b in enumerate(basin):
-            normalized_inputs[i] = (inputs[i] - self.torch_input_means[b].to(inputs.device)) / self.torch_input_stds[b].to(inputs.device)
+        inputs = (inputs - means) / stds
+
+        # print('inputs:', inputs)
+        # print('means:', means)
+        # print('stds:', stds)
+
+        # aux = input("Press Enter to continue...")
 
         # Pass through the input layer
-        x = F.tanh(self.input_layer(normalized_inputs))
+        x = F.tanh(self.input_layer(inputs))
 
         # Hidden Layers
         for hidden in self.hidden:

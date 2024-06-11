@@ -31,11 +31,8 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         
         # Input variables
         self.precp = ds['prcp']
-        # self.temp = ds['tmean']
-        # self.lday = ds['dayl']
-        
-        # print('precp.shape', self.precp.shape)
-        # aux = input('Press Enter to continue...')
+        self.temp = ds['tmean']
+        self.lday = ds['dayl']
         
         # Parameters per basin
         self.params_dict = self.get_parameters()
@@ -93,10 +90,10 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         self.temp_interp = self.interpolators[basin]['tmean']
         self.lday_interp = self.interpolators[basin]['dayl']
         
-        # # Get input variables for the basin
-        # self.precp_basin = self.precp.sel(basin=basin).values
-        # self.temp_basin = self.temp.sel(basin=basin).values
-        # self.lday_basin = self.lday.sel(basin=basin).values
+        # Get input variables for the basin
+        self.precp_basin = self.precp.sel(basin=basin).values
+        self.temp_basin = self.temp.sel(basin=basin).values
+        self.lday_basin = self.lday.sel(basin=basin).values
         
         # Set the initial conditions
         y0 = np.array([basin_params[0], basin_params[1]])
