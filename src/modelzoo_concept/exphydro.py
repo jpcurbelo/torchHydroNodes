@@ -8,13 +8,13 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
+import torch
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.utils.load_process_data import (
     Config,
     ExpHydroCommon,
 )
-
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 class ExpHydro(BaseConceptModel, ExpHydroCommon):
     
@@ -36,6 +36,8 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         
         # Parameters per basin
         self.params_dict = self.get_parameters()
+
+        self.eps = torch.finfo(cfg.precision['torch']).eps
         
     def conceptual_model(self, t, y, f, smax, qmax, df, tmax, tmin):
         
@@ -54,18 +56,40 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         s1 = y[1]
 
         # Interpolate the input variables
-        precp = self.precp_interp(t, extrapolate='periodic')
-        temp = self.temp_interp(t, extrapolate='periodic')
-        lday = self.lday_interp(t, extrapolate='periodic')
+        # precp = self.precp_interp(t, extrapolate='periodic')
+        # temp = self.temp_interp(t, extrapolate='periodic')
+        # lday = self.lday_interp(t, extrapolate='periodic')
+        precp = self.precp_interp(t, )
+        temp = self.temp_interp(t, )
+        lday = self.lday_interp(t, )
 
         # Compute and substitute the 5 mechanistic processes
         q_out = Qb(s1, f, smax, qmax, self.step_function) + Qs(s1, smax, self.step_function)
         m_out = M(s0, temp, df, tmax, self.step_function)
+
+        # print('s0', s0)
+        # print('s1', s1)
+        # print('f', f)
+        # print('Smax', smax)
+        # print('Qmax', qmax)
+        # print('Df', df)
+        # print('Tmax', tmax)
+        # print('Tmin', tmin)
+        # print('precp', precp)
+        # print('temp', temp)
+        # print('lday', lday)
+        # print('Q_out', q_out)
+        # print('M_out', m_out)
         
         # Eq 1 - Hoge_EtAl_HESS_2022
         ds0_dt = Ps(precp, temp, tmin, self.step_function) - m_out
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = Pr(precp, temp, tmin, self.step_function) + m_out - ET(s1, temp, lday, smax, self.step_function) - q_out
+
+        
+        # print('dS0_dt', ds0_dt, type(ds0_dt))
+        # print('dS1_dt', ds1_dt, type(ds1_dt))
+        # aux = input('Press Enter to continue...')
 
         return [ds0_dt, ds1_dt]
            
@@ -101,19 +125,28 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Set the parameters
         params = tuple(basin_params[2:])
 
+        # print('params:', params)
+        # print('y0:', y0)
+        # print('t_span:', (0, self.precp.shape[1] - 1))
+        # print('t_eval:', self.time_series)
+        # print('method:', self.odesmethod)
+
+        # aux = input("Press Enter to continue...")
+
         # Run the model
         y = sp_solve_ivp(self.conceptual_model, t_span=(0, self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
                          args=params, 
-                         method=self.odesmethod,
+                        #  method=self.odesmethod,
+                        method='LSODA',
                         #  method='DOP853',
-                        # rtol=1e-9, atol=1e-12,
+                        rtol=1e-9, atol=1e-12,
                     )
         
         # Extract snow and water series -> two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022
         s_snow = y.y[0]
         s_water = y.y[1]
-        s_snow = np.maximum(s_snow, 0)
-        s_water = np.maximum(s_water, 0)
+        # s_snow = np.maximum(s_snow, 0)
+        # s_water = np.maximum(s_water, 0)
 
         # Unpack the parameters to call the mechanistic processes
         f, smax, qmax, df, tmax, tmin = params
@@ -121,19 +154,19 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Calculate the mechanistic processes -> q_bucket, et_bucket, m_bucket, ps_bucket, pr_bucket
         # Discharge
         q_bucket = Qb(s_water, f, smax, qmax, self.step_function) + Qs(s_water, smax, self.step_function)
-        q_bucket = np.maximum(q_bucket, 0)
+        q_bucket = np.maximum(q_bucket, self.eps)
         # Evapotranspiration
         et_bucket = ET(s_water, self.temp_basin, self.lday_basin, smax, self.step_function)
-        et_bucket = np.maximum(et_bucket, 0)
+        et_bucket = np.maximum(et_bucket, self.eps)
         # Melting
         m_bucket = M(s_snow, self.temp_basin, df, tmax, self.step_function)
-        m_bucket = np.maximum(m_bucket, 0)
+        m_bucket = np.maximum(m_bucket, self.eps)
         # Precipitation as snow
         ps_bucket = Ps(self.precp_basin, self.temp_basin, tmin, self.step_function)
-        ps_bucket = np.maximum(ps_bucket, 0)
+        # ps_bucket = np.maximum(ps_bucket, 0)
         # Precipitation as rain
         pr_bucket = Pr(self.precp_basin, self.temp_basin, tmin, self.step_function)
-        pr_bucket = np.maximum(pr_bucket, 0)
+        # pr_bucket = np.maximum(pr_bucket, 0)
         
         # Mind this order for 'save_results' method - the last element is the target variable (q_obs)
         return s_snow, s_water, et_bucket, m_bucket, ps_bucket, pr_bucket, q_bucket
@@ -238,22 +271,25 @@ Pr = lambda p, temp, tmin, step_fct: step_fct(temp - tmin) * p
 # M = lambda temp, tmax, s0, df, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
 def M(s0, temp, df, tmax, step_fct):
     
-    if np.isscalar(temp) and np.isscalar(s0):
-        if temp > tmax and s0 > 0:
-            return  step_fct(np.minimum(s0, df * (temp - tmax)))
-        else:
-            return 0.0
-    else:
-        # If temp and s0 are arrays, perform element-wise calculation
-        result = np.zeros_like(temp)  # Initialize result array with zeros
+    # if np.isscalar(temp) and np.isscalar(s0):
+    #     if temp > tmax and s0 > 0:
+    #         return  step_fct(np.minimum(s0, df * (temp - tmax)))
+    #     else:
+    #         return 0.0
+    # else:
+    #     # If temp and s0 are arrays, perform element-wise calculation
+    #     result = np.zeros_like(temp)  # Initialize result array with zeros
         
-        # Check condition for each element of the arrays
-        condition = np.logical_and(temp > tmax, s0 > 0)
+    #     # Check condition for each element of the arrays
+    #     condition = np.logical_and(temp > tmax, s0 > 0)
 
-        # Calculate result for elements satisfying the condition
-        result[condition] = np.minimum(s0[condition], df * (temp[condition] - tmax))
+    #     # Calculate result for elements satisfying the condition
+    #     result[condition] = np.minimum(s0[condition], df * (temp[condition] - tmax))
 
-        return result
+    #     return result
+
+    return step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
+
 
 # Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
 ET = lambda s1, temp, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(temp, lday)  \

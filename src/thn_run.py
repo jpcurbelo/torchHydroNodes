@@ -179,21 +179,29 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     model_nn = get_nn_model(model_concept)
 
     print(f'-- Neural network model: {model_nn.__class__.__name__}')
+    # print(model_nn)
 
     # Load the neural network model state dictionary if cfg.nn_model_dir exists
     if cfg.nn_model_dir is not None:
+
+        print(f'-- Loading the neural network model state dictionary from {cfg.nn_model_dir}')
 
         pattern = 'pretrainer_*basins.pth'
         model_path = Path(project_dir) / 'data' / cfg.nn_model_dir / 'model_weights'
         # Find the file(s) matching the pattern
         matching_files = list(model_path.glob(pattern))
         model_file = matching_files[0]
+        # model_file = '1013500_modelM100_leakyrelu.pth'
+        print(f'-- Loading the model weights from {model_file}')
         # Load the neural network model state dictionary
         model_file = model_path / model_file
         # Load the state dictionary from the saved model
         state_dict = torch.load(model_file)
+        # print('state_dict:', state_dict)
         # Load the state dictionary into the model
         model_nn.load_state_dict(state_dict)
+
+    # aux = input("Press Enter to continue...")
 
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
@@ -242,7 +250,7 @@ def resume_training(run_dir: Path, epoch: int, gpu: int = None):
 
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
-# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre_testing.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 if __name__ == "__main__":

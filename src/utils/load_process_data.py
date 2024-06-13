@@ -683,6 +683,10 @@ class ExpHydroCommon:
                                 
                 # Get the variable values
                 var_values = self.dataset[var].sel(basin=basin).values
+
+                # print('self.time_series:', self.time_series)
+                # print('var_values:', var_values)
+                # aux = input("Press Enter to continue...")
                 
                 # Interpolate the variable values
                 interpolators[basin][var] = Akima1DInterpolator(self.time_series, var_values)
@@ -738,46 +742,32 @@ class ExpHydroCommon:
 
     def scale_target_vars(self, is_trainer=False):
        
-        epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
+        epsilon = 1e-16  # Small constant to avoid division by zero and log of zero
+
+        # print(self.dataset)
 
         # Scale the target variables
-        ## Psnow -> arcsinh
-        self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
-        # tensor_dict['ps_bucket'] = torch.asinh(tensor_dict['ps_bucket'])
-        ## Prain -> arcsinh
-        self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
-        # tensor_dict['pr_bucket'] = torch.asinh(tensor_dict['pr_bucket'])
-        ## M -> arcsinh
-        self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
-        # tensor_dict['m_bucket'] = torch.asinh(tensor_dict['m_bucket'])
-        ## ET -> log(ET / dayl)
-        # Retrieve ET and daylength values from the dataset
-        et_values = self.dataset['et_bucket'].values
-        dayl_values = self.dataset['dayl'].values
-        # Calculate the ratio while avoiding division by zero
-        et_dayl_ratio = np.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))
-        # Ensure no zero or negative values before applying log
-        et_dayl_ratio = np.where(et_dayl_ratio <= 0, epsilon, et_dayl_ratio)
-        # Apply the logarithm transformation
-        self.dataset['et_bucket'] = (('basin', 'date'), np.log(et_dayl_ratio))
-        # et_values = tensor_dict['et_bucket']
-        # dayl_values = tensor_dict['dayl']
-        # et_dayl_ratio = torch.where(dayl_values == 0, epsilon, et_values / (dayl_values + epsilon))
-        # tensor_dict['et_bucket'] = torch.log(torch.where(et_dayl_ratio == 0, epsilon, et_dayl_ratio))
-        ## Q -> log(Q)
-        if not is_trainer:
-            q_values = self.dataset['q_bucket'].values
-            self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
-            # q_values = tensor_dict['q_bucket']
-            # tensor_dict['q_bucket'] = torch.log(torch.where(q_values == 0, epsilon, q_values))
-        else:
+        if is_trainer:
             q_values = self.dataset['obs_runoff'].values
-            self.dataset['obs_runoff'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
-            # q_values = tensor_dict['obs_runoff']
-            # tensor_dict['obs_runoff'] = torch.log(torch.where(q_values == 0, epsilon, q_values))
+            # self.dataset['obs_runoff'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+            self.dataset['obs_runoff'] = (('basin', 'date'), np.log(q_values)) 
+        else:
+            ## Psnow -> arcsinh
+            self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
+            ## Prain -> arcsinh
+            self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
+            ## M -> arcsinh
+            self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
+            ## ET -> log(ET / dayl)
+            self.dataset['et_bucket'] = (('basin', 'date'), np.log(self.dataset['et_bucket'].values / self.dataset['dayl'].values))
+            ## Q -> log(Q)
+            q_values = self.dataset['q_bucket'].values
+            # self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+            self.dataset['q_bucket'] = (('basin', 'date'), np.log(q_values))  
 
-        return self.dataset
-        # return tensor_dict
+
+        # return self.dataset
+        # # return tensor_dict
 
     def scale_back_simulated(self, outputs, ds_basin, is_trainer=False):
         # Transfer outputs to CPU if necessary
@@ -820,7 +810,7 @@ class ExpHydroCommon:
         epsilon = 1e-10  # Small constant to avoid division by zero
         et_values = ds_basin['et_bucket'].values
         dayl_values = ds_basin['dayl'].values
-        et_bucket_values = np.exp(et_values) * (dayl_values + epsilon)  # Scale back using exp and dayl
+        et_bucket_values = np.exp(et_values) * dayl_values  # Scale back using exp and dayl
         ds_basin['et_bucket'] = xr.DataArray(et_bucket_values, dims=['date'])
         
         # Q -> log(Q)

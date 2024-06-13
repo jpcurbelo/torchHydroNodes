@@ -36,6 +36,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Parameters per basin
         self.params_dict = self.get_parameters()
+
+        if self.cfg.scale_target_vars:
+            self.scale_target_vars(is_trainer=True)
     
 
     def forward(self, inputs, basin):
@@ -76,9 +79,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # #  
         # #                )
         ode_solver = torchdiffeq.odeint
-        # S_sol = ode_solver(self.hydro_odes_M100, y0=S_ic, t=time_series, method='euler', rtol=1e-3, atol=1e-6) 
         y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
-        
+        # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
         
         # Update the state variables from the ODE solution
         s_snow_nn  = y[:, 0, 0]
@@ -141,15 +143,28 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # aux = input("Press Enter to continue...")
 
         # Compute ET from the pretrainer.nnmodel
-        inputs_nn = torch.stack([s0, s1, temp, precp], dim=-1)
+        # # inputs_nn = torch.stack([s0, s1, temp, precp], dim=-1)
+        inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
 
         basin = self.basin
         if not isinstance(basin, list):
             basin = [basin]
-        
+
         m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
         # m100_outputs = self.pretrainer.nnmodel(inputs_nn)[0]
-        # Target variables:  Psnow, M, Prain, ET and, Q
+
+        # print('inputs_nn', inputs_nn)
+        # print('t', t)
+        # print('s0', s0)
+        # print('s1', s1)
+        # print('precp', precp)
+        # print('temp', temp)
+        # print('lday', lday)
+        # print('m100_outputs.shape', m100_outputs.shape)
+        # print('m100_outputs', m100_outputs)
+        # aux = input("Press Enter to continue AAA...")
+
+        # Target variables:  Psnow, Prain, M, ET and, Q
         p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \
                                    m100_outputs[3], m100_outputs[4]
         
@@ -160,6 +175,14 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             m = torch.relu(self.step_function(s0) * torch.sinh(m))
             et = self.step_function(s1) * torch.exp(et) * lday
             q = self.step_function(s1) * torch.exp(q) 
+
+            # p_snow = torch.relu(torch.sinh(p_snow))
+            # p_rain = torch.relu(torch.sinh(p_rain))
+            # m = torch.relu(torch.sinh(m))
+            # et = torch.relu(torch.exp(et) * lday)
+            # q = torch.relu(torch.exp(q))
+
+    
 
         # # # Relu the Mechanism Quantities
         # # p_snow = torch.relu(p_snow)

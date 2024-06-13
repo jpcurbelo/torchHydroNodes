@@ -24,6 +24,10 @@ class BaseNNModel(nn.Module):
         self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'])
         self.torch_input_means = self.xarray_to_torch(self.scaler['ds_feature_mean'])
 
+        # print("self.torch_input_means", self.torch_input_means)
+        # print("self.torch_input_stds", self.torch_input_stds)
+        # aux = input("Press Enter to continue...")
+
         # Create the NN model
         self.create_layers()
 

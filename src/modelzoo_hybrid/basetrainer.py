@@ -156,14 +156,26 @@ class BaseHybridModelTrainer:
 
                 for dsp in self.ds_periods:
 
+                    # if dsp != 'ds_train':
+                    #     continue
+
                     period_name = dsp.split('_')[-1]
 
                     ds_period = getattr(self.model.pretrainer.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
+                    # print('dsp:', dsp)
+                    # print('ds_basin:', ds_basin)
+
+                    # aux = input("Press Enter to continue...")
+
                     time_series = ds_basin['date'].values
-                    # time_idx = torch.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_torch)
-                    time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
+                    # If the period is not ds_train, then shift the time series by the length of ds_train
+                    if dsp == 'ds_train':        
+                        time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
+                    else:
+                        time_idx = np.linspace(len(self.model.dataset['date'].values) - len(time_series), len(self.model.dataset['date'].values) - 1, len(time_series), dtype=self.model.data_type_np)
+
                     input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
 
                     # Add time_idx to the dataset, making sure to match the correct dimensions

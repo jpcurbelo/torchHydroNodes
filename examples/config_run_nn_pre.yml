@@ -24,6 +24,9 @@ nn_mech_targets:
 target_variables: 
   - obs_runoff
 
+
+scale_target_vars: True
+
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
@@ -47,13 +50,13 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 1000
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 128
+batch_size: -1
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -61,7 +64,7 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.001
+  initial: 0.01
   decay: 0.5
   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
@@ -100,7 +103,7 @@ log_n_basins:
   # 5
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 100
 
 # Metrics to use for evaluation (after training)
 metrics:

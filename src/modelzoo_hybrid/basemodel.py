@@ -29,9 +29,6 @@ class BaseHybridModel(nn.Module):
         else:
             self.odesmethod = 'RK23'
 
-        if self.cfg.scale_target_vars:
-            self.dataset = self.scale_target_vars(is_trainer=True)
-
         # Create the dataloader
         self.dataloader = self.pretrainer.create_dataloaders(is_trainer=True)
         self.num_batches = len(self.dataloader)

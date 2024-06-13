@@ -17,8 +17,8 @@ forcings:
 
 # Files to specify training, validation and test basins
 # basin_file: 25_basin_file.txt
-basin_file: 1_basin_file.txt
-# basin_file: 569_basin_file.txt
+# basin_file: 1_basin_file.txt
+basin_file: 569_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...

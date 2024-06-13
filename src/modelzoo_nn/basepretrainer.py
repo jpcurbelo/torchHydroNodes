@@ -78,9 +78,37 @@ class NNpretrainer(ExpHydroCommon):
         self.input_var_names = self.cfg.nn_dynamic_inputs
         self.output_var_names = self.cfg.nn_mech_targets
 
+
+        # et_values = self.dataset['et_bucket'].values
+        # q_values = self.dataset['q_bucket'].values
+        # m_values = self.dataset['m_bucket'].values
+        # ps_values = self.dataset['ps_bucket'].values
+        # pr_values = self.dataset['pr_bucket'].values
+
+        # print("self.ET_mech", et_values[:5], et_values[-5:])
+        # print("self.Q_mech", q_values[:5], q_values[-5:])
+        # print("self.M_mech", m_values[:5], m_values[-5:])
+        # print("self.P_snow", ps_values[:5], ps_values[-5:])
+        # print("self.P_rain", pr_values[:5], pr_values[-5:])
+
+
         # Scale the target variables
         if self.cfg.scale_target_vars:
-            self.dataset = self.scale_target_vars(is_trainer=False)
+            self.scale_target_vars(is_trainer=False)
+
+        # et_values = self.dataset['et_bucket'].values
+        # q_values = self.dataset['q_bucket'].values
+        # m_values = self.dataset['m_bucket'].values
+        # ps_values = self.dataset['ps_bucket'].values
+        # pr_values = self.dataset['pr_bucket'].values
+
+        # print("self.ET_mech", et_values[:5], et_values[-5:])
+        # print("self.Q_mech", q_values[:5], q_values[-5:])
+        # print("self.M_mech", m_values[:5], m_values[-5:])
+        # print("self.P_snow", ps_values[:5], ps_values[-5:])
+        # print("self.P_rain", pr_values[:5], pr_values[-5:])
+        
+        # aux = input("Press Enter to continue...")
 
         # Create the dataloader
         self.dataloader = self.create_dataloaders()
@@ -154,6 +182,8 @@ class NNpretrainer(ExpHydroCommon):
             tensor_dict['time_idx'] = time_idx
         else:
             input_var_names = self.input_var_names
+
+        # print("input_var_names:", input_var_names)
         
         input_tensors = [tensor_dict[var] for var in input_var_names]
         output_tensors = [tensor_dict[var] for var in self.output_var_names]
@@ -212,6 +242,9 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Move targets to the same device as predictions
                 targets = targets.to(self.device)
+
+                # print(predictions.shape, targets.shape)
+                # aux = input("Press Enter to continue...")
 
                 # Find the indices of NaNs in the predictions
                 nan_mask = torch.isnan(predictions)
@@ -307,13 +340,13 @@ class NNpretrainer(ExpHydroCommon):
                 if self.cfg.verbose and current_lr != new_lr:
                     print(f"Learning rate updated to {new_lr}")
 
-        # # Save the final model weights and plots
-        # if self.cfg.verbose:
-        #     print("-- Saving final model weights --")
-        # self.save_model()
-        # if self.cfg.verbose:
-        #     print("-- Saving final plots --")
-        # self.save_plots()
+        # Save the final model weights and plots
+        if self.cfg.verbose:
+            print("-- Saving final model weights --")
+        self.save_model()
+        if self.cfg.verbose:
+            print("-- Saving final plots --")
+        self.save_plots()
         if self.cfg.verbose:
             print("-- Evaluating the model --")
         self.evaluate()
