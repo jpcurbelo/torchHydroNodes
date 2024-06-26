@@ -68,6 +68,7 @@ class BaseNNModel(nn.Module):
             basin_values[basin.item()] = basin_data  # Store the basin's data in the dictionary
 
             # List to torch tensor
+            # print('self.device', self.device)
             basin_values[basin.item()] = torch.stack(basin_values[basin.item()], dim=0).reshape(1, -1).to(self.device)  
         
         return basin_values

@@ -11,6 +11,8 @@ from src.utils.metrics import (
     NSE_eval,
 )
 
+from src.utils.load_process_data import EarlyStopping
+
 
 class BaseHybridModelTrainer:
 
@@ -19,6 +21,7 @@ class BaseHybridModelTrainer:
         self.model = model
 
         self.target = self.model.cfg.concept_target[0]
+        # print('BaseHybridModelTrainer - self.target:', self.target)
         self.hybrid_model = (self.model.cfg.hybrid_model).lower()
         self.nnmodel = (self.model.pretrainer.nnmodel.__class__.__name__).lower()
         self.basins = self.model.dataset.basin.values
@@ -42,6 +45,8 @@ class BaseHybridModelTrainer:
             self.loss = torch.nn.MSELoss()
 
     def train(self):
+
+        early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
         if self.model.cfg.verbose:
             print("-- Training the hybrid model --")
@@ -67,10 +72,6 @@ class BaseHybridModelTrainer:
 
                 # Forward pass
                 q_sim = self.model(inputs, basin_ids[0])
-
-                # print('inputs:', inputs)
-                # print('targets:', targets[:, -1])
-                # print('q_sim:', q_sim)
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
@@ -103,6 +104,13 @@ class BaseHybridModelTrainer:
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
             pbar.close()
+
+            # Early stopping check
+            early_stopping(avg_loss)
+            if early_stopping.early_stop:
+                if self.model.cfg.verbose:
+                    print(f"Early stopping at epoch {epoch + 1} with loss {avg_loss:.4e}")
+                break
 
             if (epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0)):
                 if self.model.cfg.verbose:
@@ -174,7 +182,10 @@ class BaseHybridModelTrainer:
                     if dsp == 'ds_train':        
                         time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
                     else:
-                        time_idx = np.linspace(len(self.model.dataset['date'].values) - len(time_series), len(self.model.dataset['date'].values) - 1, len(time_series), dtype=self.model.data_type_np)
+                        time_series_test = getattr(self.model.pretrainer.fulldataset, dsp)['date'].values
+                        train_length = len(self.model.pretrainer.fulldataset.ds_train['date'].values)
+                        test_length = len(time_series_test)
+                        time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), dtype=self.model.data_type_np)
 
                     input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
 
@@ -188,6 +199,8 @@ class BaseHybridModelTrainer:
                     # Get the outputs from the hybrid model
                     outputs = self.model(inputs, basin)
 
+                    # print('outputs:', outputs)
+
                     # Scale back outputs
                     if self.model.cfg.scale_target_vars:
                         outputs = self.model.scale_back_simulated(outputs, ds_basin, is_trainer=True)
@@ -199,8 +212,12 @@ class BaseHybridModelTrainer:
                     # Get the simulated values in numpy format
                     y_sim = outputs.detach().cpu().numpy()
 
+                    # print('y_sim:', y_sim)
+
                     # Get the observed values
                     y_obs = ds_basin[self.target.lower()].values
+
+                    # print('y_obs:', y_obs)
 
                     # Plot the observed and predicted values
                     plt.figure(figsize=(10, 6))

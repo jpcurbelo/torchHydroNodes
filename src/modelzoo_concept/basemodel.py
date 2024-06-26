@@ -27,9 +27,6 @@ class BaseConceptModel:
         # Time series
         self.time_series = np.linspace(0, len(ds['date'].values) - 1, len(ds['date'].values))
         
-        # # Interpolators
-        # self.interpolators = self.create_interpolator_dict()
-        
     def conceptual_model(self, t, y, params):
         '''This function should implement the conceptual model to be used for the task'''
         raise NotImplementedError("This function has to be implemented by the child class")

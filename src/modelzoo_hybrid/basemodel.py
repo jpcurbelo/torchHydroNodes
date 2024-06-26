@@ -63,3 +63,4 @@ class BaseHybridModel(nn.Module):
     def train(self):
         '''This function should train the model'''
         raise NotImplementedError("This function has to be implemented by the child class")
+    

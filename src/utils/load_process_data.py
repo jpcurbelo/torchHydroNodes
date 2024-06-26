@@ -11,6 +11,7 @@ from torch.utils.data import Sampler, Dataset
 import random
 from scipy.interpolate import Akima1DInterpolator
 import xarray as xr
+import torch.nn as nn
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -62,6 +63,7 @@ def update_hybrid_cfg(cfg):
     cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
     cfg.hidden_size = cfg_nn['hidden_size']
     cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
+    cfg.target_variables = cfg_nn['target_variables']
 
 
     return cfg
@@ -406,6 +408,10 @@ class Config(object):
     def target_variables(self) -> list:
         return self._get_property_value("target_variables")
     
+    @target_variables.setter
+    def target_variables(self, value: list):
+        self._cfg['target_variables'] = value
+
     @property
     def concept_inputs(self) -> list:
         return self._get_property_value("concept_inputs")
@@ -542,6 +548,10 @@ class Config(object):
         return self._get_property_value("epochs", default=10)
     
     @property
+    def patience(self) -> int:
+        return self._get_property_value("patience", default=10)
+
+    @property
     def optimizer(self) -> str:
         return self._get_property_value("optimizer", default="Adam")
     
@@ -664,7 +674,7 @@ class BasinBatchSampler(Sampler):
 
 class ExpHydroCommon:
     
-    def create_interpolator_dict(self):
+    def create_interpolator_dict(self, is_trainer=False):
         '''
         Create interpolator functions for the input variables.
         
@@ -672,25 +682,28 @@ class ExpHydroCommon:
             interpolators: dict, dictionary with the interpolator functions for each basin and variable.
         '''
         
+        if is_trainer:
+            # Concatenate self. pretrainer.fulldataset.ds_train and self. pretrainer.fulldataset.ds_valid
+            dataset = xr.concat([self.pretrainer.fulldataset.ds_train, self.pretrainer.fulldataset.ds_valid], dim='date')
+            time_series = np.linspace(0, len(dataset['date'].values) - 1, len(dataset['date'].values))
+        else:
+            dataset = self.dataset
+            time_series = self.time_series
+
         # Create a dictionary to store interpolator functions for each basin and variable
         interpolators = dict()
         
         # Loop over the basins and variables
-        for basin in self.dataset['basin'].values:
+        for basin in dataset['basin'].values:
     
             interpolators[basin] = dict()
             for var in self.interpolator_vars:
                                 
                 # Get the variable values
-                var_values = self.dataset[var].sel(basin=basin).values
+                var_values = dataset[var].sel(basin=basin).values
 
-                # print('self.time_series:', self.time_series)
-                # print('var_values:', var_values)
-                # aux = input("Press Enter to continue...")
-                
                 # Interpolate the variable values
-                interpolators[basin][var] = Akima1DInterpolator(self.time_series, var_values)
-                # interpolators[basin][var] = CubicSpline(self.time_series, var_values, extrapolate='periodic')
+                interpolators[basin][var] = Akima1DInterpolator(time_series, var_values)
                 
         return interpolators
     
@@ -746,12 +759,17 @@ class ExpHydroCommon:
 
         # print(self.dataset)
 
+        # print('Scaling target variables...')
+
         # Scale the target variables
         if is_trainer:
+            # print('Scaling target variables for the trainer model...')
             q_values = self.dataset['obs_runoff'].values
             # self.dataset['obs_runoff'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
             self.dataset['obs_runoff'] = (('basin', 'date'), np.log(q_values)) 
+            # print("self.dataset['obs_runoff']", self.dataset['obs_runoff'])
         else:
+            # print('Scaling input variables for the pretrainer model...')
             ## Psnow -> arcsinh
             self.dataset['ps_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['ps_bucket'].values))
             ## Prain -> arcsinh
@@ -765,7 +783,6 @@ class ExpHydroCommon:
             # self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
             self.dataset['q_bucket'] = (('basin', 'date'), np.log(q_values))  
 
-
         # return self.dataset
         # # return tensor_dict
 
@@ -775,7 +792,9 @@ class ExpHydroCommon:
             outputs = outputs.cpu()
 
         # Scale back the output variables
-        if not is_trainer:
+        if is_trainer:
+            outputs = torch.exp(outputs)
+        else:
             # Psnow -> arcsinh
             outputs[:, 0] = torch.sinh(outputs[:, 0])
             # Prain -> arcsinh
@@ -785,9 +804,7 @@ class ExpHydroCommon:
             # ET -> log(ET / dayl)
             outputs[:, 3] = torch.exp(outputs[:, 3]) * torch.tensor(ds_basin.dayl.values, dtype=torch.float32)
             # Q -> log(Q)
-            outputs[:, 4] = torch.exp(outputs[:, 4])
-        else:
-            outputs = torch.exp(outputs)
+            outputs[:, 4] = torch.exp(outputs[:, 4])   
 
         return outputs
 
@@ -807,27 +824,145 @@ class ExpHydroCommon:
         ds_basin['m_bucket'] = xr.DataArray(m_values, dims=['date'])
 
         # ET -> log(ET / dayl)
-        epsilon = 1e-10  # Small constant to avoid division by zero
         et_values = ds_basin['et_bucket'].values
         dayl_values = ds_basin['dayl'].values
         et_bucket_values = np.exp(et_values) * dayl_values  # Scale back using exp and dayl
         ds_basin['et_bucket'] = xr.DataArray(et_bucket_values, dims=['date'])
         
         # Q -> log(Q)
-        if not is_trainer:
-            q_values = np.where(ds_basin['q_bucket'].values == 0, epsilon, ds_basin['q_bucket'].values)
-            q_bucket_values = np.exp(q_values)
-            ds_basin['q_bucket'] = xr.DataArray(q_bucket_values, dims=['date'])
-        else:
-            q_values = np.where(ds_basin['obs_runoff'].values == 0, epsilon, ds_basin['obs_runoff'].values)
-            q_bucket_values = np.exp(q_values)
+        if is_trainer:
+            q_bucket_values = np.exp(ds_basin['obs_runoff'].values)
             ds_basin['obs_runoff'] = xr.DataArray(q_bucket_values, dims=['date'])
+        else:
+            q_bucket_values = np.exp(ds_basin['q_bucket'].values)
+            ds_basin['q_bucket'] = xr.DataArray(q_bucket_values, dims=['date'])
 
         return ds_basin
 
     @property
     def interpolator_vars(self):
         return ['prcp', 'tmean', 'dayl']
+
+
+class ExpHydroODEs(nn.Module):
+    def __init__(self, 
+                # precp_series,
+                # tmean_series,
+                # lday_series,
+                # time_series,
+
+                precp_interp,
+                temp_interp,
+                lday_interp,
+                data_type_torch,
+                device,
+
+                scale_target_vars,
+                pretrainer,
+                basin,
+                step_function):
+        super(ExpHydroODEs, self).__init__()
+
+        # self.precp_series = precp_series
+        # self.tmean_series = tmean_series
+        # self.lday_series = lday_series
+        # self.time_series = time_series
+
+        self.precp_interp = precp_interp
+        self.temp_interp = temp_interp
+        self.lday_interp = lday_interp
+        self.data_type_torch = data_type_torch
+        self.device = device
+
+        self.scale_target_vars = scale_target_vars
+        self.pretrainer = pretrainer
+        self.basin = basin
+        self.step_function = step_function
+
+    def forward(self, t, y):
+         
+        ## Unpack the state variables
+        # S0: Storage state S_snow (t)                       
+        # S1: Storage state S_water (t)   
+        s0 = y[..., 0] #.to(self.device)
+        s1 = y[..., 1] #.to(self.device)
+
+        # # Find left index for the interpolation
+        # idx = torch.searchsorted(self.time_series, t, side='right') - 1
+        # idx = idx.clamp(max=self.time_series.size(0) - 2)  # Ensure indices do not exceed valid range
+
+        # # Linear interpolation
+        # precp = self.precp_series[idx] + (self.precp_series[idx + 1] - self.precp_series[idx]) \
+        #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx]).unsqueeze(0)
+        # temp = self.tmean_series[idx] + (self.tmean_series[idx + 1] - self.tmean_series[idx]) \
+        #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx]).unsqueeze(0)
+        # lday = self.lday_series[idx] + (self.lday_series[idx + 1] - self.lday_series[idx]) \
+        #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx])
+
+        # Interpolate the input variables
+        t = t.detach().cpu().numpy()
+        precp = self.precp_interp(t, extrapolate='periodic')
+        temp = self.temp_interp(t, extrapolate='periodic')
+        lday = self.lday_interp(t, extrapolate='periodic')
+
+        # Convert to tensor
+        precp = torch.tensor(precp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
+        temp = torch.tensor(temp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
+        lday = torch.tensor(lday, dtype=self.data_type_torch)
+        
+        # Compute ET from the pretrainer.nnmodel
+        inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
+
+        basin = self.basin
+        if not isinstance(basin, list):
+            basin = [basin]
+
+        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
+
+        # Target variables:  Psnow, Prain, M, ET and, Q
+        p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \
+                                   m100_outputs[3], m100_outputs[4]
+        
+        # Scale back to original values for the ODEs and Relu the Mechanism Quantities    
+        if self.scale_target_vars:
+            p_snow = torch.relu(torch.sinh(p_snow) * self.step_function(-temp[0]))
+            p_rain = torch.relu(torch.sinh(p_rain))
+            m = torch.relu(self.step_function(s0) * torch.sinh(m))
+            et = self.step_function(s1) * torch.exp(et) * lday
+            q = self.step_function(s1) * torch.exp(q) 
+
+        # Eq 1 - Hoge_EtAl_HESS_2022
+        ds0_dt = p_snow - m
+
+        # Eq 2 - Hoge_EtAl_HESS_2022
+        ds1_dt = p_rain + m - et - q
+
+        return torch.stack([ds0_dt, ds1_dt], dim=-1)
+
+
+class EarlyStopping:
+    def __init__(self, patience=5, min_delta=1e-4):
+        """
+        Args:
+            patience (int): How many epochs to wait after last time the monitored metric improved.
+            min_delta (float): Minimum change to qualify as an improvement.
+        """
+        self.patience = patience
+        self.min_delta = min_delta
+        self.best_loss = None
+        self.counter = 0
+        self.early_stop = False
+
+    def __call__(self, current_loss):
+        if self.best_loss is None:
+            self.best_loss = current_loss
+        elif current_loss < self.best_loss - self.min_delta:
+            self.best_loss = current_loss
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                self.early_stop = True
 
 
 if __name__ == "__main__":

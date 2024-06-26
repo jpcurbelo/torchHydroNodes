@@ -75,40 +75,14 @@ class NNpretrainer(ExpHydroCommon):
             self.num_workers = 8
 
         # Input/output variables
-        self.input_var_names = self.cfg.nn_dynamic_inputs
+        self.input_var_names = self.cfg.nn_dynamic_inputs + ['dayl']
+        print('self.input_var_names:', self.input_var_names)
         self.output_var_names = self.cfg.nn_mech_targets
-
-
-        # et_values = self.dataset['et_bucket'].values
-        # q_values = self.dataset['q_bucket'].values
-        # m_values = self.dataset['m_bucket'].values
-        # ps_values = self.dataset['ps_bucket'].values
-        # pr_values = self.dataset['pr_bucket'].values
-
-        # print("self.ET_mech", et_values[:5], et_values[-5:])
-        # print("self.Q_mech", q_values[:5], q_values[-5:])
-        # print("self.M_mech", m_values[:5], m_values[-5:])
-        # print("self.P_snow", ps_values[:5], ps_values[-5:])
-        # print("self.P_rain", pr_values[:5], pr_values[-5:])
-
+        self.target = self.cfg.target_variables[0]
 
         # Scale the target variables
         if self.cfg.scale_target_vars:
             self.scale_target_vars(is_trainer=False)
-
-        # et_values = self.dataset['et_bucket'].values
-        # q_values = self.dataset['q_bucket'].values
-        # m_values = self.dataset['m_bucket'].values
-        # ps_values = self.dataset['ps_bucket'].values
-        # pr_values = self.dataset['pr_bucket'].values
-
-        # print("self.ET_mech", et_values[:5], et_values[-5:])
-        # print("self.Q_mech", q_values[:5], q_values[-5:])
-        # print("self.M_mech", m_values[:5], m_values[-5:])
-        # print("self.P_snow", ps_values[:5], ps_values[-5:])
-        # print("self.P_rain", pr_values[:5], pr_values[-5:])
-        
-        # aux = input("Press Enter to continue...")
 
         # Create the dataloader
         self.dataloader = self.create_dataloaders()
@@ -180,13 +154,23 @@ class NNpretrainer(ExpHydroCommon):
             time_idx = time_idx.repeat(self.cfg.number_of_basins, 1)
             input_var_names = self.input_var_names + ['time_idx'] 
             tensor_dict['time_idx'] = time_idx
+            # Substitute the last of the output variables with the target variable
+            output_var_names = self.output_var_names[:-1] + [self.target]
+
+            # Scale self.target variable
+            if self.cfg.scale_target_vars:
+                tensor_dict[self.target] = np.log(tensor_dict[self.target])
+
         else:
             input_var_names = self.input_var_names
+            output_var_names = self.output_var_names
 
-        # print("input_var_names:", input_var_names)
+        # print('is_trainer:', is_trainer)
+        # print('input_var_names:', input_var_names)
+        # print('output_var_names:', output_var_names)
         
         input_tensors = [tensor_dict[var] for var in input_var_names]
-        output_tensors = [tensor_dict[var] for var in self.output_var_names]
+        output_tensors = [tensor_dict[var] for var in output_var_names]
 
         # Keep basin IDs as a list of strings
         num_dates = len(self.dataset.date)
@@ -195,7 +179,7 @@ class NNpretrainer(ExpHydroCommon):
         # Ensure input and output tensors are wrapped into single composite tensors if needed
         input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
             len(input_tensors) > 1 else input_tensors[0].view(-1, 1)
-        output_tensor = torch.stack(output_tensors, dim=2).view(-1, len(self.output_var_names)) if \
+        output_tensor = torch.stack(output_tensors, dim=2).view(-1, len(output_var_names)) if \
             len(output_tensors) > 1 else output_tensors[0].view(-1, 1)
 
         # Ensure that the number of samples (first dimension) is the same across all tensors
@@ -207,11 +191,12 @@ class NNpretrainer(ExpHydroCommon):
         pin_memory = True if 'cuda' in str(self.device) else False
 
         # Create custom batch sampler
-        if is_trainer:
-            batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
-        else:
-            batch_sampler = BatchSampler(len(dataset), self.batch_size, shuffle=False)
-            # batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
+        batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
+        # if is_trainer:
+        #     batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
+        # else:
+        #     batch_sampler = BatchSampler(len(dataset), self.batch_size, shuffle=False)
+        #     # batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
 
         # Create DataLoader with custom batch sampler
         dataloader = DataLoader(dataset, batch_sampler=batch_sampler, 
@@ -399,7 +384,7 @@ class NNpretrainer(ExpHydroCommon):
                     ds_basin = ds_period.sel(basin=basin)
 
                     inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
-                        for var in self.input_var_names], dim=0).t().to(self.device)
+                                for var in self.input_var_names], dim=0).t().to(self.device)
 
                     basin_list = [basin for _ in range(inputs.shape[0])]
                     outputs = self.nnmodel(inputs, basin_list)
@@ -473,7 +458,7 @@ class NNpretrainer(ExpHydroCommon):
                 ds_basin = ds_period.sel(basin=basin)
                 
                 inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0)
-                                    for var in self.input_var_names], dim=0).t().to(self.device)
+                            for var in self.input_var_names], dim=0).t().to(self.device)
                 
                 basin_list = [basin for _ in range(inputs.shape[0])]
                 outputs = self.nnmodel(inputs, basin_list)

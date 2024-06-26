@@ -214,7 +214,6 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     # Train the model
     trainer.train()
 
-
 def evaluate_model(run_dir: Path, period: str, gpu: int=None, 
                    config_file=None, model='pretrainer', epoch: int=-1):
 
@@ -251,6 +250,7 @@ def resume_training(run_dir: Path, epoch: int, gpu: int = None):
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster1.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 if __name__ == "__main__":

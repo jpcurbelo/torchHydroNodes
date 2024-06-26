@@ -418,8 +418,10 @@ class NSEloss(nn.Module):
         # y_true = torch.exp(y_true)
         # y_pred = torch.exp(y_pred)
 
-        loss = torch.sum(torch.square(y_true - y_pred)) \
-            / (torch.sum(torch.square(y_true - torch.mean(y_true))) + 1e-16) - 1.0
+        numerator = torch.sum(torch.square(y_true - y_pred))
+        denominator = torch.sum(torch.square(y_true - torch.mean(y_true))) + np.finfo(float).eps
+
+        loss = numerator / denominator - 1.0
         
         return loss
 

@@ -10,12 +10,14 @@ import sys
 import torch.nn as nn
 ## https://github.com/rtqichen/torchdiffeq/tree/master
 import torchdiffeq
+import time
 
 from src.modelzoo_hybrid.basemodel import BaseHybridModel
 from src.modelzoo_nn.basepretrainer import NNpretrainer
 from src.utils.load_process_data import (
     Config,
     ExpHydroCommon,
+    ExpHydroODEs,
 )
 
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
@@ -32,7 +34,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         nn.Module.__init__(self)  # Initialize nn.Module
 
         # Interpolators
-        self.interpolators = self.create_interpolator_dict()
+        self.interpolators = self.create_interpolator_dict(is_trainer=True)
 
         # Parameters per basin
         self.params_dict = self.get_parameters()
@@ -45,9 +47,14 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         s_snow = inputs[:, 0]
         s_water = inputs[:, 1]
-        tmean_series = inputs[:, 2]
-        precp_series = inputs[:, 3]
-        time_series = inputs[:, 4]
+        self.precp_series = inputs[:, 2]
+        self.tmean_series = inputs[:, 3]
+        self.lday_series = inputs[:, 4]
+        self.time_series = inputs[:, 5]
+
+        # print('precp_series', self.precp_series, self.precp_series.device)
+        # print('tmean_series', self.tmean_series, self.tmean_series.device)
+        # print('time_series', self.time_series, self.time_series.device)
 
         # Make basin global to be used in hybrid_model
         self.basin = basin
@@ -59,28 +66,40 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         self.lday_interp = self.interpolators[self.basin]['dayl']
 
         # Set the initial conditions
-        # # y0 = np.array([basin_params[0], basin_params[1]])
-        # y0 = torch.stack([torch.tensor(basin_params[0], dtype=self.data_type_torch), torch.tensor(basin_params[1], dtype=self.data_type_torch)], dim=-1)
         y0 = torch.stack([s_snow[0], s_water[0]], dim=0).unsqueeze(0)
 
-        # # Set the parameters
-        # params = tuple(basin_params[2:]) + (self.basin,)
+        # # Profile the ODE solver
+        # time_start = time.time()
 
-        # # Move tensors to CPU and convert to numpy
-        # time_series_cpu = time_series.cpu().numpy()
-        # precp_series_cpu = precp_series.cpu().numpy()
+        # ode_solver = torchdiffeq.odeint
+        # y = ode_solver(self.hybrid_model, y0=y0, t=self.time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
+        # # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
 
-        # Now use the CPU-based numpy arrays
-        # # y = sp_solve_ivp(self.hybrid_model, t_span=(time_series_cpu[0], time_series_cpu[-1]), y0=y0, t_eval=time_series_cpu, 
-        # #                 args=params, 
-        # #                 method=self.odesmethod,
-        # #                 # method='DOP853',
-        # #                 # rtol=1e-9, atol=1e-12,
-        # #  
-        # #                )
-        ode_solver = torchdiffeq.odeint
-        y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
-        # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
+        # Initialize your hybrid model and ODE solver
+        # ode_solver =  torchdiffeq.odeint_adjoint
+        ode_solver =  torchdiffeq.odeint
+        hybrid_model = ExpHydroODEs(
+            # self.precp_series,
+            # self.tmean_series,
+            # self.lday_series,
+            # self.time_series,
+
+            self.precp_interp,
+            self.temp_interp,
+            self.lday_interp,
+            self.data_type_torch,
+            self.device,
+
+            self.scale_target_vars,
+            self.pretrainer,
+            self.basin,
+            self.step_function
+        )
+        # y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
+        y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method='rk4', rtol=1e-4, atol=1e-4)
+
+        # print(f'Time taken for ODE solver: {round(time.time() - time_start, 2)} seconds')
+        # aux = input("Press Enter to continue...")
         
         # Update the state variables from the ODE solution
         s_snow_nn  = y[:, 0, 0]
@@ -96,7 +115,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # print(s_snow_new.device, s_water_new.device, tmean_series_tensor.device, precp_series_tensor.device)
 
         # Stack tensors to create inputs for the neural network
-        inputs_nn = torch.stack([s_snow_nn, s_water_nn, tmean_series, precp_series], dim=-1)
+        inputs_nn = torch.stack([s_snow_nn, s_water_nn, self.precp_series, self.tmean_series], dim=-1)
 
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
         # Assuming nnmodel returns a tensor of shape (batch_size, numOfVars)
@@ -114,36 +133,38 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # # Flush time
         # sys.stdout.write(f"t \r{t}")
         # sys.stdout.flush()
-        # # print((f"t \r{t}"))
-
-        # print('y.device:', y.device)
          
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       
         # S1: Storage state S_water (t)   
-        # # y = torch.tensor(y, dtype=self.data_type_torch)
-        # s0 = y[0].unsqueeze(0).to(self.device)
-        # s1 = y[1].unsqueeze(0).to(self.device)
         s0 = y[..., 0] #.to(self.device)
         s1 = y[..., 1] #.to(self.device)
 
         # Interpolate the input variables
-        t = t.detach().cpu().numpy()
-        precp = self.precp_interp(t, extrapolate='periodic')
-        temp = self.temp_interp(t, extrapolate='periodic')
-        lday = self.lday_interp(t, extrapolate='periodic')
+        t_np = t.detach().cpu().numpy()
+        precp = self.precp_interp(t_np, extrapolate='periodic')
+        temp = self.temp_interp(t_np, extrapolate='periodic')
+        lday = self.lday_interp(t_np, extrapolate='periodic')
 
         # Convert to tensor
-        precp = torch.tensor(precp, dtype=self.data_type_torch).unsqueeze(0) #.to(self.device)
-        temp = torch.tensor(temp, dtype=self.data_type_torch).unsqueeze(0) #.to(self.device)
+        precp = torch.tensor(precp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
+        temp = torch.tensor(temp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
         lday = torch.tensor(lday, dtype=self.data_type_torch)
 
-        # print('precp.device:', precp.device)
-        # print('temp.device:', temp.device)
-        # aux = input("Press Enter to continue...")
+        # # Find left index for the interpolation
+        # idx = torch.searchsorted(self.time_series, t, side='right') - 1
+        # idx = idx.clamp(max=self.time_series.size(0) - 2)  # Ensure indices do not exceed valid range
+
+        # # Linear interpolation
+        # precp = self.precp_series[idx] + (self.precp_series[idx + 1] - self.precp_series[idx]) \
+        #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx]).unsqueeze(0)
+        # temp = self.tmean_series[idx] + (self.tmean_series[idx + 1] - self.tmean_series[idx]) \
+        #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx]).unsqueeze(0)
+        # lday = self.lday_series[idx] + (self.lday_series[idx + 1] - self.lday_series[idx]) \
+        #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx])
+        
 
         # Compute ET from the pretrainer.nnmodel
-        # # inputs_nn = torch.stack([s0, s1, temp, precp], dim=-1)
         inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
 
         basin = self.basin
