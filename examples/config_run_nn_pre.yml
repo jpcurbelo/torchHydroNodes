@@ -2,7 +2,8 @@
 # Conceptual model to use [exphydro, ...
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
-nn_model: mlp
+# NN model to use [mlp, lstm]
+nn_model: lstm
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -30,8 +31,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-basin_file: 1_basin_fileC1.txt
-# basin_file: 4_basin_file.txt
+# basin_file: 1_basin_file.txt
+basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
 # n_random_basins: 100
@@ -50,14 +51,17 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 1000
+epochs: 100
 
-# # If a value, clips the gradients during training to that norm.
-# clip_gradient_norm: 1.0
+# If a value, clips the gradients during training to that norm.
+clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 7304
-# batch_size: 128
+# batch_size: 7304
+batch_size: 128
+
+# Length of the input sequence
+seq_length: 270
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -65,7 +69,7 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.01
+  initial: 0.001
   decay: 0.5
   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
@@ -76,11 +80,14 @@ hidden_size:
   - 32
   - 32
   - 32
+  # - 64
+  # - 64
+  # - 64
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 100_basins_pretrainer_run
-experiment_name: C1_basins_pretrainer_run
+experiment_name: 4_basin_pretrainer_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
@@ -99,14 +106,14 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 1
+log_n_basins: 4
   # - 1013500
   # - 6431500
   # - 1022500
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

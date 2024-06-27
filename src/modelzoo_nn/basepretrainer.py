@@ -142,10 +142,6 @@ class NNpretrainer(ExpHydroCommon):
         # Convert xarray DataArrays to PyTorch tensors and store in a dictionary
         tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
 
-        # # If scale_target_vars: True
-        # if self.cfg.scale_target_vars:
-        #     tensor_dict = self.scale_target_vars(tensor_dict, is_trainer)
-
         # Create a list of input and output tensors based on the variable names
         if is_trainer:
             time_series = self.dataset['date'].values
@@ -164,10 +160,6 @@ class NNpretrainer(ExpHydroCommon):
         else:
             input_var_names = self.input_var_names
             output_var_names = self.output_var_names
-
-        # print('is_trainer:', is_trainer)
-        # print('input_var_names:', input_var_names)
-        # print('output_var_names:', output_var_names)
         
         input_tensors = [tensor_dict[var] for var in input_var_names]
         output_tensors = [tensor_dict[var] for var in output_var_names]
@@ -176,11 +168,34 @@ class NNpretrainer(ExpHydroCommon):
         num_dates = len(self.dataset.date)
         basin_ids = [basin for basin in self.basins for _ in range(num_dates)]
 
-        # Ensure input and output tensors are wrapped into single composite tensors if needed
-        input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
-            len(input_tensors) > 1 else input_tensors[0].view(-1, 1)
-        output_tensor = torch.stack(output_tensors, dim=2).view(-1, len(output_var_names)) if \
-            len(output_tensors) > 1 else output_tensors[0].view(-1, 1)
+        # # Ensure input and output tensors are wrapped into single composite tensors if needed
+        # input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
+        #     len(input_tensors) > 1 else input_tensors[0].view(-1, 1)
+        # output_tensor = torch.stack(output_tensors, dim=2).view(-1, len(output_var_names)) if \
+        #     len(output_tensors) > 1 else output_tensors[0].view(-1, 1)
+
+        if self.cfg.nn_model == 'lstm':
+            # Create sequences
+            input_tensor = torch.stack(input_tensors, dim=2).permute(1, 0, 2)  # Shape: [num_dates, num_basins, num_vars]
+            output_tensor = torch.stack(output_tensors, dim=2).permute(1, 0, 2)  # Shape: [num_dates, num_basins, num_vars]
+
+            # Convert to sequences
+            input_sequences, output_sequences, sequence_basin_ids = [], [], []
+            for i in range(input_tensor.size(1)):  # Iterate over basins
+                for j in range(0, num_dates - self.cfg.seq_length + 1):  # Create sequences
+                    input_sequences.append(input_tensor[j:j + self.cfg.seq_length, i, :])
+                    output_sequences.append(output_tensor[j + self.cfg.seq_length - 1, i, :])
+                    sequence_basin_ids.append(basin_ids[i * num_dates + j])
+
+            input_tensor = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_vars]
+            output_tensor = torch.stack(output_sequences)  # Shape: [num_sequences, num_output_vars]
+            basin_ids = sequence_basin_ids
+
+        elif self.cfg.nn_model == 'mlp':
+            input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
+                len(input_tensors) > 1 else input_tensors[0].view(-1, 1)
+            output_tensor = torch.stack(output_tensors, dim=2).view(-1, len(output_var_names)) if \
+                len(output_tensors) > 1 else output_tensors[0].view(-1, 1)
 
         # Ensure that the number of samples (first dimension) is the same across all tensors
         assert input_tensor.shape[0] == output_tensor.shape[0] == len(basin_ids), "Size mismatch between tensors"
@@ -192,11 +207,6 @@ class NNpretrainer(ExpHydroCommon):
 
         # Create custom batch sampler
         batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
-        # if is_trainer:
-        #     batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
-        # else:
-        #     batch_sampler = BatchSampler(len(dataset), self.batch_size, shuffle=False)
-        #     # batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
 
         # Create DataLoader with custom batch sampler
         dataloader = DataLoader(dataset, batch_sampler=batch_sampler, 
@@ -419,11 +429,34 @@ class NNpretrainer(ExpHydroCommon):
                     ds_period = getattr(self.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
-                    inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
-                                for var in self.input_var_names], dim=0).t().to(self.device)
+                    # inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
+                    #             for var in self.input_var_names], dim=0).t().to(self.device)
 
-                    basin_list = [basin for _ in range(inputs.shape[0])]
-                    outputs = self.nnmodel(inputs, basin_list)
+                    # if self.cfg.nn_model == 'lstm':
+                    #     # For LSTM, create sequences
+                    #     seq_length = self.cfg.seq_length
+                    #     input_sequences = []
+                    #     for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
+                    #         input_sequences.append(inputs[j:j + seq_length, :])
+                    #     inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
+
+                    # basin_list = [basin for _ in range(inputs.shape[0])]
+                    # outputs = self.nnmodel(inputs, basin_list)
+
+                    # # Ensure outputs are on CPU
+                    # outputs = outputs.cpu().detach()
+
+                    # if self.cfg.nn_model == 'lstm':
+                    #     # For LSTM, fill the first seq_length - 1 values with NaNs
+                    #     # outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan, \
+                    #     #                                 device=outputs.device), outputs], dim=0)
+                    #     outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+
+                    # Get model outputs
+                    outputs = get_model_outputs(ds_basin, self.input_var_names, 
+                                                self.device, self.cfg.nn_model, 
+                                                self.nnmodel, basin, 
+                                                self.cfg.seq_length)
 
                     # Scale back outputs
                     if self.cfg.scale_target_vars:
@@ -432,7 +465,7 @@ class NNpretrainer(ExpHydroCommon):
                         # If period is ds_train, also scale back the observed variables
                         if dsp == 'ds_train':
                             ds_basin = self.scale_back_observed(ds_basin)
-                    
+
                     # Save the results as a CSV file
                     period_name = dsp.split('_')[-1]
 
@@ -469,8 +502,11 @@ class NNpretrainer(ExpHydroCommon):
                         else:
                             plt.savefig(basin_dir / f'{var}_{basin}_{period_name}.png', dpi=75)
                         plt.close('all')
+
+                # Clear CUDA cache to free memory
+                torch.cuda.empty_cache()
             
-            pbar_basins.close()
+        pbar_basins.close()
 
     def evaluate(self):
         # Extract keys that start with 'ds_'
@@ -493,12 +529,26 @@ class NNpretrainer(ExpHydroCommon):
                 
                 ds_basin = ds_period.sel(basin=basin)
                 
-                inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0)
-                            for var in self.input_var_names], dim=0).t().to(self.device)
+                # inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0)
+                #             for var in self.input_var_names], dim=0).t().to(self.device)
                 
-                basin_list = [basin for _ in range(inputs.shape[0])]
-                outputs = self.nnmodel(inputs, basin_list)
-                
+                # basin_list = [basin for _ in range(inputs.shape[0])]
+                # outputs = self.nnmodel(inputs, basin_list)
+
+                # Get model outputs
+                outputs = get_model_outputs(ds_basin, self.input_var_names, 
+                                            self.device, self.cfg.nn_model, 
+                                            self.nnmodel, basin, 
+                                            self.cfg.seq_length)
+
+                # Scale back outputs
+                if self.cfg.scale_target_vars:
+                    outputs = self.scale_back_simulated(outputs, ds_basin)
+
+                    # If period is ds_train, also scale back the observed variables
+                    if dsp == 'ds_train':
+                        ds_basin = self.scale_back_observed(ds_basin)
+            
                 # Always the last variable in the list -> target variable
                 y_obs = ds_basin[self.output_var_names[-1].lower()].values
                 y_bucket = outputs[:, -1].detach().cpu().numpy()
@@ -527,3 +577,26 @@ class NNpretrainer(ExpHydroCommon):
             # Save the results to a CSV file
             df_results.to_csv(output_file_path, index=False)
 
+
+def get_model_outputs(ds_basin, input_var_names, device, nn_model, nnmodel, basin, seq_length):
+    # Prepare inputs
+    inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], dim=0).t().to(device)
+
+    if nn_model == 'lstm':
+        # For LSTM, create sequences
+        input_sequences = []
+        for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
+            input_sequences.append(inputs[j:j + seq_length, :])
+        inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
+
+    basin_list = [basin for _ in range(inputs.shape[0])]
+    outputs = nnmodel(inputs, basin_list)
+
+    # Ensure outputs are on CPU
+    outputs = outputs.cpu().detach()
+
+    if nn_model == 'lstm':
+        # For LSTM, fill the first seq_length - 1 values with NaNs
+        outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+
+    return outputs

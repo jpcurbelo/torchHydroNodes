@@ -512,6 +512,14 @@ class Config(object):
         self._cfg['hidden_size'] = value
 
     @property
+    def seq_length(self) -> int:
+        return self._get_property_value("seq_length", default=365)
+
+    @property
+    def dropout(self) -> float:
+        return self._get_property_value("dropout", default=0.0)
+
+    @property
     def run_dir(self) -> Path:
         return self._get_property_value("run_dir")
     
@@ -795,6 +803,8 @@ class ExpHydroCommon:
 
             # Optionally replace -inf values with a defined minimum value or handle them as needed
             log_values = np.where(np.isinf(log_values), -1/epsilon, log_values)
+
+            self.dataset['et_bucket'] = (('basin', 'date'), log_values)
 
             ## Q -> log(Q)
             # q_values = self.dataset['q_bucket'].values

@@ -21,7 +21,8 @@ def NSE_eval(y_true, y_pred):
     .. [#] Nash, J. E.; Sutcliffe, J. V. (1970). "River flow forecasting through conceptual models part I - A 
         discussion of principles". Journal of Hydrology. 10 (3): 282-290. doi:10.1016/0022-1694(70)90255-6.
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     numerator = np.sum(np.square(y_true - y_pred))
     denominator = np.sum(np.square(y_true - np.mean(y_true))) + np.finfo(float).eps
 
@@ -46,7 +47,8 @@ def alphaNSE_eval(y_true, y_pred):
         and NSE performance criteria: Implications for improving hydrological modelling. Journal of hydrology, 377(1-2),
         80-91.
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     return y_pred.std() / y_true.std()
 
 def betaNSE_eval(y_true, y_pred):
@@ -65,8 +67,9 @@ def betaNSE_eval(y_true, y_pred):
     .. [#] Gupta, H. V., Kling, H., Yilmaz, K. K., & Martinez, G. F. (2009). Decomposition of the mean squared error 
         and NSE performance criteria: Implications for improving hydrological modelling. Journal of hydrology, 377(1-2),
         80-91.
-    '''
-    
+    '''  
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     return y_pred.mean() / y_true.mean()
 
 def FHV_eval(y_true, y_pred, h=0.02):
@@ -87,8 +90,9 @@ def FHV_eval(y_true, y_pred, h=0.02):
         evaluation: Application to the NWS distributed hydrologic model, Water Resour. Res., 44, W09417, 
         doi:10.1029/2007WR006716. 
         
-    '''
-    
+    ''' 
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
     
@@ -129,7 +133,8 @@ def FMS_eval(y_true, y_pred, lower: float = 0.2, upper: float = 0.7):
         evaluation: Application to the NWS distributed hydrologic model, Water Resour. Res., 44, W09417,
         doi:10.1029/2007WR006716.
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
     
@@ -169,7 +174,8 @@ def FLV_eval(y_true, y_pred, l=0.3):
         evaluation: Application to the NWS distributed hydrologic model, Water Resour. Res., 44, W09417, 
         doi:10.1029/2007WR006716.     
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
     
@@ -216,7 +222,8 @@ def KGE_eval(y_true, y_pred, weights = [1., 1., 1.]):
         and NSE performance criteria: Implications for improving hydrological modelling. Journal of hydrology, 377(1-2),
         80-91.
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
 
@@ -253,7 +260,8 @@ def betaKGE_eval(y_true, y_pred):
         80-91.
         
     '''
-        
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     return y_pred.mean() / y_true.mean()
 
 def MEAN_PEAK_TIMING_eval(y_true, y_pred, dates, window=3, resolution='1D'):
@@ -276,7 +284,8 @@ def MEAN_PEAK_TIMING_eval(y_true, y_pred, dates, window=3, resolution='1D'):
         meteorological datasets with deep learning for rainfall-runoff modeling, Hydrol. Earth Syst. Sci. Discuss., 
         https://doi.org/10.5194/hess-2020-221, in review, 2020.         
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
     dates = dates.flatten()
@@ -336,7 +345,8 @@ def MEAN_PEAK_MAPE_eval(y_true, y_pred):
         peak_mape: float, mean absolute percentage peak error
         
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     y_true = y_true.flatten()
     y_pred = y_pred.flatten()
     
@@ -370,7 +380,8 @@ def PEARSON_R_eval(y_true, y_pred):
     - Returns:
         corr: float, Pearson correlation coefficient
     '''
-    
+    y_true, y_pred = remove_nans(y_true, y_pred)
+
     corr, _ = stats.pearsonr(y_true.flatten(), y_pred.flatten())
     
     return corr
@@ -394,6 +405,25 @@ def compute_all_metrics(y_true, y_pred, dates, metrics):
     
     return metrics_dict
 
+def remove_nans(y_true, y_pred):
+    """
+    Remove NaNs from both the true and predicted arrays.
+    
+    Args:
+        y_true (np.ndarray): Array of true values.
+        y_pred (np.ndarray): Array of predicted values.
+        
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Tuple containing the arrays of true and predicted values with NaNs removed.
+    """
+    # Find the indices where true values are not NaN
+    idx = np.where(~np.isnan(y_pred))[0] 
+
+    # Remove NaNs from both arrays using the indices
+    y_true_clean = y_true[idx]
+    y_pred_clean = y_pred[idx]
+    
+    return y_true_clean, y_pred_clean
 
 class NSElossNH(nn.Module):
     def __init__(self):

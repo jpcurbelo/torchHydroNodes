@@ -19,6 +19,8 @@ class BaseNNModel(nn.Module):
         self.input_size = len(self.concept_model.cfg.nn_dynamic_inputs) + len(self.concept_model.cfg.nn_static_inputs)
         self.output_size = len(self.concept_model.nn_outputs)
         self.hidden_size = self.concept_model.cfg.hidden_size
+        self.num_layers = len(self.hidden_size)
+        self.dropout = self.concept_model.cfg.dropout
 
         # Compute mean and std for variables by basin
         self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'])

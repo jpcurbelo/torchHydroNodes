@@ -1,6 +1,7 @@
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_nn.basemodel import BaseNNModel
 from src.modelzoo_nn.mlp import MLP
+from src.modelzoo_nn.lstm import LSTM
 from src.modelzoo_nn.basepretrainer import NNpretrainer
 from src.datasetzoo.basedataset import BaseDataset
 
@@ -10,6 +11,8 @@ def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
     
     if concept_model.cfg.nn_model.lower() == "mlp":
         Model = MLP
+    elif concept_model.cfg.nn_model.lower() == "lstm":
+        Model = LSTM
     else:
         raise NotImplementedError(f"No model NN class implemented for model {concept_model.cfg.nn_model}")
     
