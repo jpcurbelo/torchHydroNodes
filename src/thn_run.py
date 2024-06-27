@@ -196,7 +196,7 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
         # Load the neural network model state dictionary
         model_file = model_path / model_file
         # Load the state dictionary from the saved model
-        state_dict = torch.load(model_file)
+        state_dict = torch.load(model_file, map_location=torch.device(cfg.device))
         # print('state_dict:', state_dict)
         # Load the state dictionary into the model
         model_nn.load_state_dict(state_dict)
@@ -250,8 +250,9 @@ def resume_training(run_dir: Path, epoch: int, gpu: int = None):
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre.yml
-# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster1.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 if __name__ == "__main__":
     _main()

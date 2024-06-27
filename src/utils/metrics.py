@@ -443,6 +443,8 @@ loss_name_func_dict = {
     'nse-nh': NSElossNH(),
     'nse': NSEloss(),
     'mse': nn.MSELoss(),
+    'rmse': nn.L1Loss(),
+    'l1': nn.L1Loss(),
 }
 
 

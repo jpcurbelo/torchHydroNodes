@@ -49,8 +49,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         s_water = inputs[:, 1]
         self.precp_series = inputs[:, 2]
         self.tmean_series = inputs[:, 3]
-        self.lday_series = inputs[:, 4]
-        self.time_series = inputs[:, 5]
+        # self.lday_series = inputs[:, 4]
+        self.time_series = inputs[:, 4]
 
         # print('precp_series', self.precp_series, self.precp_series.device)
         # print('tmean_series', self.tmean_series, self.tmean_series.device)
@@ -95,8 +95,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.basin,
             self.step_function
         )
-        # y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
-        y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method='rk4', rtol=1e-4, atol=1e-4)
+        y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
+        # y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method='rk4', rtol=1e-4, atol=1e-4)
 
         # print(f'Time taken for ODE solver: {round(time.time() - time_start, 2)} seconds')
         # aux = input("Press Enter to continue...")

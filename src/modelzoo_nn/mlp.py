@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -33,21 +32,8 @@ class MLP(BaseNNModel):
         means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(inputs.device)
         stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(inputs.device)
 
-
-        # print('inputs:', inputs)
-        # print('means:', means)
-        # print('stds:', stds)
-
         # Normalize the inputs
-        inputs = (inputs - means) / stds
-
-        # print('inputs:', inputs)
-
-        # print('inputs:', inputs)
-        # print('means:', means)
-        # print('stds:', stds)
-
-        # aux = input("Press Enter to continue...")
+        inputs = (inputs - means) / (stds + 1e-10)
 
         # Pass through the input layer
         x = F.tanh(self.input_layer(inputs))
@@ -58,12 +44,6 @@ class MLP(BaseNNModel):
         
         # Output Layer
         x = self.output_layer(x)
-
-        # # Clip negative values in the last dimension to 0
-        # # x[:, -1] = F.relu(x[:, -1])
-        # x = F.relu(x) + 1e-6
-
-        # print('x:', x)
 
         return x
 

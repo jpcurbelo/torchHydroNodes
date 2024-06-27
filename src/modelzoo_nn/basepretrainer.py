@@ -75,7 +75,7 @@ class NNpretrainer(ExpHydroCommon):
             self.num_workers = 8
 
         # Input/output variables
-        self.input_var_names = self.cfg.nn_dynamic_inputs + ['dayl']
+        self.input_var_names = self.cfg.nn_dynamic_inputs #+ ['dayl']
         print('self.input_var_names:', self.input_var_names)
         self.output_var_names = self.cfg.nn_mech_targets
         self.target = self.cfg.target_variables[0]
@@ -159,7 +159,7 @@ class NNpretrainer(ExpHydroCommon):
 
             # Scale self.target variable
             if self.cfg.scale_target_vars:
-                tensor_dict[self.target] = np.log(tensor_dict[self.target])
+                tensor_dict[self.target] = np.log(tensor_dict[self.target] + 1e-6)
 
         else:
             input_var_names = self.input_var_names
@@ -222,8 +222,44 @@ class NNpretrainer(ExpHydroCommon):
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
 
+
+                # print('inputs', inputs.shape)
+                # print('inputs1', inputs[:5, 0], inputs[-5:, 0])
+                # print('inputs2', inputs[:5, 1], inputs[-5:, 1])
+                # print('inputs3', inputs[:5, 2], inputs[-5:, 2])
+                # print('inputs4', inputs[:5, 3], inputs[-5:, 3])
+
+                # print('targets', targets.shape)
+                # print('targets1', targets[:5, 0], targets[-5:, 0])
+                # print('targets2', targets[:5, 1], targets[-5:, 1])
+                # print('targets3', targets[:5, 2], targets[-5:, 2])
+                # print('targets4', targets[:5, 3], targets[-5:, 3])
+                # print('targets5', targets[:5, 4], targets[-5:, 4])
+
+
+                # aux = input("Press Enter to continue...")
+
+
                 # Forward pass
                 predictions = self.nnmodel(inputs.to(self.device), basin_ids)
+
+                # print('targets1', targets[:5, 0], targets[-5:, 0])
+                # print('predictions1', predictions[:5, 0], predictions[-5:, 0])
+                # print('targets2', targets[:5, 1], targets[-5:, 1])
+                # print('predictions2', predictions[:5, 1], predictions[-5:, 1])
+                # print('targets3', targets[:5, 2], targets[-5:, 2])
+                # print('predictions3', predictions[:5, 2], predictions[-5:, 2])
+                # print('targets4', targets[:5, 3], targets[-5:, 3])
+                # print('predictions4', predictions[:5, 3], predictions[-5:, 3])
+                # print('targets5', targets[:5, 4], targets[-5:, 4])
+                # print('predictions5', predictions[:5, 4], predictions[-5:, 4])
+
+                # print('predictions', predictions.shape)
+
+                # aux = input("Press Enter to continue...")
+
+                # print('predictions', predictions.shape)
+                # print('predictions1', predictions[:5, 0], predictions[-5:, 0])
 
                 # Move targets to the same device as predictions
                 targets = targets.to(self.device)

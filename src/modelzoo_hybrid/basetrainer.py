@@ -105,19 +105,20 @@ class BaseHybridModelTrainer:
 
             pbar.close()
 
-            # Early stopping check
-            early_stopping(avg_loss)
-            if early_stopping.early_stop:
-                if self.model.cfg.verbose:
-                    print(f"Early stopping at epoch {epoch + 1} with loss {avg_loss:.4e}")
-                break
-
+            # Save the model weights and plots
             if (epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0)):
                 if self.model.cfg.verbose:
                     print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
                 # Save the model weights
                 self.save_model()
                 self.save_plots(epoch=epoch+1)
+
+            # Early stopping check
+            early_stopping(avg_loss)
+            if early_stopping.early_stop:
+                if self.model.cfg.verbose:
+                    print(f"Early stopping at epoch {epoch + 1} with loss {avg_loss:.4e}")
+                break
 
             # Learning rate scheduler
             if (self.model.scheduler is not None) and epoch < self.model.epochs - 1:

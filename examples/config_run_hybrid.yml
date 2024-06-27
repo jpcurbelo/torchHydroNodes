@@ -4,6 +4,7 @@
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 hybrid_model: exphydroM100
 concept_model: exphydro
+# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, rk2, adaptive_heun]
 odesmethod: bosh3
 
 # Files to specify training, validation and test basins
@@ -39,7 +40,7 @@ test_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 1000
 
 # Patience for early stopping
 patience: 10
@@ -48,8 +49,8 @@ patience: 10
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 7304
-# batch_size: 512
+# batch_size: 7304
+batch_size: 128
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -59,11 +60,12 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: ZZtrain_hybrid_run
+experiment_name: train_hybrid_run
+# experiment_name: ZZtrain_hybrid_run_adjoint
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu
@@ -90,7 +92,7 @@ log_n_basins:
   # 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 5
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

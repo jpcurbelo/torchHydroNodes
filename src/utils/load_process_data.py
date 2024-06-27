@@ -755,7 +755,7 @@ class ExpHydroCommon:
 
     def scale_target_vars(self, is_trainer=False):
        
-        epsilon = 1e-16  # Small constant to avoid division by zero and log of zero
+        epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
 
         # print(self.dataset)
 
@@ -766,7 +766,7 @@ class ExpHydroCommon:
             # print('Scaling target variables for the trainer model...')
             q_values = self.dataset['obs_runoff'].values
             # self.dataset['obs_runoff'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
-            self.dataset['obs_runoff'] = (('basin', 'date'), np.log(q_values)) 
+            self.dataset['obs_runoff'] = (('basin', 'date'), np.log(q_values + epsilon))  # Avoid log(0)
             # print("self.dataset['obs_runoff']", self.dataset['obs_runoff'])
         else:
             # print('Scaling input variables for the pretrainer model...')
@@ -776,12 +776,42 @@ class ExpHydroCommon:
             self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
             ## M -> arcsinh
             self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
+
             ## ET -> log(ET / dayl)
-            self.dataset['et_bucket'] = (('basin', 'date'), np.log(self.dataset['et_bucket'].values / self.dataset['dayl'].values))
+            # self.dataset['et_bucket'] = (
+            #     ('basin', 'date'), 
+            #     np.log(self.dataset['et_bucket'].values / (self.dataset['dayl'].values + epsilon))
+            # )
+            # Ensure both the numerator and denominator are adjusted to avoid division by zero
+            et_bucket_values = self.dataset['et_bucket'].values
+            dayl_values = self.dataset['dayl'].values
+
+            # Adjust both values to prevent division by zero
+            et_bucket_values = np.where(et_bucket_values == 0, epsilon, et_bucket_values)
+            dayl_values = np.where(dayl_values == 0, epsilon, dayl_values)
+
+            # Calculate the log and handle -inf values
+            log_values = np.log(et_bucket_values / dayl_values)
+
+            # Optionally replace -inf values with a defined minimum value or handle them as needed
+            log_values = np.where(np.isinf(log_values), -1/epsilon, log_values)
+
             ## Q -> log(Q)
-            q_values = self.dataset['q_bucket'].values
-            # self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
-            self.dataset['q_bucket'] = (('basin', 'date'), np.log(q_values))  
+            # q_values = self.dataset['q_bucket'].values
+            targ_var = self.cfg.nn_mech_targets[-1]
+            q_values = self.dataset[targ_var].values
+            # # print('q_values', q_values)
+            # # print('q_values.shape', q_values.shape)
+
+            # # negative_mask = q_values <= 0  # Create a mask of where q_values are negative
+            # # rows_with_negatives = np.any(negative_mask, axis=1)  # Check if any values in each row are negative
+            # # # Get indices of problematic rows
+            # # problematic_row_indices = np.where(rows_with_negatives)[0]
+            # # # Print the indices of the rows with negative values
+            # # print("Indices of rows with negative values:", problematic_row_indices)
+
+            self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+            # self.dataset['q_bucket'] = (('basin', 'date'), np.log(q_values))  
 
         # return self.dataset
         # # return tensor_dict
