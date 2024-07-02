@@ -28,6 +28,9 @@ class LSTM(BaseNNModel):
         self.dropout_layer = nn.Dropout(self.dropout)
 
     def forward(self, inputs, basin_list):
+
+        # print("inputsLSTM", inputs.shape)
+
         # Gather means and stds for the batch
         means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(inputs.device)
         stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(inputs.device)

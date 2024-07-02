@@ -64,6 +64,11 @@ def update_hybrid_cfg(cfg):
     cfg.hidden_size = cfg_nn['hidden_size']
     cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
     cfg.target_variables = cfg_nn['target_variables']
+    if 'seq_length' in cfg_nn:
+        cfg.seq_length = cfg_nn['seq_length']
+    if 'dropout' in cfg_nn:
+        cfg.dropout = cfg_nn['dropout']
+    cfg.nn_model = cfg_nn['nn_model']
 
 
     return cfg
@@ -499,6 +504,10 @@ class Config(object):
     def nn_model(self) -> str:
         return self._get_property_value("nn_model", default="mlp")
     
+    @nn_model.setter
+    def nn_model(self, value: str):
+        self._cfg['nn_model'] = value
+
     @property
     def hybrid_model(self) -> str:
         return self._get_property_value("hybrid_model", default="exphydroM100")
@@ -515,9 +524,17 @@ class Config(object):
     def seq_length(self) -> int:
         return self._get_property_value("seq_length", default=365)
 
+    @seq_length.setter
+    def seq_length(self, value: int):
+        self._cfg['seq_length'] = value
+
     @property
     def dropout(self) -> float:
         return self._get_property_value("dropout", default=0.0)
+
+    @dropout.setter
+    def dropout(self, value: float):
+        self._cfg['dropout'] = value
 
     @property
     def run_dir(self) -> Path:
@@ -680,7 +697,7 @@ class BasinBatchSampler(Sampler):
     def __len__(self):
         return len(self.batches)
 
-class ExpHydroCommon:
+class ExpHydroCommon: 
     
     def create_interpolator_dict(self, is_trainer=False):
         '''
@@ -883,6 +900,65 @@ class ExpHydroCommon:
     def interpolator_vars(self):
         return ['prcp', 'tmean', 'dayl']
 
+    @staticmethod
+    def get_model_outputs(ds_basin, input_var_names, device, nn_model, model, basin, seq_length, is_trainer=False):
+        '''
+        Get the model outputs for the given input variables.
+        
+        - Args:
+            ds_basin: xr.Dataset, dataset for the basin.
+            input_var_names: list, list of input variable names.
+            device: torch.device, device to use.
+            nn_model: str, neural network model.
+            model: torch.nn.Module, neural network model.
+            basin: str, basin ID.
+            seq_length: int, sequence length.
+            is_trainer: bool, whether the model is a trainer model.
+            
+        - Returns:
+            outputs: torch.Tensor, model outputs.
+        '''
+
+        # Prepare inputs
+        inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], dim=0).t().to(device)
+
+        if nn_model == 'lstm':
+            # For LSTM, create sequences
+            input_sequences = []
+            for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
+                input_sequences.append(inputs[j:j + seq_length, :])
+            inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
+
+        # print('inputs_getmodel', inputs.shape)
+
+        basin_list = [basin for _ in range(inputs.shape[0])]
+        if is_trainer:
+            basin_list = basin_list[0]
+
+        # Get model outputs
+        outputs = model(inputs, basin_list)
+
+        # Ensure outputs are on CPU
+        outputs = outputs.cpu().detach()
+
+        # print('outputsX', outputs.shape)
+
+        if nn_model == 'lstm':
+            # For LSTM, fill the first seq_length - 1 values with NaNs
+            # outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+            if outputs.dim() == 1:
+                # Case for 1D outputs
+                outputs = torch.cat([torch.full((seq_length - 1,), np.nan), outputs], dim=0)
+            elif outputs.dim() == 2:
+                # Case for 2D outputs
+                outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+            else:
+                raise ValueError("Unsupported tensor dimension. Outputs must be 1D or 2D.")
+            return outputs
+
+        # print('outputs_getmodel', outputs.shape)
+
+        return outputs
 
 class ExpHydroODEs(nn.Module):
     def __init__(self, 

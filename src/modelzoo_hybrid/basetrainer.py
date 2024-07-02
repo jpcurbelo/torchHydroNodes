@@ -23,7 +23,7 @@ class BaseHybridModelTrainer:
         self.target = self.model.cfg.concept_target[0]
         # print('BaseHybridModelTrainer - self.target:', self.target)
         self.hybrid_model = (self.model.cfg.hybrid_model).lower()
-        self.nnmodel = (self.model.pretrainer.nnmodel.__class__.__name__).lower()
+        self.nnmodel_name = (self.model.pretrainer.nnmodel.__class__.__name__).lower()
         self.basins = self.model.dataset.basin.values
         self.number_of_basins = self.model.cfg.number_of_basins
 
@@ -139,7 +139,7 @@ class BaseHybridModelTrainer:
         model_path.mkdir(parents=True, exist_ok=True)
 
         # Save the model weights
-        torch.save(self.model.pretrainer.nnmodel.state_dict(), model_path / f'trainer_{self.hybrid_model}_{self.nnmodel}_{self.number_of_basins}basins.pth')
+        torch.save(self.model.pretrainer.nnmodel.state_dict(), model_path / f'trainer_{self.hybrid_model}_{self.nnmodel_name}_{self.number_of_basins}basins.pth')
 
     def save_plots(self, epoch=None):
         '''
@@ -193,14 +193,24 @@ class BaseHybridModelTrainer:
                     # Add time_idx to the dataset, making sure to match the correct dimensions
                     ds_basin['time_idx'] = (('date',), time_idx)
 
-                    # Get the inputs in the correct format
-                    inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
-                        for var in input_var_names], dim=0).t().to(self.model.device)
+                    # # Get the inputs in the correct format
+                    # inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
+                    #     for var in input_var_names], dim=0).t().to(self.model.device)
                     
-                    # Get the outputs from the hybrid model
-                    outputs = self.model(inputs, basin)
+                    # print('inputs:', inputs.shape)
 
-                    # print('outputs:', outputs)
+                    # # Get the outputs from the hybrid model
+                    # outputs = self.model(inputs, basin)
+
+                    # print('outputs:', outputs.shape)
+
+                    # Get model outputs
+                    outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
+                                                self.model.device, self.model.cfg.nn_model, 
+                                                self.model, basin, self.model.cfg.seq_length,
+                                                is_trainer=True)
+
+                    # print('outputs:', outputs.shape)
 
                     # Scale back outputs
                     if self.model.cfg.scale_target_vars:
@@ -210,15 +220,17 @@ class BaseHybridModelTrainer:
                         if dsp == 'ds_train':
                             ds_basin = self.model.scale_back_observed(ds_basin, is_trainer=True)
                             
+                    # print('outputs:', outputs.shape)
+
                     # Get the simulated values in numpy format
                     y_sim = outputs.detach().cpu().numpy()
 
-                    # print('y_sim:', y_sim)
+                    # print('y_sim:', y_sim, y_sim.shape)
 
                     # Get the observed values
                     y_obs = ds_basin[self.target.lower()].values
 
-                    # print('y_obs:', y_obs)
+                    # print('y_obs:', y_obs, y_obs.shape)
 
                     # Plot the observed and predicted values
                     plt.figure(figsize=(10, 6))

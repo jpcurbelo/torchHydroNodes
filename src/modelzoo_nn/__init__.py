@@ -8,6 +8,8 @@ from src.datasetzoo.basedataset import BaseDataset
 
 def get_nn_model(concept_model: BaseConceptModel)-> BaseNNModel:
     '''Get the neural network model based on the configuration'''
+
+    # print('concept_model.cfg.nn_model.lower()', concept_model.cfg.nn_model.lower())
     
     if concept_model.cfg.nn_model.lower() == "mlp":
         Model = MLP

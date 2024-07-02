@@ -58,11 +58,9 @@ epochs: 200
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 7304
+# batch_size: 7304
 # batch_size: 128
-
-# Length of the input sequence
-seq_length: 270
+batch_size: 256
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -86,11 +84,10 @@ hidden_size:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: 100_basins_pretrainer_run
-experiment_name: 1basin_pretrainer_lstm
+experiment_name: 569basin_pretrainer_mlp
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111
@@ -106,14 +103,14 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 1
-  # - 1013500
-  # - 6431500
-  # - 1022500
-  # - 1030500
+log_n_basins: #1
+  - 1013500
+  - 6431500
+  - 1022500
+  - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

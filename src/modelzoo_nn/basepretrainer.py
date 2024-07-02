@@ -168,14 +168,14 @@ class NNpretrainer(ExpHydroCommon):
         num_dates = len(self.dataset.date)
         basin_ids = [basin for basin in self.basins for _ in range(num_dates)]
 
-        # # Ensure input and output tensors are wrapped into single composite tensors if needed
-        # input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
-        #     len(input_tensors) > 1 else input_tensors[0].view(-1, 1)
-        # output_tensor = torch.stack(output_tensors, dim=2).view(-1, len(output_var_names)) if \
-        #     len(output_tensors) > 1 else output_tensors[0].view(-1, 1)
-
+        # Ensure input and output tensors are wrapped into single composite tensors if needed
         if self.cfg.nn_model == 'lstm':
             # Create sequences
+
+            # print(is_trainer, 'time_idx' in tensor_dict)
+            # time_idx_tensor = tensor_dict['time_idx']
+
+
             input_tensor = torch.stack(input_tensors, dim=2).permute(1, 0, 2)  # Shape: [num_dates, num_basins, num_vars]
             output_tensor = torch.stack(output_tensors, dim=2).permute(1, 0, 2)  # Shape: [num_dates, num_basins, num_vars]
 
@@ -190,6 +190,8 @@ class NNpretrainer(ExpHydroCommon):
             input_tensor = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_vars]
             output_tensor = torch.stack(output_sequences)  # Shape: [num_sequences, num_output_vars]
             basin_ids = sequence_basin_ids
+
+            print(is_trainer, 'input_tensor:', input_tensor.shape)
 
         elif self.cfg.nn_model == 'mlp':
             input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
@@ -219,6 +221,9 @@ class NNpretrainer(ExpHydroCommon):
         if self.cfg.verbose:
             print("-- Pretraining the neural network model --")
 
+        # Save the plots for the initial model weights
+        self.save_plots(epoch=0)
+
         nan_count = 0  # Counter for NaN occurrences
         for epoch in range(self.epochs):
 
@@ -233,7 +238,7 @@ class NNpretrainer(ExpHydroCommon):
                 self.optimizer.zero_grad()
 
 
-                # print('inputs', inputs.shape)
+                print('inputs', inputs.shape)
                 # print('inputs1', inputs[:5, 0], inputs[-5:, 0])
                 # print('inputs2', inputs[:5, 1], inputs[-5:, 1])
                 # print('inputs3', inputs[:5, 2], inputs[-5:, 2])
@@ -247,7 +252,7 @@ class NNpretrainer(ExpHydroCommon):
                 # print('targets5', targets[:5, 4], targets[-5:, 4])
 
 
-                # aux = input("Press Enter to continue...")
+                aux = input("Press Enter to continue...")
 
 
                 # Forward pass
@@ -453,7 +458,7 @@ class NNpretrainer(ExpHydroCommon):
                     #     outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
 
                     # Get model outputs
-                    outputs = get_model_outputs(ds_basin, self.input_var_names, 
+                    outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
                                                 self.device, self.cfg.nn_model, 
                                                 self.nnmodel, basin, 
                                                 self.cfg.seq_length)
@@ -536,7 +541,7 @@ class NNpretrainer(ExpHydroCommon):
                 # outputs = self.nnmodel(inputs, basin_list)
 
                 # Get model outputs
-                outputs = get_model_outputs(ds_basin, self.input_var_names, 
+                outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
                                             self.device, self.cfg.nn_model, 
                                             self.nnmodel, basin, 
                                             self.cfg.seq_length)
@@ -578,25 +583,25 @@ class NNpretrainer(ExpHydroCommon):
             df_results.to_csv(output_file_path, index=False)
 
 
-def get_model_outputs(ds_basin, input_var_names, device, nn_model, nnmodel, basin, seq_length):
-    # Prepare inputs
-    inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], dim=0).t().to(device)
+# def get_model_outputs(ds_basin, input_var_names, device, nn_model, nnmodel, basin, seq_length):
+#     # Prepare inputs
+#     inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], dim=0).t().to(device)
 
-    if nn_model == 'lstm':
-        # For LSTM, create sequences
-        input_sequences = []
-        for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
-            input_sequences.append(inputs[j:j + seq_length, :])
-        inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
+#     if nn_model == 'lstm':
+#         # For LSTM, create sequences
+#         input_sequences = []
+#         for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
+#             input_sequences.append(inputs[j:j + seq_length, :])
+#         inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
 
-    basin_list = [basin for _ in range(inputs.shape[0])]
-    outputs = nnmodel(inputs, basin_list)
+#     basin_list = [basin for _ in range(inputs.shape[0])]
+#     outputs = nnmodel(inputs, basin_list)
 
-    # Ensure outputs are on CPU
-    outputs = outputs.cpu().detach()
+#     # Ensure outputs are on CPU
+#     outputs = outputs.cpu().detach()
 
-    if nn_model == 'lstm':
-        # For LSTM, fill the first seq_length - 1 values with NaNs
-        outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+#     if nn_model == 'lstm':
+#         # For LSTM, fill the first seq_length - 1 values with NaNs
+#         outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
 
-    return outputs
+#     return outputs
