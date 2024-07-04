@@ -4,11 +4,13 @@ import torch
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
     NSElossNH,
     NSE_eval,
+    compute_all_metrics,
 )
 
 from src.utils.load_process_data import EarlyStopping
@@ -131,6 +133,11 @@ class BaseHybridModelTrainer:
                 if self.model.cfg.verbose and new_lr != current_lr:
                     print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
 
+        # Save the final model weights and plots
+        if self.model.cfg.verbose:
+            print("-- Training completed | Evaluating the model --")
+        self.evaluate()
+
     def save_model(self):
         '''Save the model weights and plots'''
 
@@ -249,3 +256,88 @@ class BaseHybridModelTrainer:
                     plt.close('all')
 
             pbar_basins.close()
+
+    def evaluate(self):
+            '''
+            Evaluate the model on the test dataset
+            '''
+
+            # Extract keys that start with 'ds_'
+            ds_periods = [key for key in self.model.pretrainer.fulldataset.__dict__.keys() if key.startswith('ds_')]
+
+            for dsp in ds_periods:
+                ds_period = getattr(self.model.pretrainer.fulldataset, dsp)
+                ds_basins = ds_period['basin'].values
+
+                results = []
+
+                # Progress bar for basins
+                pbar_basins = tqdm(ds_basins, disable=self.model.cfg.disable_pbar, file=sys.stdout)
+                for basin in pbar_basins:
+                    pbar_basins.set_description(f'* Evaluating basin {basin} ({dsp})')
+
+                    if basin not in self.basins:
+                        print(f"Basin {basin} not found in the dataset. Skipping...")
+                        continue
+
+                    ds_basin = ds_period.sel(basin=basin)
+
+                    time_series = ds_basin['date'].values
+                    # If the period is not ds_train, then shift the time series by the length of ds_train
+                    if dsp == 'ds_train':        
+                        time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
+                    else:
+                        time_series_test = getattr(self.model.pretrainer.fulldataset, dsp)['date'].values
+                        train_length = len(self.model.pretrainer.fulldataset.ds_train['date'].values)
+                        test_length = len(time_series_test)
+                        time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), dtype=self.model.data_type_np)
+
+                    input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
+
+                    # Add time_idx to the dataset, making sure to match the correct dimensions
+                    ds_basin['time_idx'] = (('date',), time_idx)
+                    # Get the outputs from the hybrid model
+                    outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
+                                                self.model.device, self.model.cfg.nn_model, 
+                                                self.model, basin, self.model.cfg.seq_length,
+                                                is_trainer=True)
+                    
+                    # Scale back outputs
+                    if self.model.cfg.scale_target_vars:
+                        outputs = self.model.scale_back_simulated(outputs, ds_basin, is_trainer=True)
+
+                        # If period is ds_train, also scale back the observed variables
+                        if dsp == 'ds_train':
+                            ds_basin = self.model.scale_back_observed(ds_basin, is_trainer=True)
+
+                    # Get the simulated values in numpy format
+                    y_sim = outputs.detach().cpu().numpy()
+
+                    # Get the observed values
+                    y_obs = ds_basin[self.target.lower()].values
+
+                    # Extract dates
+                    dates = ds_basin['date'].values
+
+                    # Compute all evaluation metrics
+                    metrics = compute_all_metrics(y_obs, y_sim, dates, self.model.cfg.metrics)
+
+                    # Store the results in a dictionary
+                    result = {'basin': basin}
+                    result.update(metrics)
+                    results.append(result)
+
+                # Convert the results to a DataFrame
+                df_results = pd.DataFrame(results)
+
+                # Sort the DF by basin name
+                df_results = df_results.sort_values('basin').reset_index(drop=True)
+
+                # Save the results to a CSV file
+                period_name = dsp.split('_')[-1]
+                output_file = f'evaluation_metrics_{period_name}.csv'
+                output_file_path = Path(self.model.cfg.results_dir) / output_file
+
+                # Save the results to a CSV file
+                df_results.to_csv(output_file_path, index=False)
+

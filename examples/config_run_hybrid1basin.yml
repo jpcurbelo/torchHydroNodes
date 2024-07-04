@@ -5,7 +5,7 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun]
-odesmethod: rk4
+odesmethod: euler
 
 # Files to specify training, validation and test basins
 basin_file: 1_basin_file.txt
@@ -35,24 +35,24 @@ scale_target_vars: True
 # test_start_date: "01/10/2000"
 # test_end_date: "30/09/2010"
 
-train_start_date: "01/10/1990"
-train_end_date: "30/09/2000"
-valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2005"
-
-# train_start_date: "01/10/1985"
+# train_start_date: "01/10/1990"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
 # valid_end_date: "30/09/2005"
+
+train_start_date: "01/10/1987"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2003"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 10
+epochs: 5
 
 # Patience for early stopping
-patience: 10
+patience: 5
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0

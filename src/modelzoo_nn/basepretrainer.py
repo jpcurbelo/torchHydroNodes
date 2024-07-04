@@ -378,13 +378,15 @@ class NNpretrainer(ExpHydroCommon):
 
         # Save the final model weights and plots
         if self.cfg.verbose:
-            print("-- Saving final model weights --")
-        self.save_model()
-        if self.cfg.verbose:
-            print("-- Saving final plots --")
-        self.save_plots()
-        if self.cfg.verbose:
-            print("-- Evaluating the model --")
+            print("-- Training completed | Evaluating the model --")
+        # if self.cfg.verbose:
+        #     print("-- Saving final model weights --")
+        # self.save_model()
+        # if self.cfg.verbose:
+        #     print("-- Saving final plots --")
+        # self.save_plots()
+        # if self.cfg.verbose:
+        #     print("-- Evaluating the model --")
         self.evaluate()
 
     def save_model(self):
@@ -561,9 +563,10 @@ class NNpretrainer(ExpHydroCommon):
                 # Extract dates
                 dates = ds_basin.date.values
                 
+                # Compute all evaluation metrics
                 metrics = compute_all_metrics(y_obs, y_bucket, dates, self.cfg.metrics)
                 
-                # Store results in a list
+                # Store results in a dictionary
                 result = {'basin': basin}
                 result.update(metrics)
                 results.append(result)
