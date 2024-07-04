@@ -8,7 +8,8 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-basin_file: 1_basin_file.txt
+# basin_file: 1_basin_file.txt
+basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 569_basin_file_cluster1of6_63.txt
 
@@ -21,38 +22,39 @@ data_dir: M0_results_569basins_1980_2010
 
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
-nn_model_dir: 1basin_pretrainer_lstm_01013500
+# nn_model_dir: 1basin_pretrainer_lstm_01013500
+nn_model_dir: 1basin_pretrainer_lstm_06431500
 
 scale_target_vars: True
 
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-# train_start_date: "01/10/1980"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
+train_start_date: "01/10/1980"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2010"
+test_start_date: "01/10/2000"
+test_end_date: "30/09/2010"
 
 # train_start_date: "01/10/1990"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
 # valid_end_date: "30/09/2005"
 
-train_start_date: "01/10/1987"
-train_end_date: "30/09/2000"
-valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2003"
+# train_start_date: "01/10/1987"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2003"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 5
+epochs: 100
 
 # Patience for early stopping
-patience: 5
+patience: 10
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -61,8 +63,8 @@ clip_gradient_norm: 1.0
 # batch_size: 7304
 batch_size: 256
 
-# Length of the input sequence
-seq_length: 270
+# # Length of the input sequence
+# seq_length: 270
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -77,7 +79,9 @@ learning_rate:
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_hybrid_mlp
-experiment_name: CC1basin_hybrid_lstm
+# experiment_name: 1basin_hybrid_lstm
+# experiment_name: 1basin_hybrid_lstm_01013500
+experiment_name: 1basin_hybrid_lstm_06431500
 # experiment_name: cluster1_hybrid_lstm
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -104,7 +108,7 @@ log_n_basins: 1
   # 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 5
+log_every_n_epochs: 10
 
 # Metrics to use for evaluation (after training)
 metrics:

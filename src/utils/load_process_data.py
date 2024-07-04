@@ -548,10 +548,26 @@ class Config(object):
     def plots_dir(self) -> Path:
         return self._get_property_value("plots_dir")
     
+    @plots_dir.setter
+    def plots_dir(self, value: Path):
+        self._cfg['plots_dir'] = value
+
     @property
     def results_dir(self) -> Path:
         return self._get_property_value("results_dir")
     
+    @results_dir.setter
+    def results_dir(self, value: Path):
+        self._cfg['results_dir'] = value
+
+    @property
+    def weights_dir(self) -> Path:
+        return self._get_property_value("weights_dir", default=None)
+    
+    @weights_dir.setter
+    def weights_dir(self, value: Path):
+        self._cfg['weights_dir'] = value
+
     @property
     def disable_pbar(self) -> bool:
         return self._get_property_value("verbose", default=False) == False

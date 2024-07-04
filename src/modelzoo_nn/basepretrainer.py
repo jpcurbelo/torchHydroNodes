@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data import DataLoader
 import sys
@@ -139,15 +140,22 @@ class NNpretrainer(ExpHydroCommon):
     def create_dataloaders(self, is_trainer=False):
         '''Create the dataloaders for the pretrainer'''
 
+        # # Set CUDA_LAUNCH_BLOCKING for better error tracing
+        # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
         # Convert xarray DataArrays to PyTorch tensors and store in a dictionary
         tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
+
+        # # If self.device is 'cuda', move tensors to GPU
+        # if 'cuda' in str(self.device):
+        #     tensor_dict = {var: tensor.to(self.device) for var, tensor in tensor_dict.items()}
 
         # Create a list of input and output tensors based on the variable names
         if is_trainer:
             time_series = self.dataset['date'].values
             time_idx = torch.linspace(0, len(time_series) - 1, len(time_series), dtype=self.dtype)
             # Reshape time_idx to match the shape of other tensors (number_of_basins, time_idx)
-            time_idx = time_idx.repeat(self.cfg.number_of_basins, 1)
+            time_idx = time_idx.repeat(self.cfg.number_of_basins, 1)  #.to(self.device)
             input_var_names = self.input_var_names + ['time_idx'] 
             tensor_dict['time_idx'] = time_idx
             # Substitute the last of the output variables with the target variable
@@ -155,7 +163,7 @@ class NNpretrainer(ExpHydroCommon):
 
             # Scale self.target variable
             if self.cfg.scale_target_vars:
-                tensor_dict[self.target] = np.log(tensor_dict[self.target] + 1e-6)
+                tensor_dict[self.target] = torch.log(tensor_dict[self.target] + 1e-6)
 
         else:
             input_var_names = self.input_var_names
@@ -191,7 +199,7 @@ class NNpretrainer(ExpHydroCommon):
             output_tensor = torch.stack(output_sequences)  # Shape: [num_sequences, num_output_vars]
             basin_ids = sequence_basin_ids
 
-            print('create_dataloaders', is_trainer, 'input_tensor:', input_tensor.shape)
+            # print('create_dataloaders', is_trainer, 'input_tensor:', input_tensor.shape)
 
         elif self.cfg.nn_model == 'mlp':
             input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
@@ -205,7 +213,8 @@ class NNpretrainer(ExpHydroCommon):
         # Create a custom dataset with the input and output tensors and basin IDs
         dataset = CustomDatasetToNN(input_tensor, output_tensor, basin_ids)
 
-        pin_memory = True if 'cuda' in str(self.device) else False
+        # pin_memory = True if 'cuda' in str(self.device) else False
+        pin_memory = False
 
         # Create custom batch sampler
         batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
@@ -238,7 +247,7 @@ class NNpretrainer(ExpHydroCommon):
                 self.optimizer.zero_grad()
 
 
-                print('inputs', inputs.shape)
+                # print('inputs', inputs.shape)
                 # print('inputs1', inputs[:5, 0], inputs[-5:, 0])
                 # print('inputs2', inputs[:5, 1], inputs[-5:, 1])
                 # print('inputs3', inputs[:5, 2], inputs[-5:, 2])
@@ -252,7 +261,7 @@ class NNpretrainer(ExpHydroCommon):
                 # print('targets5', targets[:5, 4], targets[-5:, 4])
 
 
-                aux = input("Press Enter to continue...")
+                # aux = input("Press Enter to continue...")
 
 
                 # Forward pass
@@ -377,16 +386,16 @@ class NNpretrainer(ExpHydroCommon):
                     print(f"Learning rate updated to {new_lr}")
 
         # Save the final model weights and plots
+        # if self.cfg.verbose:
+        #     print("-- Training completed | Evaluating the model --")
         if self.cfg.verbose:
-            print("-- Training completed | Evaluating the model --")
-        # if self.cfg.verbose:
-        #     print("-- Saving final model weights --")
-        # self.save_model()
-        # if self.cfg.verbose:
-        #     print("-- Saving final plots --")
-        # self.save_plots()
-        # if self.cfg.verbose:
-        #     print("-- Evaluating the model --")
+            print("-- Saving final model weights --")
+        self.save_model()
+        if self.cfg.verbose:
+            print("-- Saving final plots --")
+        self.save_plots()
+        if self.cfg.verbose:
+            print("-- Evaluating the model --")
         self.evaluate()
 
     def save_model(self):

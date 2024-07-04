@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 from tqdm import tqdm
 import torch
+import yaml
 
 # Make sure code directory is in path,
 # Add the parent directory of your project to the Python path
@@ -45,7 +46,8 @@ def _main():
     elif args["action"] == "evaluate":
         evaluate_model(run_dir=Path(args["run_dir"]), period=args["period"], gpu=args["gpu"])
     elif args["action"] == "resume_training":
-        resume_training(run_dir=Path(args["run_dir"]), epoch=args["epoch"], gpu=args["gpu"])
+        # resume_training(run_dir=Path(args["run_dir"]), epoch=args["epoch"], gpu=args["gpu"])
+        resume_training(run_dir=Path(args["run_dir"]))
 
 def _get_args() -> dict:
     parser = argparse.ArgumentParser()
@@ -243,9 +245,79 @@ def evaluate_model(run_dir: Path, period: str, gpu: int=None,
     # Train the model
     pretrainer.evaluate()
 
-def resume_training(run_dir: Path, epoch: int, gpu: int = None):
+def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 
-    pass
+    # Load the config file
+    config_file = run_dir / 'config.yml'
+    cfg = Config(config_file)
+    if 'hybrid_model' in cfg._cfg:
+        model_type = 'hybrid'
+    else:
+        model_type = 'pretrainer'
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu, model=model_type)
+
+    # Load config_resume file
+    config_resume_file = run_dir / 'config_resume.yml'
+    if config_resume_file.exists():
+        with open(config_resume_file, 'r') as ymlfile:
+            cfg_resume = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    else:
+        raise FileNotFoundError(f"File not found: {config_resume_file} (mandatory for resuming training)")
+                                
+    # Update the config file
+    cfg._cfg.update(cfg_resume)
+
+    # Define and create resume_folder
+    resume_folder = run_dir / 'resume'
+    resume_folder.mkdir(parents=True, exist_ok=True)
+
+    # Update model_plots, model_results, and model_weights and create folders
+    cfg.plots_dir = resume_folder / 'model_plots'
+    cfg.plots_dir.mkdir(parents=True, exist_ok=True)
+    cfg.results_dir = resume_folder / 'model_results'
+    cfg.results_dir.mkdir(parents=True, exist_ok=True)
+    cfg.weights_dir = resume_folder / 'model_weights'
+    cfg.weights_dir.mkdir(parents=True, exist_ok=True)
+
+    # print(f'-- Updated config file: {cfg._cfg}')
+
+    # Conceptual model
+    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+
+    print(f'-- Conceptual model: {model_concept.__class__.__name__}')
+
+    # Neural network model
+    model_nn = get_nn_model(model_concept)
+
+    print(f'-- Neural network model: {model_nn.__class__.__name__}')
+
+    # Load the neural network model state dictionary if run_dir/model_weights/*.pth exists
+    model_path = run_dir / 'model_weights'
+    # Check if a file *.pth exists in the model_weights folder
+    matching_files = list(model_path.glob('*.pth'))
+    if len(matching_files) > 0:
+        model_file = matching_files[0]
+        # Load the state dictionary from the saved model
+        state_dict = torch.load(model_file)
+        # Load the state dictionary into the model
+        model_nn.load_state_dict(state_dict)
+        print(f'-- Loaded the model weights from {model_file}')
+    else:
+        print(f'-- No model weights found in {model_path}')
+
+    # Pretrainer
+    pretrainer = get_nn_pretrainer(model_nn, dataset)
+
+    # Build the hybrid model
+    model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
+
+    # Build the trainer 
+    trainer = get_trainer(model_hybrid)
+    # Train the model
+    trainer.train(is_resume=True)
+
+
+    
 
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
@@ -254,5 +326,8 @@ def resume_training(run_dir: Path, epoch: int, gpu: int = None):
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
+
+# python thn_run.py hybrid --action resume_training --run-dir ../examples/runs/1basin_hybrid_lstm_06431500_240704_125621
+
 if __name__ == "__main__":
     _main()

@@ -223,9 +223,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def hybrid_model_lstm(self, t, y):
 
-        # Flush time
-        sys.stdout.write(f"t \r{t}")
-        sys.stdout.flush()
+        # # Flush time
+        # sys.stdout.write(f"t \r{t}")
+        # sys.stdout.flush()
          
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       

@@ -46,7 +46,7 @@ class BaseHybridModelTrainer:
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
 
-    def train(self):
+    def train(self, is_resume=False):
 
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
@@ -54,8 +54,9 @@ class BaseHybridModelTrainer:
             print("-- Training the hybrid model --")
 
         # Save the model weights - Epoch 0
-        self.save_model()
-        self.save_plots(epoch=0)
+        if not is_resume:
+            self.save_model()
+            self.save_plots(epoch=0)
 
         for epoch in range(self.model.epochs):
 
@@ -72,21 +73,32 @@ class BaseHybridModelTrainer:
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
 
+                # print('inputs:', inputs.device)
+                # print('targets:', targets.device)
+                # aux = input("Press Enter to continue...")
+
+                # Transfer to device
+                inputs = inputs.to(self.model.device)
+                targets = targets.to(self.model.device)
+
                 # Forward pass
-                q_sim = self.model(inputs.to(self.model.device), basin_ids[0])
+                q_sim = self.model(inputs, basin_ids[0])
+
+                # print('q_sim:', q_sim.device)
+                # print('targets:', targets[:, -1].device)
+                # aux = input("Press Enter to continue...")
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
                     # To tensor
                     std_val = torch.tensor(std_val, dtype=self.model.data_type_torch)  #.to(self.model.device)
                     # print(q_sim.device, targets[:, -1].device, std_val.device)
-                    loss = self.loss(q_sim, targets[:, -1].to(self.model.device),   # .to(self.model.device), 
-                                     std_val.to(self.model.device))
+                    loss = self.loss(q_sim, targets[:, -1], std_val)
                 else:
                     if self.model.cfg.scale_target_vars:
-                        loss = self.loss(torch.exp(q_sim), torch.exp(targets[:, -1]).to(self.model.device))   #.to(self.model.device))
+                        loss = self.loss(torch.exp(q_sim), torch.exp(targets[:, -1]))   #.to(self.model.device))
                     else:
-                        loss = self.loss(q_sim, targets[:, -1].to(self.model.device))   #.to(self.model.device))
+                        loss = self.loss(q_sim, targets[:, -1])   #.to(self.model.device))
 
                 # Backward pass
                 loss.backward()
@@ -161,6 +173,10 @@ class BaseHybridModelTrainer:
             # Progress bar for basins
             pbar_basins = tqdm(self.model.pretrainer.basins_to_log, disable=self.model.cfg.disable_pbar, file=sys.stdout)
             for basin in pbar_basins:
+
+                # Clear CUDA cache at the beginning of each basin
+                torch.cuda.empty_cache()
+
                 pbar_basins.set_description(f'* Plotting basin {basin}')
 
                 if basin not in self.basins:
