@@ -45,7 +45,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def forward(self, inputs, basin):
 
-        # print('inputs_forward', inputs.shape)
+        # # print('inputs_forward', inputs.shape)
+        # print('inputs_forward', inputs.shape, inputs.device)
+        
 
         # Extract the state variables
         # If inputs shape is 2D, then is 'mlp' model
@@ -65,42 +67,25 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.time_series_lstm = inputs[:, :, 4]
 
             # Flatten self.time_series to have a 1D vector containing the time idxs values
-            #  unique_values, _ = torch.unique(flattened, sorted=True, return_inverse=True)
             self.time_series, _ = torch.unique(self.time_series_lstm.flatten(), sorted=True, return_inverse=True)
+            # Transfer to device
+            self.time_series = self.time_series #.to(self.device)
 
             self.s_snow_lstm = self.s_snow[0, :-1]
             self.s_water_lstm = self.s_water[0, :-1]
+            self.precp_lstm = self.precp_series[0, :-1]
+            self.tmean_lstm = self.tmean_series[0, :-1]
             # Add the first value of the sequence at the begining of the tensor
-            # self.s_snow_lstm = torch.cat((self.s_snow_lstm, self.s_snow[0, -1].unsqueeze(0)), dim=0)
-            # self.s_water_lstm = torch.cat((self.s_water_lstm, self.s_water[0, -1].unsqueeze(0)), dim=0)
-            self.s_snow_lstm = torch.cat((self.s_snow_lstm[0].unsqueeze(0), self.s_snow_lstm), dim=0)
-            self.s_water_lstm = torch.cat((self.s_water_lstm[0].unsqueeze(0), self.s_water_lstm), dim=0)
-            # print('self.s_snow_lstm', self.s_snow_lstm.shape)
-            # print('self.s_water_lstm', self.s_water_lstm.shape)
+            self.s_snow_lstm = torch.cat((self.s_snow_lstm[0].unsqueeze(0), self.s_snow_lstm), dim=0) #.to(self.device)
+            self.s_water_lstm = torch.cat((self.s_water_lstm[0].unsqueeze(0), self.s_water_lstm), dim=0) #.to(self.device)
+            self.precp_lstm = torch.cat((self.precp_lstm[0].unsqueeze(0), self.precp_lstm), dim=0) #.to(self.device)
+            self.tmean_lstm = torch.cat((self.tmean_lstm[0].unsqueeze(0), self.tmean_lstm), dim=0) #.to(self.device)
 
-        # print('self.time_series', self.time_series.shape)
-        # # if len(inputs.shape) == 3:
-        # #     print('self.time_series_lstm', self.time_series_lstm, self.time_series_lstm.shape)
-
-        # print('s_snow', self.s_snow.shape)
-        # print('s_water', self.s_water.shape)
-        # print('precp_series', self.precp_series.shape)
-        # print('tmean_series', self.tmean_series.shape)
-        # print('time_series', self.time_series.shape)
-        # if len(inputs.shape) == 3:
-        #     print('time_series_lstm', self.time_series_lstm.shape)
-
-        # print('self.s_snow[0, -1]', self.s_snow[0, -1])
-        # print('self.s_water[0, -1]', self.s_water[0, -1])
-
-        # print(100*'*')
-
-        # aux = input("Press Enter to continue...")
-
-
-        # print('precp_series', self.precp_series, self.precp_series.device)
-        # print('tmean_series', self.tmean_series, self.tmean_series.device)
-        # print('time_series', self.time_series, self.time_series.device)
+            # print('time_series', self.time_series.shape, self.time_series.device)
+            # print('s_snow_lstm', self.s_snow_lstm.shape, self.s_snow_lstm.device)
+            # print('s_water_lstm', self.s_water_lstm.shape, self.s_water_lstm.device)
+            # print('precp_lstm', self.precp_lstm.shape, self.precp_lstm.device)
+            # print('tmean_lstm', self.tmean_lstm.shape, self.tmean_lstm.device)
 
         # Make basin global to be used in hybrid_model
         self.basin = basin
@@ -122,38 +107,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
         elif len(inputs.shape) == 3:
             # Set the initial conditions
-            y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)
+            y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)   #.to(self.device)
             y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, rtol=1e-3, atol=1e-6)
-
-        # # Initialize your hybrid model and ODE solver
-        # # ode_solver =  torchdiffeq.odeint_adjoint
-        # ode_solver =  torchdiffeq.odeint
-        # hybrid_model = ExpHydroODEs(
-        #     # self.precp_series,
-        #     # self.tmean_series,
-        #     # self.lday_series,
-        #     # self.time_series,
-
-        #     self.precp_interp,
-        #     self.temp_interp,
-        #     self.lday_interp,
-        #     self.data_type_torch,
-        #     self.device,
-
-        #     self.scale_target_vars,
-        #     self.pretrainer,
-        #     self.basin,
-        #     self.step_function
-        # )
-        # y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
-        # # y = ode_solver(hybrid_model, y0=y0, t=self.time_series, method='rk4', rtol=1e-4, atol=1e-4)
-
-        # print(f'Time taken for ODE solver: {round(time.time() - time_start, 2)} seconds')
-        # aux = input("Press Enter to continue...")
-        
-        # # Update the state variables from the ODE solution
-        # print('\n', 100*'*')
-        # print('y', y.shape)
 
         if len(inputs.shape) == 2:
 
@@ -171,18 +126,16 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             s_snow_nn  = y[:, :, 0].squeeze()
             s_water_nn = y[:, :, 1].squeeze()
 
-            # print('self.s_snow_lstm', self.s_snow_lstm[-5:])
-            # print('s_snow_nn', s_snow_nn[-5:])
-
             # Relu the state variables
-            s_snow_nn = torch.maximum(s_snow_nn, torch.tensor(0.0)).to(self.device)
-            s_water_nn = torch.maximum(s_water_nn, torch.tensor(0.0)).to(self.device)
+            s_snow_nn = torch.maximum(s_snow_nn, torch.tensor(0.0))    #.to(self.device)
+            s_water_nn = torch.maximum(s_water_nn, torch.tensor(0.0))  #.to(self.device)
 
             # Extract the window_size-1 first elements from the LSTM state variables
             s_snow_first_batch = self.s_snow[0, :-1]
             s_water_first_batch = self.s_water[0, :-1]
 
             # Concatenate along the last dimension
+            # print(s_snow_first_batch.device, s_snow_nn.device)
             s_snow_combined = torch.cat((s_snow_first_batch, s_snow_nn), dim=0)
             s_water_combined = torch.cat((s_water_first_batch, s_water_nn), dim=0)
 
@@ -190,17 +143,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             s_snow_nn = self.create_sequences(s_snow_combined)
             s_water_nn = self.create_sequences(s_water_combined)
 
-            # print('s_snow_nn', s_snow_nn.shape)
-            # print('s_water_nn', s_water_nn.shape)
-            # print('precp_series', self.precp_series.shape)
-            # print('tmean_series', self.tmean_series.shape)
-
             # Stack tensors to create inputs for the neural network
-            inputs_nn = torch.stack([s_snow_nn, s_water_nn, self.precp_series, self.tmean_series], dim=-1)
-
-
-        # print('inputs_nn', inputs_nn.shape)
-
+            inputs_nn = torch.stack([s_snow_nn, s_water_nn, self.precp_series, self.tmean_series], dim=-1)   #.to(self.device)
 
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
         # Assuming nnmodel returns a tensor of shape (batch_size, numOfVars)
@@ -279,15 +223,15 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def hybrid_model_lstm(self, t, y):
 
-        # # Flush time
-        # sys.stdout.write(f"t \r{t}")
-        # sys.stdout.flush()
+        # Flush time
+        sys.stdout.write(f"t \r{t}")
+        sys.stdout.flush()
          
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       
         # S1: Storage state S_water (t)   
-        s0 = y[..., 0]
-        s1 = y[..., 1]
+        s0 = y[..., 0]  #.to(self.device)
+        s1 = y[..., 1]  #.to(self.device)
 
         # Interpolate the input variables
         t_np = t.detach().cpu().numpy()
@@ -298,24 +242,28 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Convert to tensor
         precp = torch.tensor(precp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
         temp = torch.tensor(temp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
-        lday = torch.tensor(lday, dtype=self.data_type_torch)
+        lday = torch.tensor(lday, dtype=self.data_type_torch).to(self.device)
 
-        # Find left index for the interpolation
-        idx = torch.searchsorted(self.time_series, t, side='right') - 1
-        idx = idx.clamp(max=self.time_series.size(0) - 2)  # Ensure indices do not exceed valid range
+        # # Find left index for the interpolation
+        # idx = torch.searchsorted(self.time_series, t, side='right') - 1
+        # idx = idx.clamp(max=self.time_series.size(0) - 2)  # Ensure indices do not exceed valid range
 
-        # Prepare entries for LSTM (find the idx position in the 2nd dim and substitute the last value by the new value)
-        precp_nn = self.precp_series[idx - self.window_size]
-        precp_nn[-1] = precp
-        temp_nn = self.tmean_series[idx - self.window_size]
-        temp_nn[-1] = temp
+        # # Prepare entries for LSTM (find the idx position in the 2nd dim and substitute the last value by the new value)
+        # precp_nn = self.precp_series[idx - self.window_size]
+        # precp_nn[-1] = precp
+        # temp_nn = self.tmean_series[idx - self.window_size]
+        # temp_nn[-1] = temp
 
-        # Prepare s_snow_nn and s_water_nn. Remove the first element and add the new value to the last entry
+        # Prepare lstm inputs. Remove the first element and add the new value to the last entry
         self.s_snow_lstm = torch.cat((self.s_snow_lstm[1:], s0), dim=0)
         self.s_water_lstm = torch.cat((self.s_water_lstm[1:], s1), dim=0)
+        # print(self.precp_lstm[1:].device, precp.device)
+        self.precp_lstm = torch.cat((self.precp_lstm[1:], precp), dim=0)
+        self.tmean_lstm = torch.cat((self.tmean_lstm[1:], temp), dim=0)
 
         # Compute ET from the pretrainer.nnmodel
-        inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, precp_nn, temp_nn], dim=-1)
+        inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, self.precp_lstm, self.tmean_lstm], dim=-1)  #.to(self.device)
+        # inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, precp_nn, temp_nn], dim=-1)
 
         basin = self.basin
         if not isinstance(basin, list):

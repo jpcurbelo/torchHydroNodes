@@ -191,7 +191,7 @@ class NNpretrainer(ExpHydroCommon):
             output_tensor = torch.stack(output_sequences)  # Shape: [num_sequences, num_output_vars]
             basin_ids = sequence_basin_ids
 
-            print(is_trainer, 'input_tensor:', input_tensor.shape)
+            print('create_dataloaders', is_trainer, 'input_tensor:', input_tensor.shape)
 
         elif self.cfg.nn_model == 'mlp':
             input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
@@ -581,27 +581,3 @@ class NNpretrainer(ExpHydroCommon):
 
             # Save the results to a CSV file
             df_results.to_csv(output_file_path, index=False)
-
-
-# def get_model_outputs(ds_basin, input_var_names, device, nn_model, nnmodel, basin, seq_length):
-#     # Prepare inputs
-#     inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], dim=0).t().to(device)
-
-#     if nn_model == 'lstm':
-#         # For LSTM, create sequences
-#         input_sequences = []
-#         for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
-#             input_sequences.append(inputs[j:j + seq_length, :])
-#         inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
-
-#     basin_list = [basin for _ in range(inputs.shape[0])]
-#     outputs = nnmodel(inputs, basin_list)
-
-#     # Ensure outputs are on CPU
-#     outputs = outputs.cpu().detach()
-
-#     if nn_model == 'lstm':
-#         # For LSTM, fill the first seq_length - 1 values with NaNs
-#         outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
-
-#     return outputs

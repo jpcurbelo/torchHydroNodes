@@ -71,19 +71,20 @@ class BaseHybridModelTrainer:
                 self.model.optimizer.zero_grad()
 
                 # Forward pass
-                q_sim = self.model(inputs, basin_ids[0])
+                q_sim = self.model(inputs.to(self.model.device), basin_ids[0])
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
                     # To tensor
                     std_val = torch.tensor(std_val, dtype=self.model.data_type_torch)  #.to(self.model.device)
-                    loss = self.loss(q_sim, targets[:, -1],   # .to(self.model.device), 
-                                     std_val)
+                    # print(q_sim.device, targets[:, -1].device, std_val.device)
+                    loss = self.loss(q_sim, targets[:, -1].to(self.model.device),   # .to(self.model.device), 
+                                     std_val.to(self.model.device))
                 else:
                     if self.model.cfg.scale_target_vars:
-                        loss = self.loss(torch.exp(q_sim), torch.exp(targets[:, -1]))   #.to(self.model.device))
+                        loss = self.loss(torch.exp(q_sim), torch.exp(targets[:, -1]).to(self.model.device))   #.to(self.model.device))
                     else:
-                        loss = self.loss(q_sim, targets[:, -1])   #.to(self.model.device))
+                        loss = self.loss(q_sim, targets[:, -1].to(self.model.device))   #.to(self.model.device))
 
                 # Backward pass
                 loss.backward()
