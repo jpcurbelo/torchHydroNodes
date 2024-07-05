@@ -57,7 +57,7 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
-batch_size: 128
+batch_size: 256
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -74,7 +74,7 @@ learning_rate:
 experiment_name: cluster1_hybrid_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111

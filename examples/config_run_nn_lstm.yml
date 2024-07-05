@@ -64,11 +64,11 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
-batch_size: 128
-# batch_size: 256
+# batch_size: 128
+batch_size: 256
 
 # Length of the input sequence
-seq_length: 270
+seq_length: 180
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -78,16 +78,19 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
   - 256
 
+# Dropout rate for the NN model
+dropout: 0.4
+
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 4basin_pretrainer_lstm
-experiment_name: 1basin_pretrainer_lstm
+experiment_name: 1basin_pretrainer_lstm_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -113,7 +116,7 @@ log_n_basins: 1
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

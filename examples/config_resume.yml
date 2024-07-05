@@ -1,0 +1,11 @@
+# Number of epochs to continue training the model
+epochs: 50
+
+# # Learning rate for the optimizer
+# learning_rate: 0.001
+learning_rate:
+  initial: 0.0005
+  decay: 0.5
+  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+
+device: cuda:0

@@ -21,7 +21,14 @@ def NSE_eval(y_true, y_pred):
     .. [#] Nash, J. E.; Sutcliffe, J. V. (1970). "River flow forecasting through conceptual models part I - A 
         discussion of principles". Journal of Hydrology. 10 (3): 282-290. doi:10.1016/0022-1694(70)90255-6.
     '''
+    
+    # print('Eval', 'y_true:', y_true.shape, 'y_pred:', y_pred.shape)
+    
     y_true, y_pred = remove_nans(y_true, y_pred)
+
+    # print('Eval', 'y_true:', y_true.shape, 'y_pred:', y_pred.shape)
+    # print('y_true:', y_true[:5], y_true[-5:])
+    # print('y_pred:', y_pred[:5], y_pred[-5:])
 
     numerator = np.sum(np.square(y_true - y_pred))
     denominator = np.sum(np.square(y_true - np.mean(y_true))) + np.finfo(float).eps
@@ -442,7 +449,9 @@ class NSEloss(nn.Module):
 
     def forward(self, y_true, y_pred):
 
-        # print('y_true:', y_true.shape, 'y_pred:', y_pred.shape)
+        # print('Loss', 'y_true:', y_true.shape, 'y_pred:', y_pred.shape)
+        # print('y_true:', y_true[:5], y_true[-5:])
+        # print('y_pred:', y_pred[:5], y_pred[-5:])
 
         # # Exp to convert the log space to normal space
         # y_true = torch.exp(y_true)

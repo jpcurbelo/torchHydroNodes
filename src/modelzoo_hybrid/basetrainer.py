@@ -5,6 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import copy
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -51,12 +52,12 @@ class BaseHybridModelTrainer:
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
         if self.model.cfg.verbose:
-            print("-- Training the hybrid model --")
+            print(f"-- Training the hybrid model on {self.model.device} --")
 
-        # Save the model weights - Epoch 0
-        if not is_resume:
-            self.save_model()
-            self.save_plots(epoch=0)
+        # # Save the model weights - Epoch 0
+        # # if not is_resume:
+        # self.save_model()
+        # self.save_plots(epoch=0)
 
         for epoch in range(self.model.epochs):
 
@@ -73,33 +74,45 @@ class BaseHybridModelTrainer:
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
 
-                # print('inputs:', inputs.device)
-                # print('targets:', targets.device)
-                # aux = input("Press Enter to continue...")
-
                 # Transfer to device
                 inputs = inputs.to(self.model.device)
                 targets = targets.to(self.model.device)
 
                 # Forward pass
+                # print(f'Model state dict0: {self.model.pretrainer.nnmodel.state_dict()}')
                 q_sim = self.model(inputs, basin_ids[0])
 
-                # print('q_sim:', q_sim.device)
-                # print('targets:', targets[:, -1].device)
-                # aux = input("Press Enter to continue...")
+                # # Print the first 5 and last 5 values of the simulated discharge
+                # print('q_sim:', q_sim[:5], q_sim[-5:])
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
                     # To tensor
-                    std_val = torch.tensor(std_val, dtype=self.model.data_type_torch)  #.to(self.model.device)
-                    # print(q_sim.device, targets[:, -1].device, std_val.device)
-                    loss = self.loss(q_sim, targets[:, -1], std_val)
+                    std_val = torch.tensor(std_val, dtype=self.model.data_type_torch)  
+                    loss = self.loss(targets[:, -1], q_sim, std_val)
                 else:
                     if self.model.cfg.scale_target_vars:
-                        loss = self.loss(torch.exp(q_sim), torch.exp(targets[:, -1]))   #.to(self.model.device))
+                        loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim))  
                     else:
-                        loss = self.loss(q_sim, targets[:, -1])   #.to(self.model.device))
+                        loss = self.loss(targets[:, -1], q_sim) 
 
+                # Accumulate the loss
+                epoch_loss += loss.item()
+                num_batches_seen += 1
+
+                # Update progress bar with current average loss
+                avg_loss = epoch_loss / num_batches_seen
+                # print(f'Avg Loss: {avg_loss:.4e}', end='\r')
+                pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
+
+                # Save the model state before optimizer step
+                if num_batches_seen == len(self.model.dataloader):
+                    # print('Saving model state dict')
+                    # nnmodel_state_dict = self.model.pretrainer.nnmodel.state_dict().copy()
+                    nnmodel_state_dict = copy.deepcopy(self.model.pretrainer.nnmodel.state_dict())
+                    # print(f'Model state dict0: {nnmodel_state_dict}')
+
+                ##############################################################
                 # Backward pass
                 loss.backward()
 
@@ -110,13 +123,8 @@ class BaseHybridModelTrainer:
                 # Update the weights
                 self.model.optimizer.step()
 
-                # Accumulate the loss
-                epoch_loss += loss.item()
-                num_batches_seen += 1
-
-                # Update progress bar with current average loss
-                avg_loss = epoch_loss / num_batches_seen
-                pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
+                # print(f'Model state dict1: {self.model.pretrainer.nnmodel.state_dict()}')
+                ##############################################################
 
             pbar.close()
 
@@ -126,7 +134,7 @@ class BaseHybridModelTrainer:
                     print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
                 # Save the model weights
                 self.save_model()
-                self.save_plots(epoch=epoch+1)
+                self.save_plots(nnmodel_state_dict, epoch=epoch+1)
 
             # Early stopping check
             early_stopping(avg_loss)
@@ -161,11 +169,18 @@ class BaseHybridModelTrainer:
         # Save the model weights
         torch.save(self.model.pretrainer.nnmodel.state_dict(), model_path / f'trainer_{self.hybrid_model}_{self.nnmodel_name}_{self.number_of_basins}basins.pth')
 
-    def save_plots(self, epoch=None):
+    def save_plots(self, nnmodel_state, epoch=None):
         '''
         Save the plots of the observed and predicted values for a random subset of basins
         and for each dataset period
         '''
+
+        # print(f'Model state dict2: {self.model.pretrainer.nnmodel.state_dict()}')
+
+        # Load the saved model state
+        self.model.pretrainer.nnmodel.load_state_dict(nnmodel_state)
+
+        # print(f'Model state dict3: {self.model.pretrainer.nnmodel.state_dict()}')
 
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
         if self.model.pretrainer.basins_to_log is not None:
@@ -205,12 +220,14 @@ class BaseHybridModelTrainer:
                     time_series = ds_basin['date'].values
                     # If the period is not ds_train, then shift the time series by the length of ds_train
                     if dsp == 'ds_train':        
-                        time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
+                        time_idx = np.linspace(0, len(time_series) - 1, len(time_series), 
+                                               dtype=self.model.data_type_np)
                     else:
                         time_series_test = getattr(self.model.pretrainer.fulldataset, dsp)['date'].values
                         train_length = len(self.model.pretrainer.fulldataset.ds_train['date'].values)
                         test_length = len(time_series_test)
-                        time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), dtype=self.model.data_type_np)
+                        time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), 
+                                               dtype=self.model.data_type_np)
 
                     input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
 
@@ -229,12 +246,16 @@ class BaseHybridModelTrainer:
                     # print('outputs:', outputs.shape)
 
                     # Get model outputs
+                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
                     outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
                                                 self.model.device, self.model.cfg.nn_model, 
                                                 self.model, basin, self.model.cfg.seq_length,
                                                 is_trainer=True)
 
                     # print('outputs:', outputs.shape)
+
+                    # # Loss testing prints
+                    # print('outputs:', outputs[:5], outputs[-5:])
 
                     # Scale back outputs
                     if self.model.cfg.scale_target_vars:
@@ -265,6 +286,8 @@ class BaseHybridModelTrainer:
                     plt.legend()
 
                     nse_val = NSE_eval(y_obs, y_sim)
+                    print(f'NSE: {nse_val:.3f}')
+
                     plt.title(f'{self.target} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
 
                     plt.tight_layout()
@@ -313,10 +336,11 @@ class BaseHybridModelTrainer:
                     # Add time_idx to the dataset, making sure to match the correct dimensions
                     ds_basin['time_idx'] = (('date',), time_idx)
                     # Get the outputs from the hybrid model
+                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
                     outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
-                                                self.model.device, self.model.cfg.nn_model, 
-                                                self.model, basin, self.model.cfg.seq_length,
-                                                is_trainer=True)
+                                            self.model.device, self.model.cfg.nn_model, 
+                                            self.model, basin, self.model.cfg.seq_length,
+                                            is_trainer=True)
                     
                     # Scale back outputs
                     if self.model.cfg.scale_target_vars:

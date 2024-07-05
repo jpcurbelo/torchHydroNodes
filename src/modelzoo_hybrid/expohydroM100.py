@@ -269,6 +269,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         if not isinstance(basin, list):
             basin = [basin]
 
+        # print(f'Model state dict9: {self.pretrainer.nnmodel.state_dict()}')
+        # aux = input('Press enter to continue: ')
         m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
 
         # Target variables:  Psnow, Prain, M, ET and, Q

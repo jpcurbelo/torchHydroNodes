@@ -23,7 +23,8 @@ data_dir: M0_results_569basins_1980_2010
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
 # nn_model_dir: 1basin_pretrainer_lstm_01013500
-nn_model_dir: 1basin_pretrainer_lstm_06431500
+# nn_model_dir: 1basin_pretrainer_lstm_06431500
+nn_model_dir: 1basin_pretrainer_lstm_06431500_do04_180d
 
 scale_target_vars: True
 
@@ -61,6 +62,7 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
+# batch_size: -1
 batch_size: 256
 
 # # Length of the input sequence
@@ -74,7 +76,7 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -84,7 +86,7 @@ learning_rate:
 experiment_name: 1basin_hybrid_lstm_06431500
 # experiment_name: cluster1_hybrid_lstm
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -108,7 +110,7 @@ log_n_basins: 1
   # 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 5
 
 # Metrics to use for evaluation (after training)
 metrics:

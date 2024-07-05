@@ -8,7 +8,8 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-basin_file: 1_basin_file.txt
+# basin_file: 1_basin_file.txt
+basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 569_basin_file_cluster1of6_63.txt
 
@@ -21,7 +22,9 @@ data_dir: M0_results_569basins_1980_2010
 
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
-nn_model_dir: 1basin_pretrainer_lstm_01013500
+# nn_model_dir: 1basin_pretrainer_lstm_01013500
+nn_model_dir: 1basin_pretrainer_lstm_06431500
+# nn_model_dir: 1basin_pretrainer_lstm_06431500_do04
 
 scale_target_vars: True
 
@@ -40,7 +43,7 @@ scale_target_vars: True
 # valid_start_date: "01/10/2000"
 # valid_end_date: "30/09/2005"
 
-train_start_date: "01/10/1987"
+train_start_date: "01/10/1997"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2003"
@@ -49,20 +52,20 @@ valid_end_date: "30/09/2003"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 5
+epochs: 200
 
 # Patience for early stopping
-patience: 5
+patience: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
-batch_size: 256
+batch_size: -1
 
-# Length of the input sequence
-seq_length: 270
+# # Length of the input sequence
+# seq_length: 270
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -72,12 +75,14 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_hybrid_mlp
-experiment_name: CC1basin_hybrid_lstm
+# experiment_name: 1basin_hybrid_lstm
+# experiment_name: 1basin_hybrid_lstm_01013500
+experiment_name: CC1basin_hybrid_lstm_06431500
 # experiment_name: cluster1_hybrid_lstm
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1

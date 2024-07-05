@@ -30,10 +30,16 @@ class LSTM(BaseNNModel):
     def forward(self, inputs, basin_list):
 
         # print("inputsLSTM", inputs.shape)
+        # print("dropout", self.dropout)
+
+        # aux = input("Press Enter to continue...")
 
         # Gather means and stds for the batch
         means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(inputs.device)
         stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(inputs.device)
+
+        # print("means", means)
+        # print("stds", stds)
 
         # Reshape means and stds to match the input shape
         means = means.unsqueeze(1)  # Shape: [batch_size, 1, input_size]

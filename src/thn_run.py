@@ -289,6 +289,9 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
     # Neural network model
     model_nn = get_nn_model(model_concept)
 
+    # # Print state dictionary
+    # print(model_nn.state_dict())
+
     print(f'-- Neural network model: {model_nn.__class__.__name__}')
 
     # Load the neural network model state dictionary if run_dir/model_weights/*.pth exists
@@ -299,6 +302,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
         model_file = matching_files[0]
         # Load the state dictionary from the saved model
         state_dict = torch.load(model_file)
+        # print('state_dict:', state_dict)
         # Load the state dictionary into the model
         model_nn.load_state_dict(state_dict)
         print(f'-- Loaded the model weights from {model_file}')
@@ -322,9 +326,12 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_lstm.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 
 # python thn_run.py hybrid --action resume_training --run-dir ../examples/runs/1basin_hybrid_lstm_06431500_240704_125621
