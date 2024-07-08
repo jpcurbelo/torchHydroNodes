@@ -36,12 +36,10 @@ valid_end_date: "30/09/2010"
 test_start_date: "01/10/2000"
 test_end_date: "30/09/2010"
 
-# train_start_date: "01/10/1995"
+# train_start_date: "01/10/1997"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
 # valid_end_date: "30/09/2003"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2003"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
@@ -74,7 +72,7 @@ learning_rate:
 experiment_name: cluster1_hybrid_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cpu
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111

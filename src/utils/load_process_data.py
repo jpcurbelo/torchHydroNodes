@@ -48,6 +48,51 @@ def load_forcing_target_data(run_config):
     
     pass
 
+def dump_config(cfg, filename: str = 'config.yml'):
+    '''
+    Dump the configuration data to a ymal file.
+    
+    - Args:
+        cfg: dict, configuration data.
+        filename: str, name of the file to save the configuration data.
+        
+    - Returns:
+        cfg: dict, configuration data.
+    '''
+    
+    # Convert PosixPath objects to strings before serializing
+    cfg_copy = cfg.copy()
+    for key, value in cfg_copy.items():
+        if isinstance(value, Path):
+            cfg_copy[key] = str(value)
+        elif isinstance(value, Timestamp):
+            # cfg_copy[key] = value.isoformat()
+            # To string this format 01/10/1980 (DD/MM/YYYY)
+            cfg_copy[key] = value.strftime('%d/%m/%Y')
+            
+    # Convert precision to string
+    if cfg_copy['precision']['numpy'] == np.float32:
+        cfg_copy['precision'] = 'float32'
+    else:
+        cfg_copy['precision'] = 'float64'
+        
+    # Device to string
+    cfg_copy['device'] = str(cfg_copy['device'])
+
+    # Number of basins
+    n_first_basins = cfg_copy['n_first_basins'] if 'n_first_basins' in cfg_copy else -1
+    n_random_basins = cfg_copy['n_random_basins'] if 'n_random_basins' in cfg_copy else -1
+    cfg_copy['number_of_basins'] = len(load_basin_file(cfg_copy['basin_file_path'], n_first_basins, n_random_basins))
+    cfg['number_of_basins'] = cfg_copy['number_of_basins']
+
+    # Save the configuration data to a ymal file
+    config_path = cfg['run_dir'] / filename
+    with open(config_path, 'w') as f:
+        yaml.dump(cfg_copy, f)
+
+    return cfg
+
+
 def update_hybrid_cfg(cfg):
 
     # Load vars from the nn_model
@@ -70,6 +115,9 @@ def update_hybrid_cfg(cfg):
         cfg.dropout = cfg_nn['dropout']
     cfg.nn_model = cfg_nn['nn_model']
 
+    # Save the configuration data to a ymal file
+    config_fname = 'configZZ.yml'
+    _ = dump_config(cfg._cfg, config_fname)
 
     return cfg
 
@@ -98,7 +146,7 @@ class Config(object):
                 self.create_run_folder_tree()
                 
             # Dump the configuration data to a ymal file
-            self.dump_config()
+            self._cfg = dump_config(self._cfg)
 
     def set_random_seeds(self):
         '''
@@ -177,48 +225,7 @@ class Config(object):
         else:
             cfg_copy['precision'] = 'float64'
     
-    def dump_config(self, filename: str = 'config.yml'):
-        '''
-        Dump the configuration data to a ymal file.
-        
-        - Args:
-            None
-            
-        - Returns:
-            None
-        '''
-        
-        # Convert PosixPath objects to strings before serializing
-        cfg_copy = self._cfg.copy()
-        for key, value in cfg_copy.items():
-            if isinstance(value, Path):
-                cfg_copy[key] = str(value)
-            elif isinstance(value, Timestamp):
-                # cfg_copy[key] = value.isoformat()
-                # To string this format 01/10/1980 (DD/MM/YYYY)
-                cfg_copy[key] = value.strftime('%d/%m/%Y')
-                
-        # Convert precision to string
-        if cfg_copy['precision']['numpy'] == np.float32:
-            cfg_copy['precision'] = 'float32'
-        else:
-            cfg_copy['precision'] = 'float64'
-            
-        # Device to string
-        cfg_copy['device'] = str(cfg_copy['device'])
-
-        # Number of basins
-        n_first_basins = cfg_copy['n_first_basins'] if 'n_first_basins' in cfg_copy else -1
-        n_random_basins = cfg_copy['n_random_basins'] if 'n_random_basins' in cfg_copy else -1
-        cfg_copy['number_of_basins'] = len(load_basin_file(cfg_copy['basin_file_path'], n_first_basins, n_random_basins))
-        self._cfg['number_of_basins'] = cfg_copy['number_of_basins']
-
-        # Save the configuration data to a ymal file
-        config_path = self._cfg['run_dir'] / filename
-        with open(config_path, 'w') as f:
-            yaml.dump(cfg_copy, f)
-    
-    def _get_property_value(self, key: str, default=None) -> Union[float, int, str, list, dict, Path, pd.Timestamp, torch.device]:
+    def _get_property_value(self, key: str, default=False) -> Union[float, int, str, list, dict, Path, pd.Timestamp, torch.device]:
         '''
         Get the value of a property from the config.
 

@@ -318,7 +318,7 @@ class NNpretrainer(ExpHydroCommon):
                         return
 
                 # Compute the loss
-                loss = self.loss(predictions, targets) 
+                loss = self.loss(targets, predictions) 
 
                 # if torch.isnan(loss).any():
                 #     nan_count += 1
