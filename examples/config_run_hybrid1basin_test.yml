@@ -52,10 +52,10 @@ valid_end_date: "30/09/2003"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 10
 
 # Patience for early stopping
-patience: 20
+patience: 10
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -109,7 +109,7 @@ log_n_basins: 1
   # 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 5
+log_every_n_epochs: 10
 
 # Metrics to use for evaluation (after training)
 metrics:

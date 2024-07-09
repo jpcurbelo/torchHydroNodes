@@ -260,8 +260,13 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
         
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='hybrid')
 
+    # Get the basin interpolators
+    interpolators = get_basin_interpolators(dataset, cfg, project_dir)
+
     # Conceptual model
-    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+    time_idx0 = 0
+    model_concept = get_concept_model(cfg, dataset.ds_train, interpolators, time_idx0,
+                                        dataset.scaler)
 
     print(f'-- Conceptual model: {model_concept.__class__.__name__}')
 
