@@ -113,8 +113,8 @@ def FHV_eval(y_true, y_pred, h=0.02):
     y_true_sorted = np.sort(y_true)[::-1]
     y_pred_sorted = np.sort(y_pred)[::-1]
 
-    print('y_true_sorted:', y_true_sorted[:5], y_true_sorted[-5:])
-    print('y_pred_sorted:', y_pred_sorted[:5], y_pred_sorted[-5:])
+    # print('y_true_sorted:', y_true_sorted[:5], y_true_sorted[-5:])
+    # print('y_pred_sorted:', y_pred_sorted[:5], y_pred_sorted[-5:])
 
     # Subset data to only top h flow values
     y_true_subset = y_true_sorted[:np.round(h * len(y_true_sorted)).astype(int)]

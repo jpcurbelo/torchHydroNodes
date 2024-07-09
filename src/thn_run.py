@@ -135,16 +135,24 @@ def _basin_interpolator_dict(ds, vars):
             
     return interpolators
 
+def get_basin_interpolators(dataset, cfg, project_dir=project_dir):
+    """
+    Get the full dataset for interpolators and return the basin interpolators.
 
+    Args:
+        dataset: The dataset object containing period-specific datasets.
+        cfg: Configuration object that includes the concept model name.
+        project_dir: The root directory of the project.
 
-def run_conceptual_model(config_file: Path, gpu: int = None):
+    Returns:
+        Dictionary of interpolators for the 
+    """
 
-    cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
-    
-    print('-- Running the model and saving the results')
-    for basin in tqdm(dataset.basins, disable=cfg .disable_pbar, file=sys.stdout):
+    # Create a dictionary to store interpolator functions for each basin and variable
+    interpolators = dict()
 
-        ## Get fulldataset for interpolators
+    for basin in dataset.basins:
+        ## Get full dataset for interpolators
         # Get keys ds_* for the full dataset
         ds_periods = [key for key in dataset.__dict__.keys() if key.startswith('ds_')]
 
@@ -164,7 +172,21 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
         # Sort the concatenated dataset by the date dimension
         ds_full = ds_full.sortby('date')
 
-        interpolators = _basin_interpolator_dict(ds_full, interpolator_vars)
+        # Generate the interpolators
+        interpolators[basin] = _basin_interpolator_dict(ds_full, interpolator_vars)
+
+    return interpolators
+
+
+def run_conceptual_model(config_file: Path, gpu: int = None):
+
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
+
+    # Get the basin interpolators
+    interpolators = get_basin_interpolators(dataset, cfg, project_dir)
+    
+    print('-- Running the model and saving the results')
+    for basin in tqdm(dataset.basins, disable=cfg .disable_pbar, file=sys.stdout):
 
         for period in dataset.start_and_end_dates.keys():
             
@@ -217,8 +239,13 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
     
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='pretrainer')
 
+    # Get the basin interpolators
+    interpolators = get_basin_interpolators(dataset, cfg, project_dir)
+
     # Conceptual model
-    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+    time_idx0 = 0
+    model_concept = get_concept_model(cfg, dataset.ds_train, interpolators, time_idx0, 
+                                      dataset.scaler)
 
     # Neural network model
     model_nn = get_nn_model(model_concept)

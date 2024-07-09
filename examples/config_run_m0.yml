@@ -8,8 +8,8 @@ forcings:
   - daymet
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file.txt
-# basin_file: 4_basin_file.txt
+# basin_file: 569_basin_file.txt
+basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
@@ -45,8 +45,8 @@ metrics:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: concept_run
-experiment_name: M0_results_569basins_1980_2010_RK23
+experiment_name: concept_run
+# experiment_name: M0_results_569basins_1980_2010_RK23
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu

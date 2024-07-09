@@ -31,8 +31,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
@@ -41,23 +41,21 @@ basin_file: 1_basin_fileB.txt
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1980"
-train_end_date: "30/09/2000"
-valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
-
-# train_start_date: "01/10/1997"
+# train_start_date: "01/10/1980"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2002"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1997"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2002"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: mse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 50
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -83,15 +81,16 @@ learning_rate:
 # Hidden layers for the NN model
 hidden_size: 
   - 256
-  - 256
+  # - 256
 
 # Dropout rate for the NN model
 dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
+experiment_name: 1basin_pretrainer_lstm
 # experiment_name: 4basin_pretrainer_lstm
-experiment_name: 1basin_pretrainer_lstm_06431500
+# experiment_name: 1basin_pretrainer_lstm_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
@@ -110,7 +109,7 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 1
+log_n_basins: 4
   # - 1013500
   # - 6431500
   # - 1022500

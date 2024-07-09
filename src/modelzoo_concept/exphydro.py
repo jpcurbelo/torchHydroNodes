@@ -109,12 +109,12 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         basin_params = self.params_dict[basin]
         
         # Get the interpolator functions for the basin
-        # self.precp_interp = self.interpolators[basin]['prcp']
-        # self.temp_interp = self.interpolators[basin]['tmean']
-        # self.lday_interp = self.interpolators[basin]['dayl']
-        self.precp_interp = self.interpolators['prcp']
-        self.temp_interp = self.interpolators['tmean']
-        self.lday_interp = self.interpolators['dayl']
+        self.precp_interp = self.interpolators[basin]['prcp']
+        self.temp_interp = self.interpolators[basin]['tmean']
+        self.lday_interp = self.interpolators[basin]['dayl']
+        # self.precp_interp = self.interpolators['prcp']
+        # self.temp_interp = self.interpolators['tmean']
+        # self.lday_interp = self.interpolators['dayl']
         
         # Get input variables for the basin
         self.precp_basin = self.precp.sel(basin=basin).values

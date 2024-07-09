@@ -445,29 +445,6 @@ class NNpretrainer(ExpHydroCommon):
                     ds_period = getattr(self.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
-                    # inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
-                    #             for var in self.input_var_names], dim=0).t().to(self.device)
-
-                    # if self.cfg.nn_model == 'lstm':
-                    #     # For LSTM, create sequences
-                    #     seq_length = self.cfg.seq_length
-                    #     input_sequences = []
-                    #     for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
-                    #         input_sequences.append(inputs[j:j + seq_length, :])
-                    #     inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
-
-                    # basin_list = [basin for _ in range(inputs.shape[0])]
-                    # outputs = self.nnmodel(inputs, basin_list)
-
-                    # # Ensure outputs are on CPU
-                    # outputs = outputs.cpu().detach()
-
-                    # if self.cfg.nn_model == 'lstm':
-                    #     # For LSTM, fill the first seq_length - 1 values with NaNs
-                    #     # outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan, \
-                    #     #                                 device=outputs.device), outputs], dim=0)
-                    #     outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
-
                     # Get model outputs
                     outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
                                                 self.device, self.cfg.nn_model, 
@@ -525,6 +502,11 @@ class NNpretrainer(ExpHydroCommon):
         pbar_basins.close()
 
     def evaluate(self):
+
+        metrics_dir = self.cfg.run_dir / 'model_metrics'
+        if not metrics_dir.exists():
+            metrics_dir.mkdir()
+
         # Extract keys that start with 'ds_'
         ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_')]
 
@@ -571,6 +553,26 @@ class NNpretrainer(ExpHydroCommon):
                 
                 # Extract dates
                 dates = ds_basin.date.values
+
+                # Save results to a CSV file
+                # Create a DataFrame with the required columns
+                results_df = pd.DataFrame({
+                    'date': dates,
+                    'y_obs': y_obs,
+                    'y_sim': y_bucket
+                })
+
+                # Save results to a CSV file
+                period_name = dsp.split('_')[-1]
+                results_file = f'{basin}_results_{period_name}.csv'
+                results_file_path = Path(self.cfg.results_dir) / results_file
+
+                # Ensure the results directory exists
+                results_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Save the DataFrame to a CSV file
+                results_df.to_csv(results_file_path, index=False)
+
                 
                 # Compute all evaluation metrics
                 metrics = compute_all_metrics(y_obs, y_bucket, dates, self.cfg.metrics)
@@ -588,8 +590,9 @@ class NNpretrainer(ExpHydroCommon):
             
             # Save results to a CSV file
             period_name = dsp.split('_')[-1]
-            output_file = f'evaluation_metrics_{period_name}.csv'
-            output_file_path = Path(self.cfg.results_dir) / output_file
+            metrics_file = f'evaluation_metrics_{period_name}.csv'
+            # output_file_path = Path(self.cfg.results_dir) / output_file
+            metrics_file_path = metrics_dir / metrics_file
 
             # Save the results to a CSV file
-            df_results.to_csv(output_file_path, index=False)
+            df_results.to_csv(metrics_file_path, index=False)
