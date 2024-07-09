@@ -15,3 +15,7 @@ exphydro:
   # clip_targets_to_zero:
   #   - obs_runoff
   #   - q_bucket
+  interpolator_vars:
+    - prcp
+    - dayl
+    - tmean

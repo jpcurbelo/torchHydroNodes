@@ -7,23 +7,20 @@ data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
 forcings: 
   - daymet
 
-# nn_dynamic_inputs:
-#   - prcp(mm/day)
-#   - dayl(s)
-#   - tmean(C)
-
-# target_variables: 
-#   - obs_runoff(mm/day)
-
 # Files to specify training, validation and test basins
-# basin_file: 25_basin_file.txt
-# basin_file: 1_basin_file.txt
 basin_file: 569_basin_file.txt
+# basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
+# exphydro model: Two buckets (water and snow), 5 processes and 6 parameters
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
+
+# Method to solve the ODEs (using solve_ivp from scipy.integrate)
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
+# Options: RK45, RK23, DOP853, Radau, BDF, LSODA
+odesmethod: RK23
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -31,8 +28,6 @@ train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
 
 # Metrics to use for evaluation
 metrics:
@@ -50,7 +45,8 @@ metrics:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: concept_run
+# experiment_name: concept_run
+experiment_name: M0_results_569basins_1980_2010_RK23
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu

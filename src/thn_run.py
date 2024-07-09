@@ -5,6 +5,9 @@ from pathlib import Path
 from tqdm import tqdm
 import torch
 import yaml
+import xarray as xr
+import numpy as np
+from scipy.interpolate import Akima1DInterpolator
 
 # Make sure code directory is in path,
 # Add the parent directory of your project to the Python path
@@ -104,6 +107,36 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptua
     
     return cfg, ds
 
+def _basin_interpolator_dict(ds, vars):
+    '''
+    Create interpolator functions for the input variables.
+
+    - Args:
+        ds: xarray.Dataset, dataset with the input variables.
+        vars: list, list with the input variables to interpolate
+    
+    - Returns:
+        interpolators: dict, dictionary with the interpolator functions for each variable.
+    '''
+    
+    time_series = np.linspace(0, len(ds['date'].values) - 1, len(ds['date'].values))
+
+    # Create a dictionary to store interpolator functions for each basin and variable
+    interpolators = dict()
+    
+    # Loop over the basins and variables
+    for var in vars:
+                        
+        # Get the variable values
+        var_values = ds[var].values
+
+        # Interpolate the variable values
+        interpolators[var] = Akima1DInterpolator(time_series, var_values)
+            
+    return interpolators
+
+
+
 def run_conceptual_model(config_file: Path, gpu: int = None):
 
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
@@ -111,17 +144,45 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
     print('-- Running the model and saving the results')
     for basin in tqdm(dataset.basins, disable=cfg .disable_pbar, file=sys.stdout):
 
+        ## Get fulldataset for interpolators
+        # Get keys ds_* for the full dataset
+        ds_periods = [key for key in dataset.__dict__.keys() if key.startswith('ds_')]
+
+        # Extract the datasets using the keys
+        datasets = [getattr(dataset, period).sel(basin=basin) for period in ds_periods]
+
+        # Concatenate the datasets along the date dimension
+        ds_full = xr.concat(datasets, dim='date')
+
+        # Load interpolator_vars from utils/concept_model_vars.yml
+        with open(Path(project_dir) / 'src' / 'utils' / 'concept_model_vars.yml', 'r') as f:
+            var_alias = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Load the variables for the concept model
+        interpolator_vars = var_alias[cfg.concept_model]['interpolator_vars']
+
+        # Sort the concatenated dataset by the date dimension
+        ds_full = ds_full.sortby('date')
+
+        interpolators = _basin_interpolator_dict(ds_full, interpolator_vars)
+
         for period in dataset.start_and_end_dates.keys():
             
             # Extract the basin data
             if period == 'train':
-                model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+                time_idx0 = 0
+                model_concept = get_concept_model(cfg, dataset.ds_train, interpolators, time_idx0,
+                                                dataset.scaler, odesmethod=cfg.odesmethod)
                 basin_data = dataset.ds_train.sel(basin=basin)
             elif period == 'test':
-                model_concept = get_concept_model(cfg, dataset.ds_test, dataset.scaler)              
+                time_idx0 = len(dataset.ds_train['date'].values)
+                model_concept = get_concept_model(cfg, dataset.ds_test, interpolators, time_idx0,
+                                                  dataset.scaler, odesmethod=cfg.odesmethod)              
                 basin_data = dataset.ds_test.sel(basin=basin)
             elif period == 'valid':
-                model_concept = get_concept_model(cfg, dataset.ds_valid, dataset.scaler)
+                time_idx0 = len(dataset.ds_train['date'].values)
+                model_concept = get_concept_model(cfg, dataset.ds_valid, interpolators, time_idx0,
+                                                  dataset.scaler, odesmethod=cfg.odesmethod)
                 basin_data = dataset.ds_valid.sel(basin=basin)
             else:
                 raise ValueError("Invalid period. Please specify 'train', 'test', or 'valid'.")

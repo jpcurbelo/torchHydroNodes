@@ -293,7 +293,6 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         return torch.stack([ds0_dt, ds1_dt], dim=-1)
 
-
     def create_sequences(self, data):
         num_sequences = data.size(0) - self.window_size + 1
         sequences = [data[i:i + self.window_size] for i in range(num_sequences)]

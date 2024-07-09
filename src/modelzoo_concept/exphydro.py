@@ -19,15 +19,14 @@ from src.utils.load_process_data import (
 class ExpHydro(BaseConceptModel, ExpHydroCommon):
     
     def __init__(self, 
-                 cfg: Config,
-                 ds: xarray.Dataset,
-                 scaler: dict,
-                 odesmethod:str ='RK23'
-                ):
-        super().__init__(cfg, ds, scaler, odesmethod)
-        
-        # Interpolators
-        self.interpolators = self.create_interpolator_dict()
+                cfg: Config,
+                ds: xarray.Dataset,
+                interpolators: dict,
+                time_idx0: int,
+                scaler: dict,
+                odesmethod:str ='RK23'
+            ):
+        super().__init__(cfg, ds, interpolators, time_idx0, scaler, odesmethod)\
         
         # Input variables
         self.precp = ds['prcp']
@@ -110,9 +109,12 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         basin_params = self.params_dict[basin]
         
         # Get the interpolator functions for the basin
-        self.precp_interp = self.interpolators[basin]['prcp']
-        self.temp_interp = self.interpolators[basin]['tmean']
-        self.lday_interp = self.interpolators[basin]['dayl']
+        # self.precp_interp = self.interpolators[basin]['prcp']
+        # self.temp_interp = self.interpolators[basin]['tmean']
+        # self.lday_interp = self.interpolators[basin]['dayl']
+        self.precp_interp = self.interpolators['prcp']
+        self.temp_interp = self.interpolators['tmean']
+        self.lday_interp = self.interpolators['dayl']
         
         # Get input variables for the basin
         self.precp_basin = self.precp.sel(basin=basin).values
@@ -127,19 +129,21 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
 
         # print('params:', params)
         # print('y0:', y0)
-        # print('t_span:', (0, self.precp.shape[1] - 1))
+        # print('t_span:', (self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1))
         # print('t_eval:', self.time_series)
         # print('method:', self.odesmethod)
 
         # aux = input("Press Enter to continue...")
 
         # Run the model
-        y = sp_solve_ivp(self.conceptual_model, t_span=(0, self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
+        # print('ode method1:', self.odesmethod )
+        y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
                          args=params, 
-                        #  method=self.odesmethod,
-                        method='LSODA',
+                         method=self.odesmethod,
+                        # method='LSODA',
                         #  method='DOP853',
-                        rtol=1e-9, atol=1e-12,
+                        # rtol=1e-9, atol=1e-12,
+                        rtol=1e-6, atol=1e-9,
                     )
         
         # Extract snow and water series -> two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022
@@ -163,10 +167,10 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         m_bucket = np.maximum(m_bucket, self.eps)
         # Precipitation as snow
         ps_bucket = Ps(self.precp_basin, self.temp_basin, tmin, self.step_function)
-        # ps_bucket = np.maximum(ps_bucket, 0)
+        ps_bucket = np.maximum(ps_bucket, self.eps)
         # Precipitation as rain
         pr_bucket = Pr(self.precp_basin, self.temp_basin, tmin, self.step_function)
-        # pr_bucket = np.maximum(pr_bucket, 0)
+        pr_bucket = np.maximum(pr_bucket, self.eps)
         
         # Mind this order for 'save_results' method - the last element is the target variable (q_obs)
         return s_snow, s_water, et_bucket, m_bucket, ps_bucket, pr_bucket, q_bucket
@@ -241,6 +245,9 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             self.params_dict[basin][0] = previous_states[0]
             self.params_dict[basin][1] = previous_states[1]
 
+            # Update self.time_series
+
+
     @property
     def nn_outputs(self):
         return ['ps_bucket', 'pr_bucket', 'm_bucket', 'et_bucket', 'q_bucket']
@@ -252,48 +259,33 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         
 ## Auxiliary functions
 # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
-# Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
-#                                         + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
+# return step_fct(S1) * step_fct(S1 - Smax) * Qmax + step_fct(S1) * step_fct(Smax - S1) * Qmax * np.exp(-f * (Smax - S1))
 Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
                                         + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
                                         
 # Qspill is the snowmelt is available to infiltrate into the catchment bucket, but the storage S has reached full capacity smax.
+# Qs = lambda S1, Smax: step_fct(S1) * step_fct(S1 - Smax) * (S1 - Smax)
 Qs = lambda s1, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * (s1 - smax)
 
 # Precipitation as snow (A1) - Hoge_EtAl_HESS_2022
+# Ps = lambda P, T, Tmin: step_fct(Tmin - T) * P
 Ps = lambda p, temp, tmin, step_fct: step_fct(tmin - temp) * p
 
 # Precipitation as snow (A2) - Hoge_EtAl_HESS_2022
+# Pr = lambda P, T, Tmin: step_fct(T - Tmin) * P
 Pr = lambda p, temp, tmin, step_fct: step_fct(temp - tmin) * p
 
 # Melting (A4) - Hoge_EtAl_HESS_2022
-# M(S0, T, Df, Tmax) = step_fct(T-Tmax)*step_fct(S0)*minimum([S0, Df*(T-Tmax)])
-# M = lambda temp, tmax, s0, df, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
-def M(s0, temp, df, tmax, step_fct):
-    
-    # if np.isscalar(temp) and np.isscalar(s0):
-    #     if temp > tmax and s0 > 0:
-    #         return  step_fct(np.minimum(s0, df * (temp - tmax)))
-    #     else:
-    #         return 0.0
-    # else:
-    #     # If temp and s0 are arrays, perform element-wise calculation
-    #     result = np.zeros_like(temp)  # Initialize result array with zeros
-        
-    #     # Check condition for each element of the arrays
-    #     condition = np.logical_and(temp > tmax, s0 > 0)
-
-    #     # Calculate result for elements satisfying the condition
-    #     result[condition] = np.minimum(s0[condition], df * (temp[condition] - tmax))
-
-    #     return result
-
-    return step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
+#  return step_fct(T - Tmax) * step_fct(S0) * np.minimum(S0, Df * (T - Tmax))
+M = lambda s0, temp, df, tmax, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
 
 
 # Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
+# ET = lambda S1, T, Lday, Smax: step_fct(S1) * step_fct(S1 - Smax) * PET(T, Lday) + \
+#                                step_fct(S1) * step_fct(Smax - S1) * PET(T, Lday) * (S1 / Smax)
 ET = lambda s1, temp, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(temp, lday)  \
                             + step_fct(s1) * step_fct(smax - s1) * PET(temp, lday) * (s1 / smax)
                                                  
 # Potential evapotranspiration - Hamon’s formula (Hamon, 1963) - Hoge_EtAl_HESS_2022 
+# return 29.8 * Lday * 0.611 * np.exp((17.3 * T) / (T + 237.3)) / (T + 273.2)  
 PET = lambda temp, lday: 29.8 * lday * 0.611 * np.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)    

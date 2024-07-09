@@ -9,14 +9,18 @@ from src.datasetzoo.basedataset import BaseDataset
 class BaseConceptModel:
     
     def __init__(self, 
-                 cfg: Config,
-                 ds: xarray.Dataset,
-                 scaler: dict,
-                 odesmethod:str ='RK23'
-                ):
+                cfg: Config,
+                ds: xarray.Dataset,
+                interpolators: dict,
+                time_idx0: int,
+                scaler: dict,
+                odesmethod:str ='RK23'
+            ):
         
         self.cfg = cfg
         self.dataset = ds
+        self.interpolators = interpolators
+        self.time_idx0 = time_idx0
         self.scaler = scaler
         self.odesmethod = odesmethod
         
@@ -25,8 +29,8 @@ class BaseConceptModel:
         self.data_type_torch = cfg.precision['torch']
         
         # Time series
-        self.time_series = np.linspace(0, len(ds['date'].values) - 1, len(ds['date'].values))
-        
+        self.time_series = np.linspace(self.time_idx0, self.time_idx0 + len(ds['date'].values) - 1, len(ds['date'].values))
+
     def conceptual_model(self, t, y, params):
         '''This function should implement the conceptual model to be used for the task'''
         raise NotImplementedError("This function has to be implemented by the child class")

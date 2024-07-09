@@ -116,7 +116,7 @@ def update_hybrid_cfg(cfg):
     cfg.nn_model = cfg_nn['nn_model']
 
     # Save the configuration data to a ymal file
-    config_fname = 'configZZ.yml'
+    config_fname = 'config.yml'
     _ = dump_config(cfg._cfg, config_fname)
 
     return cfg

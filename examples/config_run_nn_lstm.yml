@@ -68,7 +68,7 @@ clip_gradient_norm: 1.0
 batch_size: 256
 
 # Length of the input sequence
-seq_length: 180
+seq_length: 270
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -83,6 +83,7 @@ learning_rate:
 # Hidden layers for the NN model
 hidden_size: 
   - 256
+  - 256
 
 # Dropout rate for the NN model
 dropout: 0.4
@@ -93,7 +94,7 @@ dropout: 0.4
 experiment_name: 1basin_pretrainer_lstm_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -116,7 +117,7 @@ log_n_basins: 1
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:
