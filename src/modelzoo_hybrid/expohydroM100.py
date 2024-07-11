@@ -43,11 +43,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.scale_target_vars(is_trainer=True)
     
 
-    def forward(self, inputs, basin):
+    def forward(self, inputs, basin, use_grad=True):
 
-        # # print('inputs_forward', inputs.shape)
-        # print('inputs_forward', inputs.shape, inputs.device)
+        self.use_grad = use_grad
 
+        # print('use_grad', use_grad)
         # print(f"Memory usage before forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         
 
@@ -156,7 +156,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
         # Assuming nnmodel returns a tensor of shape (batch_size, numOfVars)
         # output = self.pretrainer.nnmodel(inputs_nn.to(self.device), [self.basin]) #.to(self.device)
-        output = self.pretrainer.nnmodel(inputs_nn, [self.basin])
+        output = self.pretrainer.nnmodel(inputs_nn, [self.basin], use_grad=self.use_grad)
 
         # Extract the last variable (last column) from the output
         q_output = output[:, -1]
@@ -288,7 +288,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             basin = [basin]
         # print(f"Memory usage after preparing basin: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
-        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] 
+        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin, use_grad=self.use_grad)[0] 
         # print(f"Memory usage after nnmodel output: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # Target variables:  Psnow, Prain, M, ET and, Q

@@ -121,10 +121,10 @@ class BaseHybridModelTrainer:
             # Save the model weights and plots
             if (epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0)):
                 
-                aux = input("Press Enter to continue...")
+                # aux = input("Press Enter to continue...")
                 
                 if self.model.cfg.verbose:
-                    print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
+                    print(f"-- Saving the model weights and plots (epoch {epoch + 1}) | --")
                 # Save the model weights
                 self.save_model()
                 # self.save_plots(nnmodel_state_dict, epoch=epoch+1)
@@ -198,18 +198,10 @@ class BaseHybridModelTrainer:
 
                 for dsp in self.ds_periods:
 
-                    # if dsp != 'ds_train':
-                    #     continue
-
                     period_name = dsp.split('_')[-1]
 
                     ds_period = getattr(self.model.pretrainer.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
-
-                    # print('dsp:', dsp)
-                    # print('ds_basin:', ds_basin)
-
-                    # aux = input("Press Enter to continue...")
 
                     time_series = ds_basin['date'].values
                     # If the period is not ds_train, then shift the time series by the length of ds_train
@@ -228,34 +220,12 @@ class BaseHybridModelTrainer:
                     # Add time_idx to the dataset, making sure to match the correct dimensions
                     ds_basin['time_idx'] = (('date',), time_idx)
 
-                    # # Get the inputs in the correct format
-                    # inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) \
-                    #     for var in input_var_names], dim=0).t().to(self.model.device)
-                    
-                    # print('inputs:', inputs.shape)
-
-                    # # Get the outputs from the hybrid model
-                    # outputs = self.model(inputs, basin)
-
-                    # print('outputs:', outputs.shape)
-
                     # Get model outputs
-                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
-                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
-                    #                             self.model.device, self.model.cfg.nn_model, 
-                    #                             self.model, basin, self.model.cfg.seq_length,
-                    #                             is_trainer=True)
-                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, basin, is_trainer=True)
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
-
                     # Get model outputs
-                    outputs = self.model(inputs, basin)
-
+                    outputs = self.model(inputs, basin, use_grad=False)
                     # Reshape outputs
                     outputs = self.model.reshape_outputs(outputs)
-
-                    # # Loss testing prints
-                    # print('outputs:', outputs[:5], outputs[-5:])
 
                     # Scale back outputs
                     if self.model.cfg.scale_target_vars:
@@ -264,18 +234,12 @@ class BaseHybridModelTrainer:
                         # If period is ds_train, also scale back the observed variables
                         if dsp == 'ds_train':
                             ds_basin = self.model.scale_back_observed(ds_basin, is_trainer=True)
-                            
-                    # print('outputs:', outputs.shape)
 
                     # Get the simulated values in numpy format
                     y_sim = outputs.detach().cpu().numpy()
 
-                    # print('y_sim:', y_sim, y_sim.shape)
-
                     # Get the observed values
                     y_obs = ds_basin[self.target.lower()].values
-
-                    # print('y_obs:', y_obs, y_obs.shape)
 
                     # Plot the observed and predicted values
                     plt.figure(figsize=(10, 6))
@@ -339,17 +303,11 @@ class BaseHybridModelTrainer:
 
                 # Add time_idx to the dataset, making sure to match the correct dimensions
                 ds_basin['time_idx'] = (('date',), time_idx)
+
                 # Get the outputs from the hybrid model
-                # # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
-                # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
-                #                         self.model.device, self.model.cfg.nn_model, 
-                #                         self.model, basin, self.model.cfg.seq_length,
-                #                         is_trainer=True)
                 inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
-
                 # Get model outputs
-                outputs = self.model(inputs, basin)
-
+                outputs = self.model(inputs, basin, use_grad=False)
                 # Reshape outputs
                 outputs = self.model.reshape_outputs(outputs)
 

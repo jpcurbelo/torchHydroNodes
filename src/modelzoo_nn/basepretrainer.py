@@ -385,7 +385,7 @@ class NNpretrainer(ExpHydroCommon):
 
                     # Get model outputs
                     basin_list = [basin for _ in range(inputs.shape[0])]
-                    outputs = self.nnmodel(inputs, basin_list)
+                    outputs = self.nnmodel(inputs, basin_list, use_grad=False)
 
                     # Reshape outputs
                     outputs = self.reshape_outputs(outputs)
@@ -481,7 +481,7 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Get model outputs
                 basin_list = [basin for _ in range(inputs.shape[0])]
-                outputs = self.nnmodel(inputs, basin_list)
+                outputs = self.nnmodel(inputs, basin_list, use_grad=False)
 
                 # Reshape outputs
                 outputs = self.reshape_outputs(outputs)

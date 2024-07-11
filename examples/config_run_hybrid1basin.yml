@@ -110,7 +110,7 @@ log_n_basins: 1
   # 1single1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 10
 
 # Metrics to use for evaluation (after training)
 metrics:
