@@ -12,7 +12,7 @@ basin_file: 569_basin_file_hydronodes.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010
+data_dir: M0_results_569basins_1980_2010_RK23
 nn_model_dir: 100_basins_pretrainer_run_240613_200903
 
 scale_target_vars: True

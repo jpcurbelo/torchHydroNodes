@@ -54,10 +54,10 @@ class BaseHybridModelTrainer:
         if self.model.cfg.verbose:
             print(f"-- Training the hybrid model on {self.model.device} --")
 
-        # # Save the model weights - Epoch 0
-        # # if not is_resume:
-        # self.save_model()
-        # self.save_plots(epoch=0)
+        # Save the model weights - Epoch 0
+        # if not is_resume:
+        self.save_model()
+        self.save_plots(epoch=0)
 
         for epoch in range(self.model.epochs):
 
@@ -79,11 +79,7 @@ class BaseHybridModelTrainer:
                 targets = targets.to(self.model.device)
 
                 # Forward pass
-                # print(f'Model state dict0: {self.model.pretrainer.nnmodel.state_dict()}')
                 q_sim = self.model(inputs, basin_ids[0])
-
-                # # Print the first 5 and last 5 values of the simulated discharge
-                # print('q_sim:', q_sim[:5], q_sim[-5:])
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
@@ -102,15 +98,11 @@ class BaseHybridModelTrainer:
 
                 # Update progress bar with current average loss
                 avg_loss = epoch_loss / num_batches_seen
-                # print(f'Avg Loss: {avg_loss:.4e}', end='\r')
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
-                # Save the model state before optimizer step
-                if num_batches_seen == len(self.model.dataloader):
-                    # print('Saving model state dict')
-                    # nnmodel_state_dict = self.model.pretrainer.nnmodel.state_dict().copy()
-                    nnmodel_state_dict = copy.deepcopy(self.model.pretrainer.nnmodel.state_dict())
-                    # print(f'Model state dict0: {nnmodel_state_dict}')
+                # # Save the model state before optimizer step
+                # if num_batches_seen == len(self.model.dataloader):
+                #     nnmodel_state_dict = copy.deepcopy(self.model.pretrainer.nnmodel.state_dict())
 
                 ##############################################################
                 # Backward pass
@@ -122,25 +114,26 @@ class BaseHybridModelTrainer:
 
                 # Update the weights
                 self.model.optimizer.step()
-
-                # print(f'Model state dict1: {self.model.pretrainer.nnmodel.state_dict()}')
                 ##############################################################
 
             pbar.close()
 
             # Save the model weights and plots
             if (epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0)):
+                
+                aux = input("Press Enter to continue...")
+                
                 if self.model.cfg.verbose:
                     print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
                 # Save the model weights
                 self.save_model()
-                self.save_plots(nnmodel_state_dict, epoch=epoch+1)
+                # self.save_plots(nnmodel_state_dict, epoch=epoch+1)
+                self.save_plots(epoch=epoch+1)
 
             # Early stopping check
             early_stopping(avg_loss)
             if early_stopping.early_stop:
-                if self.model.cfg.verbose:
-                    print(f"Early stopping at epoch {epoch + 1} with loss {avg_loss:.4e}")
+                print(f"Early stopping at epoch {epoch + 1} with loss {avg_loss:.4e}")
                 break
 
             # Learning rate scheduler
@@ -152,6 +145,10 @@ class BaseHybridModelTrainer:
                 new_lr = self.model.optimizer.param_groups[0]['lr']
                 if self.model.cfg.verbose and new_lr != current_lr:
                     print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
+
+            # Print the average loss for the epoch if not verbose (pbar is disabled)
+            if not self.model.cfg.verbose:
+                print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
         # Save the final model weights and plots
         if self.model.cfg.verbose:
@@ -169,18 +166,14 @@ class BaseHybridModelTrainer:
         # Save the model weights
         torch.save(self.model.pretrainer.nnmodel.state_dict(), model_path / f'trainer_{self.hybrid_model}_{self.nnmodel_name}_{self.number_of_basins}basins.pth')
 
-    def save_plots(self, nnmodel_state, epoch=None):
+    def save_plots(self, epoch=None):
         '''
         Save the plots of the observed and predicted values for a random subset of basins
         and for each dataset period
         '''
 
-        # print(f'Model state dict2: {self.model.pretrainer.nnmodel.state_dict()}')
-
-        # Load the saved model state
-        self.model.pretrainer.nnmodel.load_state_dict(nnmodel_state)
-
-        # print(f'Model state dict3: {self.model.pretrainer.nnmodel.state_dict()}')
+        # # Load the saved model state
+        # self.model.pretrainer.nnmodel.load_state_dict(nnmodel_state)
 
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
         if self.model.pretrainer.basins_to_log is not None:
@@ -190,6 +183,7 @@ class BaseHybridModelTrainer:
             for basin in pbar_basins:
 
                 # Clear CUDA cache at the beginning of each basin
+                
                 torch.cuda.empty_cache()
 
                 pbar_basins.set_description(f'* Plotting basin {basin}')
@@ -247,12 +241,18 @@ class BaseHybridModelTrainer:
 
                     # Get model outputs
                     # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
-                    outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
-                                                self.model.device, self.model.cfg.nn_model, 
-                                                self.model, basin, self.model.cfg.seq_length,
-                                                is_trainer=True)
+                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
+                    #                             self.model.device, self.model.cfg.nn_model, 
+                    #                             self.model, basin, self.model.cfg.seq_length,
+                    #                             is_trainer=True)
+                    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, basin, is_trainer=True)
+                    inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
 
-                    # print('outputs:', outputs.shape)
+                    # Get model outputs
+                    outputs = self.model(inputs, basin)
+
+                    # Reshape outputs
+                    outputs = self.model.reshape_outputs(outputs)
 
                     # # Loss testing prints
                     # print('outputs:', outputs[:5], outputs[-5:])
@@ -340,12 +340,19 @@ class BaseHybridModelTrainer:
                 # Add time_idx to the dataset, making sure to match the correct dimensions
                 ds_basin['time_idx'] = (('date',), time_idx)
                 # Get the outputs from the hybrid model
-                # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
-                outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
-                                        self.model.device, self.model.cfg.nn_model, 
-                                        self.model, basin, self.model.cfg.seq_length,
-                                        is_trainer=True)
-                
+                # # outputs = self.model.get_model_outputs(ds_basin, input_var_names, self.model, basin, is_trainer=True)
+                # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
+                #                         self.model.device, self.model.cfg.nn_model, 
+                #                         self.model, basin, self.model.cfg.seq_length,
+                #                         is_trainer=True)
+                inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
+
+                # Get model outputs
+                outputs = self.model(inputs, basin)
+
+                # Reshape outputs
+                outputs = self.model.reshape_outputs(outputs)
+
                 # Scale back outputs
                 if self.model.cfg.scale_target_vars:
                     outputs = self.model.scale_back_simulated(outputs, ds_basin, is_trainer=True)
@@ -403,4 +410,3 @@ class BaseHybridModelTrainer:
 
             # Save the results to a CSV file
             df_results.to_csv(metrics_file_path, index=False)
-

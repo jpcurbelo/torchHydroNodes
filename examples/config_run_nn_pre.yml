@@ -8,7 +8,7 @@ nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010
+data_dir: M0_results_569basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
@@ -30,10 +30,10 @@ target_variables:
 scale_target_vars: True
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file.txt
+# basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
 # basin_file: 1_basin_file.txt
-# basin_file: 4_basin_file.txt
+basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
 # n_random_basins: 100
@@ -45,8 +45,11 @@ train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
+
+# train_start_date: "01/10/1995"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: mse
@@ -58,8 +61,9 @@ epochs: 200
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 7304
-# batch_size: 128
+# batch_size: 7304
+# batch_size: 256
+batch_size: 1024
 
 # Length of the input sequence
 seq_length: 270
@@ -87,7 +91,8 @@ hidden_size:
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 100_basins_pretrainer_run
-experiment_name: 1basin_pretrainer_lstm
+# experiment_name: ZZ1basin_pretrainer_lstm
+experiment_name: ZZ4basin_pretrainer_lstm
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0

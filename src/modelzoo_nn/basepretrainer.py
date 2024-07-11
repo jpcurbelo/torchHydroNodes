@@ -24,6 +24,7 @@ from src.utils.metrics import (
     compute_all_metrics,
 )
 
+from src.utils.load_process_data import EarlyStopping
 
 class NNpretrainer(ExpHydroCommon):
 
@@ -140,15 +141,8 @@ class NNpretrainer(ExpHydroCommon):
     def create_dataloaders(self, is_trainer=False):
         '''Create the dataloaders for the pretrainer'''
 
-        # # Set CUDA_LAUNCH_BLOCKING for better error tracing
-        # os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-
         # Convert xarray DataArrays to PyTorch tensors and store in a dictionary
         tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
-
-        # # If self.device is 'cuda', move tensors to GPU
-        # if 'cuda' in str(self.device):
-        #     tensor_dict = {var: tensor.to(self.device) for var, tensor in tensor_dict.items()}
 
         # Create a list of input and output tensors based on the variable names
         if is_trainer:
@@ -178,12 +172,8 @@ class NNpretrainer(ExpHydroCommon):
 
         # Ensure input and output tensors are wrapped into single composite tensors if needed
         if self.cfg.nn_model == 'lstm':
+
             # Create sequences
-
-            # print(is_trainer, 'time_idx' in tensor_dict)
-            # time_idx_tensor = tensor_dict['time_idx']
-
-
             input_tensor = torch.stack(input_tensors, dim=2).permute(1, 0, 2)  # Shape: [num_dates, num_basins, num_vars]
             output_tensor = torch.stack(output_tensors, dim=2).permute(1, 0, 2)  # Shape: [num_dates, num_basins, num_vars]
 
@@ -199,8 +189,6 @@ class NNpretrainer(ExpHydroCommon):
             output_tensor = torch.stack(output_sequences)  # Shape: [num_sequences, num_output_vars]
             basin_ids = sequence_basin_ids
 
-            # print('create_dataloaders', is_trainer, 'input_tensor:', input_tensor.shape)
-
         elif self.cfg.nn_model == 'mlp':
             input_tensor = torch.stack(input_tensors, dim=2).view(-1, len(input_var_names)) if \
                 len(input_tensors) > 1 else input_tensors[0].view(-1, 1)
@@ -213,8 +201,8 @@ class NNpretrainer(ExpHydroCommon):
         # Create a custom dataset with the input and output tensors and basin IDs
         dataset = CustomDatasetToNN(input_tensor, output_tensor, basin_ids)
 
-        # pin_memory = True if 'cuda' in str(self.device) else False
-        pin_memory = False
+        pin_memory = True if not 'cpu' in str(self.device) else False
+        # pin_memory = False
 
         # Create custom batch sampler
         batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
@@ -227,8 +215,10 @@ class NNpretrainer(ExpHydroCommon):
     
     def train(self, max_nan_batches=10):
 
-        if self.cfg.verbose:
-            print("-- Pretraining the neural network model --")
+        early_stopping = EarlyStopping(patience=self.cfg.patience)
+
+        # if self.cfg.verbose:
+        print("-- Pretraining the neural network model --")
 
         # Save the plots for the initial model weights
         self.save_plots(epoch=0)
@@ -246,66 +236,22 @@ class NNpretrainer(ExpHydroCommon):
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
 
-
-                # print('inputs', inputs.shape)
-                # print('inputs1', inputs[:5, 0], inputs[-5:, 0])
-                # print('inputs2', inputs[:5, 1], inputs[-5:, 1])
-                # print('inputs3', inputs[:5, 2], inputs[-5:, 2])
-                # print('inputs4', inputs[:5, 3], inputs[-5:, 3])
-
-                # print('targets', targets.shape)
-                # print('targets1', targets[:5, 0], targets[-5:, 0])
-                # print('targets2', targets[:5, 1], targets[-5:, 1])
-                # print('targets3', targets[:5, 2], targets[-5:, 2])
-                # print('targets4', targets[:5, 3], targets[-5:, 3])
-                # print('targets5', targets[:5, 4], targets[-5:, 4])
-
-
-                # aux = input("Press Enter to continue...")
-
-
                 # Forward pass
                 predictions = self.nnmodel(inputs.to(self.device), basin_ids)
 
-                # print('targets1', targets[:5, 0], targets[-5:, 0])
-                # print('predictions1', predictions[:5, 0], predictions[-5:, 0])
-                # print('targets2', targets[:5, 1], targets[-5:, 1])
-                # print('predictions2', predictions[:5, 1], predictions[-5:, 1])
-                # print('targets3', targets[:5, 2], targets[-5:, 2])
-                # print('predictions3', predictions[:5, 2], predictions[-5:, 2])
-                # print('targets4', targets[:5, 3], targets[-5:, 3])
-                # print('predictions4', predictions[:5, 3], predictions[-5:, 3])
-                # print('targets5', targets[:5, 4], targets[-5:, 4])
-                # print('predictions5', predictions[:5, 4], predictions[-5:, 4])
-
-                # print('predictions', predictions.shape)
-
-                # aux = input("Press Enter to continue...")
-
-                # print('predictions', predictions.shape)
-                # print('predictions1', predictions[:5, 0], predictions[-5:, 0])
-
                 # Move targets to the same device as predictions
                 targets = targets.to(self.device)
-
-                # print(predictions.shape, targets.shape)
-                # aux = input("Press Enter to continue...")
 
                 # Find the indices of NaNs in the predictions
                 nan_mask = torch.isnan(predictions)
                 nan_indices = torch.where(nan_mask)[0]
 
-                # print("Basins in this batch:", set(basin_ids))
-
                 if len(nan_indices) > 0:
                     nan_count += 1
-
-                    # print(predictions.shape, targets.shape, nan_mask.shape, nan_indices.shape)
 
                     # Find the basins with NaNs in the predictions
                     nan_basins = set([basin_ids[i] for i in nan_indices])
                     print(f"Basins with NaNs in the predictions: {nan_basins}")
-                    return
 
                     # Drop the NaNs from the predictions and targets
                     predictions = predictions[~nan_mask]
@@ -319,34 +265,7 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Compute the loss
                 loss = self.loss(targets, predictions) 
-
-                # if torch.isnan(loss).any():
-                #     nan_count += 1
-                   
-                #     # Find the indices of NaNs in the loss
-                #     nan_indices = torch.where(torch.isnan(loss))[0]
-
-                #     # Find the basins with NaNs in the loss
-                #     nan_basins = [basin_ids[i] for i in nan_indices]
-                #     print(f"Basins with NaNs in the loss: {nan_basins}")  
-
-                #     # # Adjust learning rate
-                #     # for param_group in self.optimizer.param_groups:
-                #     #     param_group['lr'] *= 0.5
-                #     # print(f"Reduced learning rate to {self.optimizer.param_groups[0]['lr']}")
-
-                #     # Reduce gradient clipping norm
-                #     if self.cfg.clip_gradient_norm is not None:
-                #         self.cfg.clip_gradient_norm *= 0.5
-
-                #     # Skip the batch if NaNs are found
-                #     print(f"Skipping batch {num_batches_seen + 1} due to NaNs in loss")
-                #     if nan_count > max_nan_batches:
-                #         print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
-                #         return
-                    
-                #     num_batches_seen += 1
-                #     continue
+                # print(num_batches_seen, loss.item())
 
                 # Backward pass
                 loss.backward()
@@ -375,6 +294,12 @@ class NNpretrainer(ExpHydroCommon):
                 self.save_model()
                 self.save_plots(epoch=epoch+1)
 
+            # Early stopping check
+            early_stopping(avg_loss)
+            if early_stopping.early_stop:
+                print(f"Early stopping at epoch {epoch + 1} with loss {avg_loss:.4e}")
+                break
+
             # Learning rate scheduler
             if (self.scheduler is not None) and epoch < self.epochs - 1:
                 current_lr = self.optimizer.param_groups[0]['lr']
@@ -384,6 +309,10 @@ class NNpretrainer(ExpHydroCommon):
                 new_lr = self.optimizer.param_groups[0]['lr']
                 if self.cfg.verbose and current_lr != new_lr:
                     print(f"Learning rate updated to {new_lr}")
+
+            # Print the average loss for the epoch if not verbose (pbar is disabled)
+            if not self.cfg.verbose:
+                print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
         # Save the final model weights and plots
         # if self.cfg.verbose:
@@ -445,11 +374,21 @@ class NNpretrainer(ExpHydroCommon):
                     ds_period = getattr(self.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
+                    # # Get model outputs
+                    # outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
+                    #                             self.device, self.cfg.nn_model, 
+                    #                             self.nnmodel, basin, 
+                    #                             self.cfg.seq_length)
+                    inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
+
+                    print('inputs:', inputs.shape, basin)  
+
                     # Get model outputs
-                    outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
-                                                self.device, self.cfg.nn_model, 
-                                                self.nnmodel, basin, 
-                                                self.cfg.seq_length)
+                    basin_list = [basin for _ in range(inputs.shape[0])]
+                    outputs = self.nnmodel(inputs, basin_list)
+
+                    # Reshape outputs
+                    outputs = self.reshape_outputs(outputs)
 
                     # Scale back outputs
                     if self.cfg.scale_target_vars:
@@ -533,11 +472,19 @@ class NNpretrainer(ExpHydroCommon):
                 # basin_list = [basin for _ in range(inputs.shape[0])]
                 # outputs = self.nnmodel(inputs, basin_list)
 
+                # # Get model outputs
+                # outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
+                #                             self.device, self.cfg.nn_model, 
+                #                             self.nnmodel, basin, 
+                #                             self.cfg.seq_length)
+                inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
+
                 # Get model outputs
-                outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
-                                            self.device, self.cfg.nn_model, 
-                                            self.nnmodel, basin, 
-                                            self.cfg.seq_length)
+                basin_list = [basin for _ in range(inputs.shape[0])]
+                outputs = self.nnmodel(inputs, basin_list)
+
+                # Reshape outputs
+                outputs = self.reshape_outputs(outputs)
 
                 # Scale back outputs
                 if self.cfg.scale_target_vars:

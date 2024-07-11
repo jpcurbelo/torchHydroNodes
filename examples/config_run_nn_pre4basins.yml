@@ -6,7 +6,7 @@ nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010
+data_dir: M0_results_569basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
@@ -39,18 +39,21 @@ n_random_basins: -1
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1980"
+# train_start_date: "01/10/1980"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1995"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
+valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: mse
 
 # Number of epochs to train the model
-epochs: 5000
+epochs: 50
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -78,7 +81,7 @@ hidden_size:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: 4basins_pretrainer_run
+experiment_name: ZZ4basins_pretrainer_run
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
@@ -93,15 +96,15 @@ precision: float32
 num_workers: 8
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 1
+verbose: 0
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins:
-  - 1013500
-  - 6431500
-  - 1022500
-  - 1030500
+log_n_basins: 4
+  # - 1013500
+  # - 6431500
+  # - 1022500
+  # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
 log_every_n_epochs: 50

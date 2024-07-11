@@ -154,8 +154,8 @@ class BaseDataset(Dataset):
         # print('keep_cols:', keep_cols)
         # print('alias_map:', self.alias_map)
         
-        if self.cfg.verbose:
-            print("-- Loading basin data into xarray data set.")
+        # if self.cfg.verbose:
+        print("-- Loading basin data into xarray data set.")
         
         for basin in tqdm(self.basins, disable=self._disable_pbar, file=sys.stdout):
             

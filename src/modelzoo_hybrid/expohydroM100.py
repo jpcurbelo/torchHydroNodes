@@ -47,6 +47,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # # print('inputs_forward', inputs.shape)
         # print('inputs_forward', inputs.shape, inputs.device)
+
+        # print(f"Memory usage before forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         
 
         # Extract the state variables
@@ -81,15 +83,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.precp_lstm = torch.cat((self.precp_lstm[0].unsqueeze(0), self.precp_lstm), dim=0) #.to(self.device)
             self.tmean_lstm = torch.cat((self.tmean_lstm[0].unsqueeze(0), self.tmean_lstm), dim=0) #.to(self.device)
 
-            # print('time_series', self.time_series.shape, self.time_series.device)
-            # print('s_snow_lstm', self.s_snow_lstm.shape, self.s_snow_lstm.device)
-            # print('s_water_lstm', self.s_water_lstm.shape, self.s_water_lstm.device)
-            # print('precp_lstm', self.precp_lstm.shape, self.precp_lstm.device)
-            # print('tmean_lstm', self.tmean_lstm.shape, self.tmean_lstm.device)
-
         # Make basin global to be used in hybrid_model
         self.basin = basin
-        # basin_params = self.params_dict[self.basin]
 
         # Set the interpolators 
         self.precp_interp = self.interpolators[self.basin]['prcp']
@@ -99,16 +94,28 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # # Profile the ODE solver
         # time_start = time.time()
 
+        # Define rtol and atol
+        # Higher rtol and atol values will make the ODE solver faster but less accurate
+        if self.odesmethod in ['euler', 'rk4', 'midpoint']:
+            rtol = 1e-3
+            atol = 1e-3
+        elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'bosh3', 'adaptive_heun', 'heun3']:
+            rtol = 1e-6
+            atol = 1e-6
+        elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
+            rtol = 1e-7
+            atol = 1e-7
+
         ode_solver = torchdiffeq.odeint
         if len(inputs.shape) == 2:
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0], self.s_water[0]], dim=0).unsqueeze(0)
-            y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, rtol=1e-3, atol=1e-6)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
+            y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, rtol=rtol, atol=atol)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
             # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
         elif len(inputs.shape) == 3:
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)   #.to(self.device)
-            y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, rtol=1e-3, atol=1e-6)
+            y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, rtol=rtol, atol=atol)
 
         if len(inputs.shape) == 2:
 
@@ -153,6 +160,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Extract the last variable (last column) from the output
         q_output = output[:, -1]
+
+        # print(f"Memory usage after forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+        # aux = input("Press Enter to continue...")
 
         return q_output
 
@@ -226,23 +236,29 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # # Flush time
         # sys.stdout.write(f"t \r{t}")
         # sys.stdout.flush()
+
+        # print(f"Initial memory usage: {torch.cuda.memory_allocated() / 1024**2:.2f} MB - {t}d")
          
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       
         # S1: Storage state S_water (t)   
         s0 = y[..., 0]  #.to(self.device)
         s1 = y[..., 1]  #.to(self.device)
+        # print(f"Memory usage after unpacking state variables: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # Interpolate the input variables
         t_np = t.detach().cpu().numpy()
         precp = self.precp_interp(t_np, extrapolate='periodic')
         temp = self.temp_interp(t_np, extrapolate='periodic')
         lday = self.lday_interp(t_np, extrapolate='periodic')
+        # print(f"Memory usage after interpolation: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # Convert to tensor
         precp = torch.tensor(precp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
         temp = torch.tensor(temp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
         lday = torch.tensor(lday, dtype=self.data_type_torch).to(self.device)
+        # print(f"Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
 
         # # Find left index for the interpolation
         # idx = torch.searchsorted(self.time_series, t, side='right') - 1
@@ -257,25 +273,28 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Prepare lstm inputs. Remove the first element and add the new value to the last entry
         self.s_snow_lstm = torch.cat((self.s_snow_lstm[1:], s0), dim=0)
         self.s_water_lstm = torch.cat((self.s_water_lstm[1:], s1), dim=0)
-        # print(self.precp_lstm[1:].device, precp.device)
         self.precp_lstm = torch.cat((self.precp_lstm[1:], precp), dim=0)
         self.tmean_lstm = torch.cat((self.tmean_lstm[1:], temp), dim=0)
+        # print(f"Memory usage after preparing LSTM inputs: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # Compute ET from the pretrainer.nnmodel
-        inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, self.precp_lstm, self.tmean_lstm], dim=-1)  #.to(self.device)
-        # inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, precp_nn, temp_nn], dim=-1)
+        inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, self.precp_lstm, self.tmean_lstm], dim=-1)  
+        # print(f"Memory usage after stacking inputs: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
+        basin = self.basin
 
         basin = self.basin
         if not isinstance(basin, list):
             basin = [basin]
+        # print(f"Memory usage after preparing basin: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
-        # print(f'Model state dict9: {self.pretrainer.nnmodel.state_dict()}')
-        # aux = input('Press enter to continue: ')
-        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
+        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] 
+        # print(f"Memory usage after nnmodel output: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # Target variables:  Psnow, Prain, M, ET and, Q
         p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \
                                    m100_outputs[3], m100_outputs[4]
+        # print(f"Memory usage after unpacking nnmodel outputs: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         
         # Scale back to original values for the ODEs and Relu the Mechanism Quantities    
         if self.cfg.scale_target_vars:
@@ -284,6 +303,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             m = torch.relu(self.step_function(s0) * torch.sinh(m))
             et = self.step_function(s1) * torch.exp(et) * lday
             q = self.step_function(s1) * torch.exp(q) 
+        # print(f"Memory usage after scaling back variables: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # Eq 1 - Hoge_EtAl_HESS_2022
         ds0_dt = p_snow - m
@@ -291,7 +311,20 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = p_rain + m - et - q
 
-        return torch.stack([ds0_dt, ds1_dt], dim=-1)
+        # # print(f"Memory usage after ODE solver: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
+        # print(f"Memory usage before returning results: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+        result = torch.stack([ds0_dt, ds1_dt], dim=-1)
+        # print(f"Memory usage after returning results: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
+        # Clear temporary variables
+        del s0, s1, precp, temp, lday, inputs_nn, m100_outputs, p_snow, p_rain, m, et, q, ds0_dt, ds1_dt
+        torch.cuda.empty_cache()
+        # print(f"Memory usage after clearing cache: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
+        # aux = input("Press Enter to continue...")
+
+        return result
 
     def create_sequences(self, data):
         num_sequences = data.size(0) - self.window_size + 1

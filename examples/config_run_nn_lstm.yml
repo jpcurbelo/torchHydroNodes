@@ -7,7 +7,7 @@ nn_model: lstm
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010
+data_dir: M0_results_569basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
@@ -31,9 +31,9 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-basin_file: 1_basin_file.txt
+# basin_file: 1_basin_file.txt
 # basin_file: 1_basin_fileB.txt
-# basin_file: 4_basin_file.txt
+basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
 # n_random_basins: 100
@@ -41,21 +41,24 @@ basin_file: 1_basin_file.txt
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-# train_start_date: "01/10/1980"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2010"
-
-train_start_date: "01/10/1997"
+train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2002"
+valid_end_date: "30/09/2010"
+
+# train_start_date: "01/10/1997"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2002"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: mse
 
 # Number of epochs to train the model
-epochs: 50
+epochs: 200
+
+# Patience for early stopping
+patience: 10
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -80,20 +83,20 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 256
-  # - 256
+  - 64
+  - 64
 
 # Dropout rate for the NN model
 dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: 1basin_pretrainer_lstm
-# experiment_name: 4basin_pretrainer_lstm
+# experiment_name: 1basin_pretrainer_lstm_01013500
+experiment_name: 4basin_pretrainer_lstm
 # experiment_name: 1basin_pretrainer_lstm_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111
@@ -116,7 +119,7 @@ log_n_basins: 4
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

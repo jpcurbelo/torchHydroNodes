@@ -5,9 +5,10 @@ import torch.nn as nn
 
 from src.utils.load_process_data import Config
 from src.modelzoo_nn.basepretrainer import NNpretrainer
+from src.utils.load_process_data import ExpHydroCommon
 
 # Classes
-class BaseHybridModel(nn.Module):
+class BaseHybridModel(ExpHydroCommon, nn.Module):
 
     def __init__(self,
                 cfg: Config,

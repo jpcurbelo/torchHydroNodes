@@ -8,7 +8,7 @@ nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010
+data_dir: M0_results_569basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
@@ -52,7 +52,10 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 500
+
+# Patience for early stopping
+patience: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -60,7 +63,9 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
 # batch_size: 128
-batch_size: 256
+# batch_size: 256
+# batch_size: 1024
+batch_size: 2048
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -74,20 +79,24 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 32
-  - 32
-  - 32
-  - 32
-  - 32
+  # - 32
+  # - 32
+  # - 32
+  # - 32
+  # - 32
 
-  # - 256
+  - 32
+  - 64
+  - 64
+  - 64
+  - 32
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 experiment_name: 569basin_pretrainer_mlp
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -96,7 +105,7 @@ seed: 1111
 precision: float32
 
 # Number of parallel workers used in the data pipeline
-num_workers: 8
+num_workers: 16
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
 verbose: 1

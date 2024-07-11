@@ -92,7 +92,6 @@ def dump_config(cfg, filename: str = 'config.yml'):
 
     return cfg
 
-
 def update_hybrid_cfg(cfg):
 
     # Load vars from the nn_model
@@ -197,12 +196,14 @@ class Config(object):
             
         # Create a folder to save img content
         plots_dir = os.path.join(run_dir, 'model_plots')
-        os.mkdir(plots_dir)
+        if not os.path.exists(plots_dir):
+            os.mkdir(plots_dir)
         self._cfg['plots_dir'] = plots_dir
         
         # Create a folder to save the model results (csv files)
         results_dir = os.path.join(run_dir, 'model_results')
-        os.mkdir(results_dir)
+        if not os.path.exists(results_dir):
+            os.mkdir(results_dir)
         self._cfg['results_dir'] = results_dir
             
         # Check if forcings are provided for camelus dataset
@@ -311,18 +312,19 @@ class Config(object):
             }
 
         # Set device (GPU or CPU)
-        try:
-            gpu = int(cfg['device'].split(':')[-1])
-        except:
-            gpu = None
+        # try:
+        #     gpu = int(cfg['device'].split(':')[-1])
+        # except:
+        #     gpu = None
 
-        if 'device' not in cfg or cfg['device'] is None:
-            cfg['device'] = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        elif gpu is not None and gpu >= 0:
-            cfg['device'] = torch.device(f"cuda:{gpu}")
-        else:
-            cfg['device'] = torch.device("cpu")
-        
+        # if 'device' not in cfg or cfg['device'] is None:
+        #     cfg['device'] = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        # elif gpu is not None and gpu >= 0:
+        #     cfg['device'] = torch.device(f"cuda:{gpu}")
+        # else:
+        #     cfg['device'] = torch.device("cpu")
+        cfg['device'] = self._set_device(cfg)
+
         # Load variables for the concept model
         if 'concept_model' in cfg:
             cfg['concept_inputs'],  cfg['concept_target'] = self._load_concept_model_vars(cfg['concept_model'])
@@ -344,6 +346,55 @@ class Config(object):
 
         # Add more config parsing if necessary
         return cfg
+
+    @staticmethod
+    def _set_device(cfg: dict) -> torch.device:
+        '''
+        Set the device (GPU or CPU) to use.
+        
+        - Args:
+            cfg: dict, configuration data.
+            
+        - Returns:
+            device: torch.device, device to use.
+        '''
+        
+        # Default to CPU
+        device_to_use = torch.device('cpu')
+
+        if 'device' in cfg and cfg['device']:
+            try:
+                # Extract GPU index if specified
+                gpu = int(cfg['device'].split(':')[-1])
+
+                # Validate GPU index
+                if gpu >= 0 and gpu < torch.cuda.device_count():
+                    device_to_use = torch.device(f"cuda:{gpu}")
+                else:
+                    print(f"Warning: Invalid GPU ID {gpu}. Falling back to an available GPU.")
+                    if torch.cuda.is_available():
+                        device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                    else:
+                        print("No CUDA GPUs available. Falling back to CPU.")
+
+            except ValueError:
+                # Check for 'cuda' string for default GPU
+                if 'cuda' in cfg['device'].lower():
+                    if torch.cuda.is_available():
+                        device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                    else:
+                        print("CUDA is not available. Falling back to CPU.")
+                else:
+                    print("Warning: Unrecognized device format. Falling back to CPU.")
+        else:
+            # Default to the first available GPU if any
+            if torch.cuda.is_available():
+                device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                
+        print(f"-- Using device: {device_to_use} --")
+        print(f"GPU {gpu}: {torch.cuda.get_device_name(gpu)}")
+
+        return device_to_use
     
     @staticmethod
     def _load_concept_model_vars(concept_model: str) -> dict:
@@ -923,19 +974,33 @@ class ExpHydroCommon:
     def interpolator_vars(self):
         return ['prcp', 'tmean', 'dayl']
 
-    @staticmethod
-    def get_model_outputs(ds_basin, input_var_names, device, nn_model, model, basin, seq_length, is_trainer=False):
+
+    # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 
+    #                             self.model.device, self.model.cfg.nn_model, 
+    #                             self.model, basin, self.model.cfg.seq_length,
+    #                             is_trainer=True)
+    def get_model_inputs(self, ds_basin, input_var_names, basin, is_trainer=False):
+
+        # # Print all self variables
+        # for attr, value in self.__dict__.items():
+        #     if 'forward' in attr:
+        #         aux = input('Press any key to continue...')
+        #     print(f'self.{attr}')
+
+        # aux = input('Press any key to continue...')
+
+
         '''
-        Get the model outputs for the given input variables.
+        Get the model inputs for the given input variables.
         
         - Args:
             ds_basin: xr.Dataset, dataset for the basin.
             input_var_names: list, list of input variable names.
-            device: torch.device, device to use.
-            nn_model: str, neural network model.
-            model: torch.nn.Module, neural network model.
+            # device: torch.device, device to use.
+            # nn_model: str, neural network model.
+            # model: torch.nn.Module, neural network model.
             basin: str, basin ID.
-            seq_length: int, sequence length.
+            # seq_length: int, sequence length.
             is_trainer: bool, whether the model is a trainer model.
             
         - Returns:
@@ -943,44 +1008,41 @@ class ExpHydroCommon:
         '''
 
         # Prepare inputs
-        inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], dim=0).t().to(device)
+        inputs = torch.cat([torch.tensor(ds_basin[var.lower()].values).unsqueeze(0) for var in input_var_names], \
+                           dim=0).t().to(self.device)
 
-        if nn_model == 'lstm':
+        if self.cfg.nn_model == 'lstm':
             # For LSTM, create sequences
             input_sequences = []
-            for j in range(0, inputs.shape[0] - seq_length + 1):  # Create sequences
-                input_sequences.append(inputs[j:j + seq_length, :])
+            for j in range(0, inputs.shape[0] - self.cfg.seq_length + 1):  # Create sequences
+                input_sequences.append(inputs[j:j + self.cfg.seq_length, :])
             inputs = torch.stack(input_sequences)  # Shape: [num_sequences, seq_length, num_features]
 
-        # print('inputs_getmodel', inputs.shape)
+        # basin_list = [basin for _ in range(inputs.shape[0])]
+        # if is_trainer:
+        #     basin_list = basin_list[0]
 
-        basin_list = [basin for _ in range(inputs.shape[0])]
-        if is_trainer:
-            basin_list = basin_list[0]
+        # # Get model outputs
+        # outputs = self.model(inputs, basin_list)
 
-        # Get model outputs
-        outputs = model(inputs, basin_list)
+        return inputs
+
+    def reshape_outputs(self, outputs):
 
         # Ensure outputs are on CPU
         outputs = outputs.cpu().detach()
 
-        # print('outputsX', outputs.shape)
-
-        if nn_model == 'lstm':
-            # For LSTM, fill the first seq_length - 1 values with NaNs
-            # outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+        if self.cfg.nn_model == 'lstm':
             if outputs.dim() == 1:
                 # Case for 1D outputs
-                outputs = torch.cat([torch.full((seq_length - 1,), np.nan), outputs], dim=0)
+                outputs = torch.cat([torch.full((self.cfg.seq_length - 1,), np.nan), outputs], dim=0)
             elif outputs.dim() == 2:
                 # Case for 2D outputs
-                outputs = torch.cat([torch.full((seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
+                outputs = torch.cat([torch.full((self.cfg.seq_length - 1, outputs.shape[1]), np.nan), outputs], dim=0)
             else:
                 raise ValueError("Unsupported tensor dimension. Outputs must be 1D or 2D.")
             return outputs
-
-        # print('outputs_getmodel', outputs.shape)
-
+        
         return outputs
 
 class ExpHydroODEs(nn.Module):
