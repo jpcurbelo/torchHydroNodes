@@ -78,7 +78,7 @@ class NNpretrainer(ExpHydroCommon):
 
         # Input/output variables
         self.input_var_names = self.cfg.nn_dynamic_inputs #+ ['dayl']
-        print('self.input_var_names:', self.input_var_names)
+        # print('self.input_var_names:', self.input_var_names)
         self.output_var_names = self.cfg.nn_mech_targets
         self.target = self.cfg.target_variables[0]
 
@@ -220,8 +220,8 @@ class NNpretrainer(ExpHydroCommon):
         # if self.cfg.verbose:
         print("-- Pretraining the neural network model --")
 
-        # Save the plots for the initial model weights
-        self.save_plots(epoch=0)
+        # # Save the plots for the initial model weights
+        # self.save_plots(epoch=0)
 
         nan_count = 0  # Counter for NaN occurrences
         for epoch in range(self.epochs):
@@ -235,6 +235,10 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
+
+                print(epoch, num_batches_seen+1)
+                print('inputs:', inputs.shape)
+                print('basin_ids:', len(basin_ids), set(basin_ids))
 
                 # Forward pass
                 predictions = self.nnmodel(inputs.to(self.device), basin_ids)
@@ -381,7 +385,7 @@ class NNpretrainer(ExpHydroCommon):
                     #                             self.cfg.seq_length)
                     inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
 
-                    print('inputs:', inputs.shape, basin)  
+                    # print('inputs:', inputs.shape, basin)  
 
                     # Get model outputs
                     basin_list = [basin for _ in range(inputs.shape[0])]

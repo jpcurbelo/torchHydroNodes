@@ -16,7 +16,11 @@ class BaseNNModel(nn.Module):
         self.dtype = self.concept_model.cfg.precision['torch']
         self.scaler = self.concept_model.scaler
 
-        self.input_size = len(self.concept_model.cfg.nn_dynamic_inputs) + len(self.concept_model.cfg.nn_static_inputs)
+        self.num_dynamic = len(self.concept_model.cfg.nn_dynamic_inputs)
+        self.num_static = len(self.concept_model.cfg.static_attributes)
+        self.include_static = self.num_static > 0
+        self.input_size = self.num_dynamic + self.num_static
+        self.static_size = self.num_static if self.include_static else 0
         self.output_size = len(self.concept_model.nn_outputs)
         self.hidden_size = self.concept_model.cfg.hidden_size
         self.num_layers = len(self.hidden_size)
@@ -25,11 +29,7 @@ class BaseNNModel(nn.Module):
         # Compute mean and std for variables by basin
         self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'])
         self.torch_input_means = self.xarray_to_torch(self.scaler['ds_feature_mean'])
-
-        # print("self.torch_input_means", self.torch_input_means)
-        # print("self.torch_input_stds", self.torch_input_stds)
-        # aux = input("Press Enter to continue...")
-
+ 
         # Create the NN model
         self.create_layers()
 

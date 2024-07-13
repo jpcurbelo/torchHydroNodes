@@ -19,12 +19,12 @@ class CamelsUS(BaseDataset):
         
         super(CamelsUS, self).__init__(cfg, scaler, is_train)
         
-    def _load_basin_data(self, basin: str) -> pd.DataFrame:
+    def _load_basin_dynamics(self, basin: str) -> pd.DataFrame:
         # get forcings
         dfs = list()
 
         for forcing in self.cfg.forcings:
-            df, area = load_camels_us_forcings(self.cfg.data_dir, basin, forcing)
+            df, area = load_camels_us_forcings(self.cfg.concept_data_dir, basin, forcing)
 
             # rename columns
             if len(self.cfg.forcings) > 1:
@@ -33,7 +33,7 @@ class CamelsUS(BaseDataset):
         df = pd.concat(dfs, axis=1)
 
         # Add discharge
-        df['obs_runoff(mm/day)'] = load_camels_us_discharge(self.cfg.data_dir, basin, area)   
+        df['obs_runoff(mm/day)'] = load_camels_us_discharge(self.cfg.concept_data_dir, basin, area)   
 
         # Replace invalid discharge values by NaNs
         qobs_cols = [col for col in df.columns if "qobs" in col.lower()]

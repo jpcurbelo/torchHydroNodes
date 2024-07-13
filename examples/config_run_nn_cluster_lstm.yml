@@ -1,0 +1,130 @@
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+concept_model: exphydro
+# NN model to use [mlp, lstm]
+nn_model: lstm
+
+# --- Data configurations --- #
+# Dataset to use for training and testing [camelsus, summaca]
+data_dir: M0_results_569basins_1980_2010_RK23
+
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  - tmean
+
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+  # - obs_runoff
+
+target_variables: 
+  - obs_runoff
+
+scale_target_vars: True
+
+# Files to specify training, validation and test basins
+basin_file: cluster_files/569_basin_file_cluster2of17_46.txt
+
+# --- Training configurations --- #
+
+# Period to train, validate and test the model (they should be consecutive)
+train_start_date: "01/10/1980"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2010"
+# test_start_date: "01/10/2000"
+# test_end_date: "30/09/2010"
+
+# Loss function to use [mse, rmse/l1]
+loss: mse
+
+# Number of epochs to train the model
+epochs: 300
+
+# Patience for early stopping
+patience: 20
+
+# If a value, clips the gradients during training to that norm.
+clip_gradient_norm: 1.0
+
+# Batch size for training (if -1, it will be only one batch for the whole dataset)
+batch_size: 1024
+# batch_size: 256
+
+# Optimizer to use [adam, sgd]
+optimizer: adam
+
+# # Learning rate for the optimizer
+# learning_rate: 0.001
+learning_rate:
+  initial: 0.001
+  decay: 0.5
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+
+# Hidden layers for the NN model
+hidden_size: 
+  # - 32
+  # - 32
+  # - 32
+  # - 32
+  # - 32
+
+  # - 32
+  # - 32
+
+  - 128
+  # - 128
+
+# Dropout rate for the NN model
+dropout: 0.4
+
+## --- Run configurations --- ##
+# Experiment name, used as folder name
+experiment_name: cluster2of17_pretrainer_lstm
+# experiment_name: 569basin_pretrainer_run
+
+# which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
+device: cuda:1
+
+# Set seed for reproducibility
+seed: 1111
+
+# Set precision for the model [float32, float64]
+precision: float32
+
+# Number of parallel workers used in the data pipeline
+num_workers: 8
+
+# Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
+verbose: 1
+
+# If a value and greater than 0, logs n random basins as figures after pretraining the NN model
+# If list of basins, logs the specified basins: format is either '01013500' or 1013500
+log_n_basins: 4
+  # - 1013500
+  # - 6431500
+  # - 1022500
+  # - 1030500
+
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 50
+
+# Metrics to use for evaluation (after training)
+metrics:
+- NSE
+- Alpha-NSE
+- Beta-NSE
+- FHV
+- FMS
+- FLV
+- KGE
+- Beta-KGE
+- Peak-Timing
+- Peak-MAPE
+- Pearson-r

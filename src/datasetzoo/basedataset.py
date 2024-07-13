@@ -20,7 +20,7 @@ from src.utils.load_process_data import (
 # List of possible variables that can be passed to the model(s)
 possible_variables = [
     'nn_dynamic_inputs', 
-    'nn_static_inputs', 
+    'static_attributes', 
     'nn_mech_targets',
     'target_variables',
     'concept_inputs',
@@ -51,12 +51,6 @@ class BaseDataset(Dataset):
         self._disable_pbar = not self.cfg.verbose
         
         # Initialize class attributes that are filled in the data loading functions
-        # self._x_d = dict()
-        # self._x_h = dict()
-        # self._x_f = dict()
-        # self._x_s = dict()
-        # self._attributes = dict()
-        # self._y = dict()
         self._per_basin_target_stds = dict()
         self._dates = dict()
         self.start_and_end_dates = dict()
@@ -117,10 +111,14 @@ class BaseDataset(Dataset):
             
         if self._compute_scaler:
             # Get feature-wise center and scale values for the feature normalization
-            self._setup_normalization(self.ds_train)
+            self._setup_normalization_dynamic(self.ds_train)
                         
-        # Performs normalization
-        # ds = (ds - self.scaler["xarray_feature_center"]) / self.scaler["xarray_feature_scale"] 
+        if 'static_attributes' in self.cfg._cfg:
+            # Add static attributes to the DataFrame
+            static_df = self._load_attributes()
+
+            if self._compute_scaler:
+                self.ds_static = self._setup_normalization_static(static_df)
 
     def _load_or_create_xarray_dataset(self) -> xr.Dataset:
         '''
@@ -132,17 +130,12 @@ class BaseDataset(Dataset):
         
         data_list = list()
         
-        # # # Check if static inputs are provided - it is assumed that dynamic inputs and target are always provided
-        # # if hasattr(self.cfg, 'nn_static_inputs') and self.cfg.nn_static_inputs:
-        # #     self.cfg['nn_static_inputs'] = list()
-        
         # List of columns to keep, everything else will be removed to reduce memory footprint
-        # # keep_cols = self.cfg.nn_dynamic_inputs + self.cfg.nn_static_inputs + self.cfg.target_variables
         # Create keep_cols list dynamically
         keep_cols = []
         for attr in possible_variables:
             if attr in self.cfg._cfg:
-                keep_cols.extend(getattr( self.cfg, attr))
+                keep_cols.extend(getattr(self.cfg, attr))
         
         keep_cols = list(sorted(set(keep_cols)))
         # Lowercase all columns
@@ -150,16 +143,13 @@ class BaseDataset(Dataset):
 
         # Get the alias map
         self.alias_map = self._get_alias_map(keep_cols)
-
-        # print('keep_cols:', keep_cols)
-        # print('alias_map:', self.alias_map)
         
         # if self.cfg.verbose:
-        print("-- Loading basin data into xarray data set.")
+        print("-- Loading basin dynamics into xarray data set.")
         
         for basin in tqdm(self.basins, disable=self._disable_pbar, file=sys.stdout):
             
-            df = self._load_basin_data(basin)
+            df = self._load_basin_dynamics(basin)
 
             if df.empty:
                 print(f"Warning! (Data): No data loaded for basin {basin}. Skipping.")
@@ -190,10 +180,14 @@ class BaseDataset(Dataset):
             
         return ds
                
-    def _load_basin_data(self, basin: str) -> pd.DataFrame:
+    def _load_basin_dynamics(self, basin: str) -> pd.DataFrame:
         """This function has to return the data for the specified basin as a time-indexed pandas DataFrame"""
         raise NotImplementedError("This function has to be implemented by the child class")
     
+    def _load_attributes(self) -> pd.DataFrame:
+        """This function has to return the static attributes for the specified basins as a pandas DataFrame"""
+        raise NotImplementedError("This function has to be implemented by the child class")
+
     def _compute_mean_from_min_max(self, df, keep_cols):
         """
         Compute the mean from the minimum and maximum values for specified columns.
@@ -334,7 +328,7 @@ class BaseDataset(Dataset):
 
         return subsetted_df
             
-    def _setup_normalization(self, ds: xr.Dataset):
+    def _setup_normalization_dynamic(self, ds: xr.Dataset):
         '''
         Setup the normalization for the xarray dataset. 
         The default center and scale values are the feature mean and std.
@@ -348,6 +342,29 @@ class BaseDataset(Dataset):
         
         self.scaler["ds_feature_std"] = ds.groupby('basin').std(dim='date')
         self.scaler["ds_feature_mean"] = ds.groupby('basin').mean(dim='date')
-  
+    
+    def _setup_normalization_static(self, df: pd.DataFrame):
+        '''
+        Setup the normalization for the static attributes. 
+        The default center and scale values are the feature mean and std.
+        
+        - Args:
+            df: pd.DataFrame, the DataFrame to normalize.
             
+        - Returns:
+            None
+        '''
+        
+        self.scaler["static_std"] = df.std()
+        self.scaler["static_mean"] = df.mean()
+
+        # Normalize the static attributes
+        df = (df - self.scaler["static_mean"]) / self.scaler["static_std"]
+
+        # Convert to xarray Dataset
+        ds_static = xr.Dataset.from_dataframe(df)
+
+        return ds_static
+
+
 ###############################

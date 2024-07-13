@@ -85,9 +85,9 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptua
 
     cfg = Config(config_file)
 
-    if model == 'hybrid':
+    if model in ['pretrainer', 'hybrid']:
         # Update the config file given the nn_model_dir
-        cfg = update_hybrid_cfg(cfg)
+        cfg = update_hybrid_cfg(cfg, model)
     
     # check if a GPU has been specified as command line argument. If yes, overwrite config
     if gpu is not None and gpu >= 0:
@@ -154,7 +154,7 @@ def get_basin_interpolators(dataset, cfg, project_dir=project_dir):
     for basin in dataset.basins:
         ## Get full dataset for interpolators
         # Get keys ds_* for the full dataset
-        ds_periods = [key for key in dataset.__dict__.keys() if key.startswith('ds_')]
+        ds_periods = [key for key in dataset.__dict__.keys() if key.startswith('ds_') and 'static' not in key]
 
         # Extract the datasets using the keys
         datasets = [getattr(dataset, period).sel(basin=basin) for period in ds_periods]
@@ -239,6 +239,14 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
     
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='pretrainer')
 
+    # print('dataset:', dataset.__dict__.keys())
+    # print('dataset.scaler', dataset.scaler)
+    # print('dataset.cfg._cfg.keys()', dataset.cfg._cfg.keys())
+    # if 'static_attributes' in dataset.cfg._cfg:
+    #     print('self.ds_static', dataset.ds_static)
+
+    # print('************************')
+
     # Get the basin interpolators
     interpolators = get_basin_interpolators(dataset, cfg, project_dir)
 
@@ -246,6 +254,8 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
     time_idx0 = 0
     model_concept = get_concept_model(cfg, dataset.ds_train, interpolators, time_idx0, 
                                       dataset.scaler)
+    
+    # print('model_concept:', model_concept.__dict__.keys())
 
     # Neural network model
     model_nn = get_nn_model(model_concept)
@@ -418,13 +428,14 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 
 # Example usage:
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
-# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_pre.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_test.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_mlp.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_lstm.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 

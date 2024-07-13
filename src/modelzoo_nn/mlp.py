@@ -12,6 +12,10 @@ class MLP(BaseNNModel):
 
     def create_layers(self):
 
+        # print('self.num_dynamic', self.num_dynamic)
+        # print('self.num_static', self.num_static)
+        # print('self.include_static', self.include_static)
+
         self.input_layer = nn.Linear(self.input_size, self.hidden_size[0])
         self.input_layer.name = 'input_layer'
 
@@ -26,26 +30,39 @@ class MLP(BaseNNModel):
         self.output_layer = nn.Linear(self.hidden_size[-1], self.output_size)
         self.output_layer.name = 'output_layer'
 
-    def forward(self, inputs, basin_list):
+    def forward(self, dynamic_inputs, basin_list, static_inputs=None, use_grad=True):
 
         # Gather means and stds for the batch
-        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(inputs.device)
-        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(inputs.device)
+        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
 
-        # Normalize the inputs
-        inputs = (inputs - means) / (stds + 1e-10)
+        # Normalize the dynamic inputs
+        dynamic_inputs = (dynamic_inputs - means) / (stds + 1e-10)
 
-        # Pass through the input layer
-        x = F.tanh(self.input_layer(inputs))
+        # Concatenate static inputs if included
+        if self.include_static and static_inputs is not None:
+            inputs = torch.cat((dynamic_inputs, static_inputs), dim=1)
+        else:
+            inputs = dynamic_inputs
 
-        # Hidden Layers
-        for hidden in self.hidden:
-            x = F.leaky_relu(hidden(x))
-        
-        # Output Layer
-        x = self.output_layer(x)
-
-        return x
+        if use_grad:
+            # Pass through the input layer
+            x = F.tanh(self.input_layer(inputs))
+            # Hidden Layers
+            for hidden in self.hidden:
+                x = F.leaky_relu(hidden(x))
+            # Output Layer
+            x = self.output_layer(x)
+            return x
+        else:
+            with torch.no_grad():
+                # Pass through the input layer
+                x = F.tanh(self.input_layer(inputs))
+                # Hidden Layers
+                for hidden in self.hidden:
+                    x = F.leaky_relu(hidden(x))
+                # Output Layer
+                x = self.output_layer(x)
 
         
 

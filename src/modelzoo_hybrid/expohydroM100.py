@@ -100,11 +100,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             rtol = 1e-3
             atol = 1e-3
         elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'bosh3', 'adaptive_heun', 'heun3']:
-            rtol = 1e-6
+            rtol = 1e-3
             atol = 1e-6
         elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
-            rtol = 1e-7
-            atol = 1e-7
+            rtol = 1e-6
+            atol = 1e-9
 
         ode_solver = torchdiffeq.odeint
         if len(inputs.shape) == 2:

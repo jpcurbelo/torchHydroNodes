@@ -1,15 +1,17 @@
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 dataset: camelsus
-data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+# concept_data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+## See file src/utils/data_dir.yml for more details
+concept_data_dir: data_dir_camelsus
 
 # Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
 forcings: 
   - daymet
 
 # Files to specify training, validation and test basins
-# basin_file: 569_basin_file.txt
-basin_file: 4_basin_file.txt
+basin_file: 569_basin_file.txt
+# basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
@@ -20,7 +22,7 @@ concept_model: exphydro
 # Method to solve the ODEs (using solve_ivp from scipy.integrate)
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 # Options: RK45, RK23, DOP853, Radau, BDF, LSODA
-odesmethod: RK23
+odesmethod: RK45
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -45,7 +47,8 @@ metrics:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: concept_run
+experiment_name: 569concept_rk45
+# experiment_name: 4concept_run_dop853
 # experiment_name: M0_results_569basins_1980_2010_RK23
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]

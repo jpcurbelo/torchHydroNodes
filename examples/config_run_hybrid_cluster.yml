@@ -5,7 +5,7 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, rk2, adaptive_heun]
-odesmethod: euler
+odesmethod: rk4
 
 # Files to specify training, validation and test basins
 basin_file: 569_basin_file_cluster1of6_63.txt #ok
@@ -21,6 +21,7 @@ basin_file: 569_basin_file_cluster1of6_63.txt #ok
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
+
 # nn_model_dir: cluster1_pretrainer_mlp_200ep
 nn_model_dir: cluster1_pretrainer_lstm_500ep
 
@@ -73,7 +74,7 @@ learning_rate:
 experiment_name: cluster1_hybrid_lstm
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111
@@ -90,7 +91,7 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 2
+log_n_basins: 4
   # - 1013500
   # # - 6431500
   # # 2

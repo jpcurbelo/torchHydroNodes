@@ -92,31 +92,46 @@ def dump_config(cfg, filename: str = 'config.yml'):
 
     return cfg
 
-def update_hybrid_cfg(cfg):
+def update_hybrid_cfg(cfg, model_type: str='pretrainer'):
 
-    # Load vars from the nn_model
-    nn_cgf_dir = project_dir / 'data' / cfg.nn_model_dir / 'config.yml'
-    
-    # Load the nn_model config file
-    if nn_cgf_dir.exists():
-        with open(nn_cgf_dir, 'r') as ymlfile:
-            cfg_nn = yaml.load(ymlfile, Loader=yaml.FullLoader)
-    else:
-        raise FileNotFoundError(f"File not found: {nn_cgf_dir}")
-    
-    cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
-    cfg.hidden_size = cfg_nn['hidden_size']
-    cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
-    cfg.target_variables = cfg_nn['target_variables']
-    if 'seq_length' in cfg_nn:
-        cfg.seq_length = cfg_nn['seq_length']
-    if 'dropout' in cfg_nn:
-        cfg.dropout = cfg_nn['dropout']
-    cfg.nn_model = cfg_nn['nn_model']
+    if model_type == 'pretrainer':
 
-    # Save the configuration data to a ymal file
-    config_fname = 'config.yml'
-    _ = dump_config(cfg._cfg, config_fname)
+        concept_cfg_dir = project_dir / 'data' / cfg.data_dir / 'config.yml'
+        # Load the concept model config file
+        if concept_cfg_dir.exists():
+            with open(concept_cfg_dir, 'r') as ymlfile:
+                cfg_concept = yaml.load(ymlfile, Loader=yaml.FullLoader)
+        else:
+            raise FileNotFoundError(f"File not found: {concept_cfg_dir}")
+        cfg.concept_data_dir = cfg_concept['concept_data_dir']
+
+        cfg.dataset = cfg_concept['dataset']
+
+
+    elif model_type == 'hybrid':
+        # Load vars from the nn_model
+        nn_cfg_dir = project_dir / 'data' / cfg.nn_model_dir / 'config.yml'
+        
+        # Load the nn_model config file
+        if nn_cfg_dir.exists():
+            with open(nn_cfg_dir, 'r') as ymlfile:
+                cfg_nn = yaml.load(ymlfile, Loader=yaml.FullLoader)
+        else:
+            raise FileNotFoundError(f"File not found: {nn_cfg_dir}")
+        
+        cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
+        cfg.hidden_size = cfg_nn['hidden_size']
+        cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
+        cfg.target_variables = cfg_nn['target_variables']
+        if 'seq_length' in cfg_nn:
+            cfg.seq_length = cfg_nn['seq_length']
+        if 'dropout' in cfg_nn:
+            cfg.dropout = cfg_nn['dropout']
+        cfg.nn_model = cfg_nn['nn_model']
+
+        # Save the configuration data to a ymal file
+        config_fname = 'config.yml'
+        _ = dump_config(cfg._cfg, config_fname)
 
     return cfg
 
@@ -175,8 +190,7 @@ class Config(object):
         '''
         
         config_dir = self._cfg['config_dir']  
-        if not os.path.exists(config_dir / 'runs'):
-            os.mkdir(config_dir / 'runs')
+        os.makedirs(config_dir / 'runs', exist_ok=True)
             
         # Experiment name
         if "experiment_name" in self._cfg and self._cfg["experiment_name"]:
@@ -202,8 +216,7 @@ class Config(object):
         
         # Create a folder to save the model results (csv files)
         results_dir = os.path.join(run_dir, 'model_results')
-        if not os.path.exists(results_dir):
-            os.mkdir(results_dir)
+        os.makedirs(results_dir, exist_ok=True)
         self._cfg['results_dir'] = results_dir
             
         # Check if forcings are provided for camelus dataset
@@ -344,6 +357,13 @@ class Config(object):
             # Convert log_n_basins to a list of str with 8 characters and leading zeros
             cfg['log_n_basins'] = [f"{int(basin):08d}" if isinstance(basin, int) else basin for basin in cfg['log_n_basins']]
 
+        # Extract the data dir from src/utils/data_dir.yml
+        if 'concept_data_dir' in cfg: 
+            # Load data_dir.yml
+            with open(project_dir / 'src' / 'utils' / 'data_dir.yml', 'r') as f:
+                data_dir_dict = yaml.load(f, Loader=yaml.FullLoader)
+            cfg['concept_data_dir'] = Path(data_dir_dict[str(cfg['concept_data_dir'])])
+
         # Add more config parsing if necessary
         return cfg
 
@@ -363,36 +383,41 @@ class Config(object):
         device_to_use = torch.device('cpu')
 
         if 'device' in cfg and cfg['device']:
-            try:
-                # Extract GPU index if specified
-                gpu = int(cfg['device'].split(':')[-1])
+            if 'cpu' in cfg['device'].lower():
+                device_to_use = torch.device('cpu')
+            else:
+                try:
+                    # Extract GPU index if specified
+                    gpu = int(cfg['device'].split(':')[-1])
 
-                # Validate GPU index
-                if gpu >= 0 and gpu < torch.cuda.device_count():
-                    device_to_use = torch.device(f"cuda:{gpu}")
-                else:
-                    print(f"Warning: Invalid GPU ID {gpu}. Falling back to an available GPU.")
-                    if torch.cuda.is_available():
-                        device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                    # Validate GPU index
+                    if gpu >= 0 and gpu < torch.cuda.device_count():
+                        device_to_use = torch.device(f"cuda:{gpu}")
                     else:
-                        print("No CUDA GPUs available. Falling back to CPU.")
+                        print(f"Warning: Invalid GPU ID {gpu}. Falling back to an available GPU.")
+                        if torch.cuda.is_available():
+                            device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                        else:
+                            print("No CUDA GPUs available. Falling back to CPU.")
 
-            except ValueError:
-                # Check for 'cuda' string for default GPU
-                if 'cuda' in cfg['device'].lower():
-                    if torch.cuda.is_available():
-                        device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                except ValueError:
+                    # Check for 'cuda' string for default GPU
+                    if 'cuda' in cfg['device'].lower():
+                        if torch.cuda.is_available():
+                            device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
+                        else:
+                            print("CUDA is not available. Falling back to CPU.")
                     else:
-                        print("CUDA is not available. Falling back to CPU.")
-                else:
-                    print("Warning: Unrecognized device format. Falling back to CPU.")
+                        print("Warning: Unrecognized device format. Falling back to CPU.")
+
+                print(f"GPU {gpu}: {torch.cuda.get_device_name(gpu)}")
         else:
             # Default to the first available GPU if any
             if torch.cuda.is_available():
                 device_to_use = torch.device(f'cuda:{torch.cuda.current_device()}')
                 
         print(f"-- Using device: {device_to_use} --")
-        print(f"GPU {gpu}: {torch.cuda.get_device_name(gpu)}")
+        
 
         return device_to_use
     
@@ -431,7 +456,11 @@ class Config(object):
     @property
     def dataset(self) -> str:
         return self._get_property_value("dataset")
-    
+
+    @dataset.setter
+    def dataset(self, value: str):
+        self._cfg['dataset'] = value
+
     @property
     def basin_file(self) -> Path:
         return self._get_property_value("basin_file")
@@ -449,11 +478,8 @@ class Config(object):
         self._cfg['nn_dynamic_inputs'] = value
         
     @property
-    def nn_static_inputs(self) -> list:
-        if "static_attributes" in self._cfg.keys():
-            self._as_default_list(self._cfg['nn_static_inputs'])
-        else:
-            return list()
+    def static_attributes(self) -> list:
+        return self._get_property_value("static_attributes", default=[])
     
     @property
     def nn_mech_targets(self) -> list:
@@ -494,6 +520,14 @@ class Config(object):
     @data_dir.setter
     def data_dir(self, value: Path):
         self._cfg['data_dir'] = value
+
+    @property
+    def concept_data_dir(self) -> Path:
+        return self._get_property_value("concept_data_dir", default=None)
+
+    @concept_data_dir.setter
+    def concept_data_dir(self, value: Path):
+        self._cfg['concept_data_dir'] = value      
 
     @property
     def nn_model_dir(self) -> Path:
