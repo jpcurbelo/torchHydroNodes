@@ -118,7 +118,7 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer'):
                 cfg_nn = yaml.load(ymlfile, Loader=yaml.FullLoader)
         else:
             raise FileNotFoundError(f"File not found: {nn_cfg_dir}")
-        
+
         cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
         cfg.hidden_size = cfg_nn['hidden_size']
         cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
@@ -128,6 +128,21 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer'):
         if 'dropout' in cfg_nn:
             cfg.dropout = cfg_nn['dropout']
         cfg.nn_model = cfg_nn['nn_model']
+
+        # Handle statics
+        if 'static_attributes' in cfg_nn and cfg_nn['static_attributes']:
+            cfg.static_attributes = cfg_nn['static_attributes']
+            concept_cfg_dir = project_dir / 'data' / cfg_nn['data_dir'] / 'config.yml'
+            # Load the concept model config file
+            if concept_cfg_dir.exists():
+                with open(concept_cfg_dir, 'r') as ymlfile:
+                    cfg_concept = yaml.load(ymlfile, Loader=yaml.FullLoader)
+            else:
+                raise FileNotFoundError(f"File not found: {concept_cfg_dir}")
+            cfg.concept_data_dir = cfg_concept['concept_data_dir']
+            cfg.dataset = cfg_concept['dataset']
+        else:
+            cfg.static_attributes = []
 
         # Save the configuration data to a ymal file
         config_fname = 'config.yml'
@@ -481,6 +496,10 @@ class Config(object):
     def static_attributes(self) -> list:
         return self._get_property_value("static_attributes", default=[])
     
+    @static_attributes.setter
+    def static_attributes(self, value: list):
+        self._cfg['static_attributes'] = value
+
     @property
     def nn_mech_targets(self) -> list:
         return self._get_property_value("nn_mech_targets")

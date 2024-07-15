@@ -1,15 +1,17 @@
 
 import torch
 import torch.nn as nn
+import xarray
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
 
 class BaseNNModel(nn.Module):
     
-    def __init__(self, concept_model: BaseConceptModel):
+    def __init__(self, concept_model: BaseConceptModel, ds_static: xarray.Dataset = None):
         super(BaseNNModel, self).__init__()
 
         self.concept_model = concept_model
+        self.ds_static = ds_static
         
         # Extract quantities for easy access
         self.device = self.concept_model.cfg.device
@@ -27,9 +29,14 @@ class BaseNNModel(nn.Module):
         self.dropout = self.concept_model.cfg.dropout
 
         # Compute mean and std for variables by basin
-        self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'])
-        self.torch_input_means = self.xarray_to_torch(self.scaler['ds_feature_mean'])
- 
+        self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'], variables=self.concept_model.cfg.nn_dynamic_inputs)
+        self.torch_input_means = self.xarray_to_torch(self.scaler['ds_feature_mean'], variables=self.concept_model.cfg.nn_dynamic_inputs)
+
+        if self.ds_static is not None:
+            self.torch_static = self.xarray_to_torch(self.ds_static, variables=self.concept_model.cfg.static_attributes)
+        else:
+            self.torch_static = None
+
         # Create the NN model
         self.create_layers()
 
@@ -44,7 +51,7 @@ class BaseNNModel(nn.Module):
         '''This function should implement the forward pass of the neural network'''
         raise NotImplementedError("This function has to be implemented by the child class")
 
-    def xarray_to_torch(self, xr_dataset):
+    def xarray_to_torch(self, xr_dataset, variables=None):
         '''
         Function to convert an xarray dataset to a dictionary of torch tensors
         
@@ -54,6 +61,8 @@ class BaseNNModel(nn.Module):
         - Returns:
             - basin_values: Dictionary with the basin values as torch tensors
         '''
+        if variables is None:
+            variables = xr_dataset.data_vars.keys()
 
         basin_values = {}
         # Iterate over each basin
@@ -61,7 +70,7 @@ class BaseNNModel(nn.Module):
             basin_data = []
             
             # Iterate over each variable
-            for var_name in self.concept_model.cfg.nn_dynamic_inputs:
+            for var_name in variables:
 
                 var_value = xr_dataset[var_name.lower()].sel(basin=basin).values  # Get the variable's values for the current basin
                 torch_value = torch.tensor(var_value, dtype=self.dtype)  # Convert to torch tensor

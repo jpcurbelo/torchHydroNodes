@@ -43,7 +43,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.scale_target_vars(is_trainer=True)
     
 
-    def forward(self, inputs, basin, use_grad=True):
+    def forward(self, inputs, basins, use_grad=True):
 
         self.use_grad = use_grad
 
@@ -84,12 +84,12 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.tmean_lstm = torch.cat((self.tmean_lstm[0].unsqueeze(0), self.tmean_lstm), dim=0) #.to(self.device)
 
         # Make basin global to be used in hybrid_model
-        self.basin = basin
+        self.basins = basins
 
         # Set the interpolators 
-        self.precp_interp = self.interpolators[self.basin]['prcp']
-        self.temp_interp = self.interpolators[self.basin]['tmean']
-        self.lday_interp = self.interpolators[self.basin]['dayl']
+        self.precp_interp = self.interpolators[self.basins]['prcp']
+        self.temp_interp = self.interpolators[self.basins]['tmean']
+        self.lday_interp = self.interpolators[self.basins]['dayl']
 
         # # Profile the ODE solver
         # time_start = time.time()
@@ -155,8 +155,12 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
         # Assuming nnmodel returns a tensor of shape (batch_size, numOfVars)
-        # output = self.pretrainer.nnmodel(inputs_nn.to(self.device), [self.basin]) #.to(self.device)
-        output = self.pretrainer.nnmodel(inputs_nn, [self.basin], use_grad=self.use_grad)
+        # output = self.pretrainer.nnmodel(inputs_nn, [self.basin], use_grad=self.use_grad)
+        if self.pretrainer.nnmodel.include_static:
+            output = self.pretrainer.nnmodel(inputs_nn.to(self.device), [self.basins], 
+                                    static_inputs=self.pretrainer.nnmodel.torch_static[self.basins])
+        else:
+            output = self.pretrainer.nnmodel(inputs_nn.to(self.device), [self.basins])
 
         # Extract the last variable (last column) from the output
         q_output = output[:, -1]
@@ -168,9 +172,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def hybrid_model_mlp(self, t, y):
 
-        # Flush time
-        sys.stdout.write(f"t \r{t}")
-        sys.stdout.flush()
+        # # Flush time
+        # sys.stdout.write(f"t \r{t}")
+        # sys.stdout.flush()
          
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       
@@ -181,7 +185,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Interpolate the input variables
         t_np = t.detach().cpu().numpy()
         precp = self.precp_interp(t_np, extrapolate='periodic')
-        temp = self.temp_interp(t_np, extrapolate='periodic')
+        temp = self.temp_interp(t_np, extrapolate='periodic') 
         lday = self.lday_interp(t_np, extrapolate='periodic')
 
         # Convert to tensor
@@ -205,11 +209,17 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Compute ET from the pretrainer.nnmodel
         inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
 
-        basin = self.basin
-        if not isinstance(basin, list):
-            basin = [basin]
+        basins = self.basins
+        if not isinstance(basins, list):
+            basins = [basins]
 
-        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
+        # m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
+        # Forward pass
+        if self.pretrainer.nnmodel.include_static:
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins, 
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]])
+        else:
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins)
 
         # Target variables:  Psnow, Prain, M, ET and, Q
         p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \

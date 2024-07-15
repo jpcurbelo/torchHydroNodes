@@ -22,9 +22,9 @@ data_dir: M0_results_569basins_1980_2010_RK23
 
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
-# nn_model_dir: 1basin_pretrainer_lstm_01013500
+nn_model_dir: 1basin_pretrainer_lstm_01013500
 # nn_model_dir: 1basin_pretrainer_lstm_01013500_do04_2hid128
-nn_model_dir: 1basin_pretrainer_lstm_01013500_do04_1hid64
+# nn_model_dir: 1basin_pretrainer_lstm_01013500_do04_1hid64
 # nn_model_dir: 1basin_pretrainer_lstm_06431500
 # nn_model_dir: 1basin_pretrainer_lstm_06431500_do04_2hidden
 
@@ -52,7 +52,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 300
+epochs: 200
 
 # Patience for early stopping
 patience: 20
@@ -63,7 +63,10 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
 # batch_size: -1
+# batch_size: 512
 batch_size: 512
+
+# dropout: 0.4
 
 # # Length of the input sequence
 # seq_length: 270
@@ -76,7 +79,7 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -110,7 +113,7 @@ log_n_basins: 1
   # 1single1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 40
 
 # Metrics to use for evaluation (after training)
 metrics:

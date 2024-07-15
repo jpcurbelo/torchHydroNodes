@@ -31,7 +31,8 @@ class BaseHybridModelTrainer:
         self.number_of_basins = self.model.cfg.number_of_basins
 
         # Extract keys that start with 'ds_'
-        self.ds_periods = [key for key in self.model.pretrainer.fulldataset.__dict__.keys() if key.startswith('ds_')]
+        self.ds_periods = [key for key in self.model.pretrainer.fulldataset.__dict__.keys() if key.startswith('ds_') \
+                           and 'static' not in key]
 
         # Loss function setup
         try:
@@ -270,7 +271,8 @@ class BaseHybridModelTrainer:
             metrics_dir.mkdir()
 
         # Extract keys that start with 'ds_'
-        ds_periods = [key for key in self.model.pretrainer.fulldataset.__dict__.keys() if key.startswith('ds_')]
+        ds_periods = [key for key in self.model.pretrainer.fulldataset.__dict__.keys() if key.startswith('ds_') \
+                           and 'static' not in key]
 
         for dsp in ds_periods:
             ds_period = getattr(self.model.pretrainer.fulldataset, dsp)

@@ -242,8 +242,8 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
     # print('dataset:', dataset.__dict__.keys())
     # print('dataset.scaler', dataset.scaler)
     # print('dataset.cfg._cfg.keys()', dataset.cfg._cfg.keys())
-    # if 'static_attributes' in dataset.cfg._cfg:
-    #     print('self.ds_static', dataset.ds_static)
+    # # if 'static_attributes' in dataset.cfg._cfg:
+    # print('self.ds_static', dataset.ds_static)
 
     # print('************************')
 
@@ -258,7 +258,7 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
     # print('model_concept:', model_concept.__dict__.keys())
 
     # Neural network model
-    model_nn = get_nn_model(model_concept)
+    model_nn = get_nn_model(model_concept, dataset.ds_static)
 
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
@@ -281,7 +281,7 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     print(f'-- Conceptual model: {model_concept.__class__.__name__}')
 
     # Neural network model
-    model_nn = get_nn_model(model_concept)
+    model_nn = get_nn_model(model_concept, dataset.ds_static)
 
     print(f'-- Neural network model: {model_nn.__class__.__name__}')
     # print(model_nn)
@@ -436,6 +436,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_mlp.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 

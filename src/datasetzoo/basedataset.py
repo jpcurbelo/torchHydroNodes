@@ -112,13 +112,15 @@ class BaseDataset(Dataset):
         if self._compute_scaler:
             # Get feature-wise center and scale values for the feature normalization
             self._setup_normalization_dynamic(self.ds_train)
-                        
-        if 'static_attributes' in self.cfg._cfg:
+
+        if 'static_attributes' in self.cfg._cfg and len(self.cfg.static_attributes) > 0:
             # Add static attributes to the DataFrame
             static_df = self._load_attributes()
 
             if self._compute_scaler:
                 self.ds_static = self._setup_normalization_static(static_df)
+        else:
+            self.ds_static = None
 
     def _load_or_create_xarray_dataset(self) -> xr.Dataset:
         '''

@@ -94,6 +94,9 @@ class Pretrainer(BaseDataset):
             # Fix the order of the columns to be alphabetically
             df = df.sort_index(axis=1)
 
+        # Rename 'gauge_id' to 'basin'
+        df.index.name = 'basin'
+
         return df
 
 

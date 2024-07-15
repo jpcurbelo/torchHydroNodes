@@ -236,12 +236,12 @@ class NNpretrainer(ExpHydroCommon):
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
 
-                print(epoch, num_batches_seen+1)
-                print('inputs:', inputs.shape)
-                print('basin_ids:', len(basin_ids), set(basin_ids))
-
                 # Forward pass
-                predictions = self.nnmodel(inputs.to(self.device), basin_ids)
+                if self.nnmodel.include_static:
+                    predictions = self.nnmodel(inputs.to(self.device), basin_ids, 
+                                               static_inputs=self.nnmodel.torch_static[basin_ids[0]])
+                else:
+                    predictions = self.nnmodel(inputs.to(self.device), basin_ids)
 
                 # Move targets to the same device as predictions
                 targets = targets.to(self.device)
@@ -355,7 +355,8 @@ class NNpretrainer(ExpHydroCommon):
         '''
 
         # Extract keys that start with 'ds_'
-        ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_')]
+        ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_') \
+                           and 'static' not in key]
 
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
         if self.basins_to_log is not None:
@@ -378,18 +379,17 @@ class NNpretrainer(ExpHydroCommon):
                     ds_period = getattr(self.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
-                    # # Get model outputs
-                    # outputs = self.get_model_outputs(ds_basin, self.input_var_names, 
-                    #                             self.device, self.cfg.nn_model, 
-                    #                             self.nnmodel, basin, 
-                    #                             self.cfg.seq_length)
+                    # Get model outputs
                     inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
-
-                    # print('inputs:', inputs.shape, basin)  
 
                     # Get model outputs
                     basin_list = [basin for _ in range(inputs.shape[0])]
-                    outputs = self.nnmodel(inputs, basin_list, use_grad=False)
+
+                    # Forward pass
+                    if self.nnmodel.include_static:
+                        outputs = self.nnmodel(inputs, basin_list, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                    else:
+                        outputs = self.nnmodel(inputs, basin_list, use_grad=False)
 
                     # Reshape outputs
                     outputs = self.reshape_outputs(outputs)
@@ -451,7 +451,8 @@ class NNpretrainer(ExpHydroCommon):
             metrics_dir.mkdir()
 
         # Extract keys that start with 'ds_'
-        ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_')]
+        ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_') \
+                           and 'static' not in key]
 
         for dsp in ds_periods:
             ds_period = getattr(self.fulldataset, dsp)
@@ -485,7 +486,11 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Get model outputs
                 basin_list = [basin for _ in range(inputs.shape[0])]
-                outputs = self.nnmodel(inputs, basin_list, use_grad=False)
+                # Forward pass
+                if self.nnmodel.include_static:
+                    outputs = self.nnmodel(inputs, basin_list, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                else:
+                    outputs = self.nnmodel(inputs, basin_list, use_grad=False)
 
                 # Reshape outputs
                 outputs = self.reshape_outputs(outputs)

@@ -1,20 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import xarray
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_nn.basemodel import BaseNNModel
 
 class MLP(BaseNNModel):
     
-    def __init__(self, concept_model: BaseConceptModel):
-        super().__init__(concept_model)
+    def __init__(self, concept_model: BaseConceptModel, ds_static: xarray.Dataset = None):
+        super().__init__(concept_model, ds_static)
 
     def create_layers(self):
-
-        # print('self.num_dynamic', self.num_dynamic)
-        # print('self.num_static', self.num_static)
-        # print('self.include_static', self.include_static)
 
         self.input_layer = nn.Linear(self.input_size, self.hidden_size[0])
         self.input_layer.name = 'input_layer'
@@ -41,9 +38,13 @@ class MLP(BaseNNModel):
 
         # Concatenate static inputs if included
         if self.include_static and static_inputs is not None:
+            # Expand static inputs to match the batch size
+            static_inputs = static_inputs.expand(dynamic_inputs.shape[0], -1)
             inputs = torch.cat((dynamic_inputs, static_inputs), dim=1)
         else:
             inputs = dynamic_inputs
+
+        # print('inputs.shape', inputs.shape)
 
         if use_grad:
             # Pass through the input layer
@@ -53,7 +54,6 @@ class MLP(BaseNNModel):
                 x = F.leaky_relu(hidden(x))
             # Output Layer
             x = self.output_layer(x)
-            return x
         else:
             with torch.no_grad():
                 # Pass through the input layer
@@ -63,6 +63,13 @@ class MLP(BaseNNModel):
                     x = F.leaky_relu(hidden(x))
                 # Output Layer
                 x = self.output_layer(x)
+        
+        
+        # Reshape the output to remove the batch dimension if it's 1
+        if x.shape[0] == 1:
+            x = x.squeeze(0)
+
+        return x
 
         
 
