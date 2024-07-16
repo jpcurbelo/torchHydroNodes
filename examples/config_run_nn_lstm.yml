@@ -22,38 +22,39 @@ nn_mech_targets:
   - m_bucket
   - et_bucket
   - q_bucket
+  # - obs_runoff
 
 target_variables: 
   - obs_runoff
 
-static_attributes:
-  - elev_mean
-  - slope_mean
-  - area_gages2
-  - frac_forest
-  - lai_max
-  - lai_diff
-  - gvf_max
-  - gvf_diff
-  - soil_depth_pelletier
-  - soil_depth_statsgo
-  - soil_porosity
-  - soil_conductivity
-  - max_water_content
-  - sand_frac
-  - silt_frac
-  - clay_frac
-  - carbonate_rocks_frac
-  - geol_permeability
-  - p_mean
-  - pet_mean
-  - aridity
-  - frac_snow
-  - high_prec_freq
-  - high_prec_dur
-  - low_prec_freq
-  - low_prec_dur
-  - p_seasonality
+# static_attributes:
+#   - elev_mean
+#   - slope_mean
+#   - area_gages2
+#   - frac_forest
+#   - lai_max
+#   - lai_diff
+#   - gvf_max
+#   - gvf_diff
+#   - soil_depth_pelletier
+#   - soil_depth_statsgo
+#   - soil_porosity
+#   - soil_conductivity
+#   - max_water_content
+#   - sand_frac
+#   - silt_frac
+#   - clay_frac
+#   - carbonate_rocks_frac
+#   - geol_permeability
+#   - p_mean
+#   - pet_mean
+#   - aridity
+#   - frac_snow
+#   - high_prec_freq
+#   - high_prec_dur
+#   - low_prec_freq
+#   - low_prec_dur
+#   - p_seasonality
 
 scale_target_vars: True
 
@@ -61,8 +62,8 @@ scale_target_vars: True
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
 # basin_file: 1_basin_file.txt
-# basin_file: 1_basin_fileB.txt
-basin_file: 4_basin_file.txt
+basin_file: 1_basin_fileB.txt
+# basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
 # n_random_basins: 100
@@ -95,10 +96,10 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
 # batch_size: 128
-batch_size: 256
+batch_size: 512
 
 # Length of the input sequence
-seq_length: 270
+seq_length: 365
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -112,20 +113,21 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 256
+  - 128
 
-# Dropout rate for the NN model
-dropout: 0.4
+# # Dropout rate for the NN model
+# dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_pretrainer_lstm_01013500
 # experiment_name: 4basin_pretrainer_lstm
-experiment_name: 4basin_pretrainer_lstm_static
-# experiment_name: 1basin_pretrainer_lstm_06431500
+# experiment_name: 4basin_pretrainer_lstm_static_128x1_minscale
+# experiment_name: Z4basin_pretrainer_lstm_static_128x1_runoff
+experiment_name: 1basin_pretrainer_lstm_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111
@@ -141,14 +143,14 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 4
+log_n_basins: 1
   # - 1013500
   # - 6431500
   # - 1022500
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

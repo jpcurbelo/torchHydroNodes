@@ -8,8 +8,8 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 569_basin_file_cluster1of6_63.txt
 
@@ -22,8 +22,8 @@ data_dir: M0_results_569basins_1980_2010_RK23
 
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
-# nn_model_dir: 1basin_pretrainer_lstm_01013500
-nn_model_dir: 1basin_pretrainer_lstm_06431500
+nn_model_dir: 1basin_pretrainer_lstm_01013500_240716_154241
+# nn_model_dir: 1basin_pretrainer_lstm_06431500
 # nn_model_dir: 1basin_pretrainer_lstm_06431500_do04
 
 scale_target_vars: True
@@ -52,7 +52,7 @@ valid_end_date: "30/09/2003"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 10
+epochs: 100
 
 # Patience for early stopping
 patience: 10
@@ -81,8 +81,8 @@ learning_rate:
 # Experiment name, used as folder name
 # experiment_name: 1basin_hybrid_mlp
 # experiment_name: 1basin_hybrid_lstm
-# experiment_name: 1basin_hybrid_lstm_01013500
-experiment_name: CC1basin_hybrid_lstm_06431500
+experiment_name: CC1basin_hybrid_lstm_01013500
+# experiment_name: CC1basin_hybrid_lstm_06431500
 # experiment_name: cluster1_hybrid_lstm
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
@@ -97,7 +97,7 @@ precision: float32
 num_workers: 8
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 0
+verbose: 1
 
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model

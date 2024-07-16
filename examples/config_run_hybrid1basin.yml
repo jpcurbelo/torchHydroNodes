@@ -22,11 +22,9 @@ data_dir: M0_results_569basins_1980_2010_RK23
 
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
-nn_model_dir: 1basin_pretrainer_lstm_01013500
-# nn_model_dir: 1basin_pretrainer_lstm_01013500_do04_2hid128
-# nn_model_dir: 1basin_pretrainer_lstm_01013500_do04_1hid64
-# nn_model_dir: 1basin_pretrainer_lstm_06431500
-# nn_model_dir: 1basin_pretrainer_lstm_06431500_do04_2hidden
+nn_model_dir: 1basin_pretrainer_lstm_01013500_240716_154241
+# nn_model_dir: ZZ1basin_pretrainer_mlp_minclip_240716_142915
+
 
 scale_target_vars: True
 
@@ -64,7 +62,7 @@ clip_gradient_norm: 1.0
 # batch_size: 7304
 # batch_size: -1
 # batch_size: 512
-batch_size: 512
+batch_size: 256
 
 # dropout: 0.4
 

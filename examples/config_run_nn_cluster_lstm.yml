@@ -29,7 +29,8 @@ target_variables:
 scale_target_vars: True
 
 # Files to specify training, validation and test basins
-basin_file: cluster_files/569_basin_file_cluster2of17_46.txt
+# basin_file: cluster_files/569_basin_file_cluster1of6_63.txt
+basin_file: cluster_files/569_basin_file_cluster2of17_46.txt 
 
 # --- Training configurations --- #
 
@@ -45,7 +46,7 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 300
+epochs: 150
 
 # Patience for early stopping
 patience: 20
@@ -54,7 +55,7 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 1024
+batch_size: 512
 # batch_size: 256
 
 # Optimizer to use [adam, sgd]
@@ -78,7 +79,7 @@ hidden_size:
   # - 32
   # - 32
 
-  - 128
+  - 256
   # - 128
 
 # Dropout rate for the NN model
@@ -86,11 +87,14 @@ dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: cluster2of17_pretrainer_lstm
+# experiment_name: cluster2of17_pretrainer_lstm
+# experiment_name: cluster1of6_pretrainer_lstm
+# experiment_name: cluster1of6_pretrainer_lstm_256x1_minclip
 # experiment_name: 569basin_pretrainer_run
+experiment_name: cluster2of6_pretrainer_lstm_256x1_minclip
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -113,7 +117,7 @@ log_n_basins: 4
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 25
 
 # Metrics to use for evaluation (after training)
 metrics:

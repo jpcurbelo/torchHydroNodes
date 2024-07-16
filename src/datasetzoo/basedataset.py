@@ -344,6 +344,10 @@ class BaseDataset(Dataset):
         
         self.scaler["ds_feature_std"] = ds.groupby('basin').std(dim='date')
         self.scaler["ds_feature_mean"] = ds.groupby('basin').mean(dim='date')
+        # self.scaler["ds_feature_min"] = ds.groupby('basin').min(dim='date')
+
+        # print("ds_feature_mean:", self.scaler["ds_feature_mean"])
+        # aux = input('Press any key to continue...')
     
     def _setup_normalization_static(self, df: pd.DataFrame):
         '''

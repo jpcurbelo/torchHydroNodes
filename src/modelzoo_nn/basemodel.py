@@ -31,6 +31,10 @@ class BaseNNModel(nn.Module):
         # Compute mean and std for variables by basin
         self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'], variables=self.concept_model.cfg.nn_dynamic_inputs)
         self.torch_input_means = self.xarray_to_torch(self.scaler['ds_feature_mean'], variables=self.concept_model.cfg.nn_dynamic_inputs)
+        # self.torch_input_mins = self.xarray_to_torch(self.scaler['ds_feature_min'], variables=self.concept_model.cfg.nn_mech_targets)
+
+        # print("self.torch_input_means", self.torch_input_means)
+        # aux = input("Press Enter to continue...")
 
         if self.ds_static is not None:
             self.torch_static = self.xarray_to_torch(self.ds_static, variables=self.concept_model.cfg.static_attributes)

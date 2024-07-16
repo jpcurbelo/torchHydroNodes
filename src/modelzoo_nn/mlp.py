@@ -61,10 +61,18 @@ class MLP(BaseNNModel):
                     x = F.leaky_relu(hidden(x))
                 # Output Layer
                 x = self.output_layer(x)
+
+
+        # Retrieve the minimum values for the basins
+        min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+
+        # print(basin_list[0], "self.torch_input_mins[b]", self.torch_input_mins[basin_list[0]])
+        # print(basin_list[0], "min_values", min_values)
+        # print(basin_list[0], "x_values", x)
+        # aux = input("Press Enter to continue..."    )
         
-        # Reshape the output to remove the batch dimension if it's 1
-        if x.shape[0] == 1:
-            x = x.squeeze(0)
+        # Clip the outputs
+        x = torch.maximum(x, min_values)
 
         return x
 

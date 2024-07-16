@@ -57,5 +57,12 @@ class LSTM(BaseNNModel):
                     lstm_out = lstm_out * input_gate_activations.unsqueeze(1)
                 lstm_out = self.dropout_layer(lstm_out)
                 output = self.fc(lstm_out[:, -1, :])
+
+        # Retrieve the minimum values for the basins
+        min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+
+        # Clip the outputs
+        output = torch.max(output, min_values)
         
         return output
+    

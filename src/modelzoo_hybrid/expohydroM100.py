@@ -217,9 +217,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Forward pass
         if self.pretrainer.nnmodel.include_static:
             m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins, 
-                                        static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]])
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]])[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins)
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q
         p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \
@@ -291,15 +291,17 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, self.precp_lstm, self.tmean_lstm], dim=-1)  
         # print(f"Memory usage after stacking inputs: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
-        basin = self.basin
-
-        basin = self.basin
-        if not isinstance(basin, list):
-            basin = [basin]
+        basins = self.basins
+        if not isinstance(basins, list):
+            basins = [basins]
         # print(f"Memory usage after preparing basin: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
-        m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin, use_grad=self.use_grad)[0] 
-        # print(f"Memory usage after nnmodel output: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+        # m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin, use_grad=self.use_grad)[0] 
+        if self.pretrainer.nnmodel.include_static:
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins, 
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]])[0]
+        else:
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q
         p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \

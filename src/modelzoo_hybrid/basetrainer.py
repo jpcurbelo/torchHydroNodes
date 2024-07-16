@@ -60,6 +60,8 @@ class BaseHybridModelTrainer:
         self.save_model()
         self.save_plots(epoch=0)
 
+        best_loss = float('inf')  # Initialize best loss to a very high value
+
         for epoch in range(self.model.epochs):
 
             # Clear CUDA cache at the beginning of each epoch
@@ -125,11 +127,18 @@ class BaseHybridModelTrainer:
                 # aux = input("Press Enter to continue...")
                 
                 if self.model.cfg.verbose:
-                    print(f"-- Saving the model weights and plots (epoch {epoch + 1}) | --")
-                # Save the model weights
-                self.save_model()
+                    print(f"-- Saving the basin plots (epoch {epoch + 1}) | --")
+                # # Save the model weights
+                # self.save_model()
                 # self.save_plots(nnmodel_state_dict, epoch=epoch+1)
                 self.save_plots(epoch=epoch+1)
+
+            # Check for the best model and save it
+            if avg_loss < best_loss:
+                best_loss = avg_loss
+                self.save_model()
+                if self.model.cfg.verbose:
+                    print(f"-- Best model updated at epoch {epoch + 1} with loss {avg_loss:.4e}")
 
             # Early stopping check
             early_stopping(avg_loss)
@@ -251,7 +260,7 @@ class BaseHybridModelTrainer:
                     plt.legend()
 
                     nse_val = NSE_eval(y_obs, y_sim)
-                    print(f'NSE: {nse_val:.3f}')
+                    print(period_name, f'NSE: {nse_val:.3f}')
 
                     plt.title(f'{self.target} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
 
@@ -265,6 +274,19 @@ class BaseHybridModelTrainer:
         '''
         Evaluate the model on the test dataset
         '''
+
+        # Define the path to the best model saved during training
+        best_model_path = self.model.cfg.run_dir / 'model_weights' / 'best_model.pth'
+
+        # Check if the best model exists
+        if best_model_path.exists():
+            # Load best model saved during training
+            self.model.pretrainer.nnmodel.load_state_dict(torch.load(best_model_path))
+            if self.model.cfg.verbose:
+                print(f"Loaded best model from {best_model_path}")
+        else:
+            print(f"Best model file not found at {best_model_path}. Evaluation will not be performed.")
+            return
 
         metrics_dir = self.model.cfg.run_dir / 'model_metrics'
         if not metrics_dir.exists():

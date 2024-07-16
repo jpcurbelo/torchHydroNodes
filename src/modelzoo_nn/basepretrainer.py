@@ -170,6 +170,18 @@ class NNpretrainer(ExpHydroCommon):
         num_dates = len(self.dataset.date)
         basin_ids = [basin for basin in self.basins for _ in range(num_dates)]
 
+        if self.cfg.scale_target_vars:
+            self.nnmodel.torch_input_mins = {}
+            for idx, basin in enumerate(self.basins):
+                target_vals = []
+                for outvar in output_var_names:
+                    # if outvar == 'q_bucket':
+                    #     print('outvar:', outvar, torch.min(tensor_dict[outvar][idx] + 1e-10))
+
+                    target_vals.append(torch.min(tensor_dict[outvar][idx] + 1e-10))
+
+                self.nnmodel.torch_input_mins[basin] = torch.tensor(target_vals, dtype=self.dtype)
+
         # Ensure input and output tensors are wrapped into single composite tensors if needed
         if self.cfg.nn_model == 'lstm':
 

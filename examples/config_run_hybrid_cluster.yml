@@ -5,25 +5,27 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, rk2, adaptive_heun]
-odesmethod: rk4
+odesmethod: euler
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file_cluster1of6_63.txt #ok
+# basin_file: cluster_files/569_basin_file_cluster1of6_63.txt #ok
 # basin_file: 569_basin_file_cluster2of6_56.txt
 # basin_file: 569_basin_file_cluster3of6_190.txt #ok
 # basin_file: 569_basin_file_cluster4of6_99.txt  #ok
 # basin_file: 569_basin_file_cluster5of6_68.txt
 # basin_file: 569_basin_file_cluster6of6_93.txt #ok
+basin_file: cluster_files/569_basin_file_cluster2of17_46.txt
 
-# # Number of first and random basins to use for training and testing
-# n_random_basins: 10
+# Number of first and random basins to use for training and testing
+n_random_basins: 10
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
 
 # nn_model_dir: cluster1_pretrainer_mlp_200ep
-nn_model_dir: cluster1_pretrainer_lstm_500ep
+# nn_model_dir: cluster1_pretrainer_lstm_500ep
+nn_model_dir: cluster1of6_pretrainer_lstm_256x1_minclip_240716_123019
 
 scale_target_vars: True
 
@@ -34,8 +36,8 @@ train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
-test_start_date: "01/10/2000"
-test_end_date: "30/09/2010"
+# test_start_date: "01/10/2000"
+# test_end_date: "30/09/2010"
 
 # train_start_date: "01/10/1997"
 # train_end_date: "30/09/2000"
@@ -71,7 +73,9 @@ learning_rate:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: cluster1_hybrid_lstm
+# experiment_name: cluster1_hybrid_lstm
+experiment_name: ZZZZcluster2of17_hybrid_lstm
+
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -91,7 +95,7 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 4
+log_n_basins: 2
   # - 1013500
   # # - 6431500
   # # 2

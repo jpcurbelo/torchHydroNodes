@@ -327,11 +327,16 @@ def evaluate_model(run_dir: Path, period: str, gpu: int=None,
 
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model=model)
 
+    # Get the basin interpolators
+    interpolators = get_basin_interpolators(dataset, cfg, project_dir)
+
     # Conceptual model
-    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+    time_idx0 = 0
+    model_concept = get_concept_model(cfg, dataset.ds_train, interpolators, time_idx0,
+                                        dataset.scaler)
 
     # Neural network model
-    model_nn = get_nn_model(model_concept)
+    model_nn = get_nn_model(model_concept, dataset.ds_static)
 
     model_path = run_dir / 'model_weights'
     basins = dataset.basins
@@ -437,6 +442,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_mlp.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_lstm.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 
