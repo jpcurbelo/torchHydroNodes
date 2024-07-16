@@ -44,8 +44,6 @@ class MLP(BaseNNModel):
         else:
             inputs = dynamic_inputs
 
-        # print('inputs.shape', inputs.shape)
-
         if use_grad:
             # Pass through the input layer
             x = F.tanh(self.input_layer(inputs))
@@ -63,7 +61,6 @@ class MLP(BaseNNModel):
                     x = F.leaky_relu(hidden(x))
                 # Output Layer
                 x = self.output_layer(x)
-        
         
         # Reshape the output to remove the batch dimension if it's 1
         if x.shape[0] == 1:

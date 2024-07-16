@@ -7,7 +7,8 @@ nn_model: lstm
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010_RK23
+# data_dir: M0_results_569basins_1980_2010_RK23
+data_dir: M0_results_4basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
@@ -25,6 +26,34 @@ nn_mech_targets:
 target_variables: 
   - obs_runoff
 
+static_attributes:
+  - elev_mean
+  - slope_mean
+  - area_gages2
+  - frac_forest
+  - lai_max
+  - lai_diff
+  - gvf_max
+  - gvf_diff
+  - soil_depth_pelletier
+  - soil_depth_statsgo
+  - soil_porosity
+  - soil_conductivity
+  - max_water_content
+  - sand_frac
+  - silt_frac
+  - clay_frac
+  - carbonate_rocks_frac
+  - geol_permeability
+  - p_mean
+  - pet_mean
+  - aridity
+  - frac_snow
+  - high_prec_freq
+  - high_prec_dur
+  - low_prec_freq
+  - low_prec_dur
+  - p_seasonality
 
 scale_target_vars: True
 
@@ -83,8 +112,7 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 64
-  - 64
+  - 256
 
 # Dropout rate for the NN model
 dropout: 0.4
@@ -92,11 +120,12 @@ dropout: 0.4
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_pretrainer_lstm_01013500
-experiment_name: 4basin_pretrainer_lstm
+# experiment_name: 4basin_pretrainer_lstm
+experiment_name: 4basin_pretrainer_lstm_static
 # experiment_name: 1basin_pretrainer_lstm_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111

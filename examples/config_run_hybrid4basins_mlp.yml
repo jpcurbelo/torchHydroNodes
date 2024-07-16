@@ -20,8 +20,8 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
 # nn_model_dir: 4basin_pretrainer_lstm_do04_1hid64
 # nn_model_dir: 4basin_pretrainer_lstm_240628_1hid256_270d
-# nn_model_dir: 4basin_pretrainer_mlp_static
-nn_model_dir: 4basin_pretrainer_mlp
+nn_model_dir: 4basin_pretrainer_mlp_static
+# nn_model_dir: 4basin_pretrainer_mlp
 
 scale_target_vars: True
 
@@ -56,14 +56,14 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.001
+  initial: 0.0001
   decay: 0.5
   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: 4basin_hybrid_mlp_static
-experiment_name: 4basin_hybrid_mlp
+experiment_name: 4basin_hybrid_mlp_static
+# experiment_name: 4basin_hybrid_mlp
 # experiment_name: 4basin_hybrid_lstm
 # experiment_name: cluster1_hybrid_lstm
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]

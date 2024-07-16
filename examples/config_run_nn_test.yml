@@ -3,8 +3,8 @@
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
 # NN model to use [mlp, lstm]
-# nn_model: lstm
-nn_model: mlp
+nn_model: lstm
+# nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -96,7 +96,7 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
 # batch_size: 256
-batch_size: 1024
+batch_size: 512
 
 # Length of the input sequence
 seq_length: 270
@@ -127,8 +127,8 @@ dropout: 0.4
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 100_basins_pretrainer_run
-# experiment_name: ZZ1basin_pretrainer_lstm
-experiment_name: ZZZZ4basin_pretrainer_mlp
+experiment_name: ZZZZ1basin_pretrainer_lstm
+# experiment_name: ZZZZ4basin_pretrainer_mlp
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
