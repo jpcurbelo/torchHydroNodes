@@ -157,7 +157,9 @@ class Config(object):
     During parsing, config keys that contain 'dir', 'file', or 'path' will be converted to pathlib.Path instances.
     '''
     
-    def __init__(self, yml_path_or_dict: Union[Path, dict]):
+    def __init__(self, yml_path_or_dict: Union[Path, dict], run_folder='runs'):
+        
+        self.run_folder = run_folder
         
         if isinstance(yml_path_or_dict, Path) or isinstance(yml_path_or_dict, str):
             self._cfg = self._parse_run_config(yml_path_or_dict)
@@ -205,7 +207,7 @@ class Config(object):
         '''
         
         config_dir = self._cfg['config_dir']  
-        os.makedirs(config_dir / 'runs', exist_ok=True)
+        os.makedirs(config_dir / self.run_folder, exist_ok=True)
             
         # Experiment name
         if "experiment_name" in self._cfg and self._cfg["experiment_name"]:
@@ -214,9 +216,13 @@ class Config(object):
             experiment_name = 'run'
                                
         # Create a folder to save the trained models
+        basins = load_basin_file(self._cfg['basin_file_path']) 
+        if len(basins) == 1:
+            experiment_name = f"{experiment_name}_{basins[0]}"
+
         now = datetime.now()
         dt_string = now.strftime("%y%m%d %H%M%S")
-        run_dir = config_dir / 'runs' / f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}'
+        run_dir = config_dir / self.run_folder / f'{experiment_name}_{dt_string.split()[0]}_{dt_string.split()[1]}'
         try:
             os.mkdir(run_dir)
             self._cfg['run_dir'] = run_dir
@@ -717,7 +723,7 @@ class Config(object):
 
     @property
     def log_every_n_epochs(self) -> int:
-        return self._get_property_value("log_every_n_epochs", default=10)
+        return self._get_property_value("log_every_n_epochs", default=self.epochs)
 
     @property
     def periods(self) -> List[str]:

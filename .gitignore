@@ -3,6 +3,7 @@
 venv-hydronodes/*
 examples/runs/*
 data/*
+src/scripts_paper/runs_pretrainer*
 
 
 # Files

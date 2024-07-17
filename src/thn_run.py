@@ -79,11 +79,11 @@ def _get_args() -> dict:
     
     return args
 
-def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptual'):
+def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptual', run_folder='runs'):
 
     print('-- Loading the config file and the dataset')
 
-    cfg = Config(config_file)
+    cfg = Config(config_file, run_folder=run_folder)
 
     if model in ['pretrainer', 'hybrid']:
         # Update the config file given the nn_model_dir
