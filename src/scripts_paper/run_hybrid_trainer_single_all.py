@@ -1,0 +1,155 @@
+import os
+import sys
+from pathlib import Path
+import yaml
+import re
+import torch
+import concurrent.futures
+
+# Make sure code directory is in path,
+# Add the parent directory of your project to the Python path
+script_path = Path(__file__).resolve().parent
+project_path = str(script_path.parent.parent)
+sys.path.append(project_path)
+
+from src.thn_run import (
+    _load_cfg_and_ds,
+    get_basin_interpolators,
+)
+from src.modelzoo_concept import get_concept_model
+from src.modelzoo_nn import (
+    get_nn_model,
+    get_nn_pretrainer,
+)
+from src.modelzoo_hybrid import (
+    get_hybrid_model,
+    get_trainer,
+)
+
+nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+
+config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
+pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}'
+run_folder = f'runs_hybrid_single_{nnmodel_type}'
+
+MAX_WORKERS = 8
+
+def train_model_for_basin(nn_model_dir, project_path):
+    '''
+    Train the hybrid model for a single basin
+
+    - Args:
+        - nn_model_dir: str, neural network model directory
+        - project_path: str, path to the project directory
+
+    - Returns:
+        - None
+    '''
+
+    # Load the MAIN configuration file
+    if isinstance(config_file, Path):
+        if config_file.exists():
+            with open(config_file, 'r') as f:
+                cfg = yaml.safe_load(f)
+        else:
+            raise FileNotFoundError(f'Configuration file {config_file} not found!')
+        
+    # Extract the basin name from the nn_model_dir
+    # basin = nn_model_dir.split('_')[-3]
+    # Use a regular expression to find an 8-digit number in the string
+    match = re.search(r'\d{8}', nn_model_dir)
+    if match:
+        basin = match.group(0)
+    else:
+        basin = None
+
+    # Create 1_basin_{basin}.txt file
+    basin_file = f'1_basin_{basin}_{nnmodel_type}.txt'
+    with open(basin_file, 'w') as f:
+        f.write(basin)
+
+    # Update the configuration file with nn_model_dir and basin_file
+    cfg['nn_model_dir'] = pretrainer_runs_folder + '/' +nn_model_dir
+    cfg['basin_file'] = basin_file
+
+    # Create temporary configuration file config_file_temp_basin.yml
+    config_file_temp = str(config_file).split('.')[0] + f'_temp_{basin}.yml'
+    with open(config_file_temp, 'w') as f:
+        yaml.dump(cfg, f)
+
+    # Load the configuration file and dataset
+    print(Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
+    cfg_run, dataset = _load_cfg_and_ds(Path(config_file_temp), model='hybrid', 
+                                        run_folder=run_folder,
+                                        # nn_model_path=Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
+                                        nn_model_path=script_path)
+
+    # Get the basin interpolators
+    interpolators = get_basin_interpolators(dataset, cfg_run, project_path)
+
+    # Conceptual model
+    time_idx0 = 0
+    model_concept = get_concept_model(cfg_run, dataset.ds_train, interpolators, time_idx0, 
+                                      dataset.scaler)
+
+    # Neural network model
+    model_nn = get_nn_model(model_concept, dataset.ds_static)
+
+    # Load the neural network model state dictionary if cfg.nn_model_dir exists
+    if cfg_run.nn_model_dir is not None:
+
+        pattern = 'pretrainer_*basins.pth'
+
+        model_path = Path(script_path) / cfg_run.nn_model_dir / 'model_weights'
+
+        # Find the file(s) matching the pattern
+        matching_files = list(model_path.glob(pattern))
+        model_file = matching_files[0]
+        # Load the neural network model state dictionary
+        model_file = model_path / model_file
+        # Load the state dictionary from the saved model
+        state_dict = torch.load(model_file, map_location=torch.device(cfg_run.device))
+        # Load the state dictionary into the model
+        model_nn.load_state_dict(state_dict)
+
+    # Pretrainer
+    pretrainer = get_nn_pretrainer(model_nn, dataset)
+
+    # Build the hybrid model
+    model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
+
+    # Build the trainer 
+    trainer = get_trainer(model_hybrid)
+
+    # Train the model
+    trainer.train()
+
+    # Delete the basin_file and config_file_temp after training
+    os.remove(basin_file)
+    os.remove(config_file_temp)
+
+
+def main():
+
+    # Load available nn_model_dir in pretrainer_runs_folder
+    nn_model_dirs = sorted([d for d in os.listdir(pretrainer_runs_folder) \
+                     if os.path.isdir(os.path.join(pretrainer_runs_folder, d))])
+    
+    # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
+    max_workers = MAX_WORKERS
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()  # Will raise exception if training failed
+            except Exception as e:
+                print(f'Error in training model: {e}')
+    
+    # for nn_model_dir in nn_model_dirs: 
+    #     train_model_for_basin(nn_model_dir, project_path)
+
+
+if __name__ == "__main__":
+
+    main()

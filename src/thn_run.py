@@ -79,7 +79,8 @@ def _get_args() -> dict:
     
     return args
 
-def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptual', run_folder='runs'):
+def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptual', 
+                     run_folder='runs', nn_model_path=Path(project_dir) / 'data'):
 
     print('-- Loading the config file and the dataset')
 
@@ -87,7 +88,7 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptua
 
     if model in ['pretrainer', 'hybrid']:
         # Update the config file given the nn_model_dir
-        cfg = update_hybrid_cfg(cfg, model)
+        cfg = update_hybrid_cfg(cfg, model, nn_model_path=nn_model_path)
     
     # check if a GPU has been specified as command line argument. If yes, overwrite config
     if gpu is not None and gpu >= 0:
@@ -237,6 +238,7 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
 
 def pretrain_nn_model(config_file: Path, gpu: int = None):
     
+    # Load the configuration file and dataset
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='pretrainer')
 
     # print('dataset:', dataset.__dict__.keys())
@@ -268,6 +270,7 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
 
 def train_hybrid_model(config_file: Path, gpu: int = None):
         
+    # Load the configuration file and dataset
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='hybrid')
 
     # Get the basin interpolators
@@ -325,6 +328,7 @@ def evaluate_model(run_dir: Path, period: str, gpu: int=None,
     if config_file is None:
         config_file = run_dir / 'config.yml'
 
+    # Load the configuration file and dataset
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model=model)
 
     # Get the basin interpolators
@@ -362,6 +366,8 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
         model_type = 'hybrid'
     else:
         model_type = 'pretrainer'
+    
+    # Load the configuration file and dataset
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model=model_type)
 
     # Load config_resume file

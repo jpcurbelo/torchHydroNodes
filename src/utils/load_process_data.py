@@ -92,7 +92,8 @@ def dump_config(cfg, filename: str = 'config.yml'):
 
     return cfg
 
-def update_hybrid_cfg(cfg, model_type: str='pretrainer'):
+def update_hybrid_cfg(cfg, model_type: str='pretrainer', 
+                      nn_model_path=project_dir / 'data'):
 
     if model_type == 'pretrainer':
 
@@ -110,7 +111,7 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer'):
 
     elif model_type == 'hybrid':
         # Load vars from the nn_model
-        nn_cfg_dir = project_dir / 'data' / cfg.nn_model_dir / 'config.yml'
+        nn_cfg_dir = nn_model_path / cfg.nn_model_dir / 'config.yml'
         
         # Load the nn_model config file
         if nn_cfg_dir.exists():

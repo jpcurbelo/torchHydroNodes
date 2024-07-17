@@ -276,7 +276,7 @@ class BaseHybridModelTrainer:
         '''
 
         # Define the path to the best model saved during training
-        best_model_path = self.model.cfg.run_dir / 'model_weights' / 'best_model.pth'
+        best_model_path = self.model.cfg.run_dir / 'model_weights' / f'trainer_{self.hybrid_model}_{self.nnmodel_name}_{self.number_of_basins}basins.pth'
 
         # Check if the best model exists
         if best_model_path.exists():
