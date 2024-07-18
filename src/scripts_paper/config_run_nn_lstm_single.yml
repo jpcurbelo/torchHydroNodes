@@ -68,11 +68,12 @@ hidden_size:
   - 128
 
 # Length of the input sequence
-seq_length: 365
+seq_length: 270
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: pretrainer_lstm_single365
+# experiment_name: pretrainer_lstm_single365
+experiment_name: pretrainer_lstm_single270
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -87,7 +88,7 @@ precision: float32
 num_workers: 16
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 1
+verbose: 0
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500

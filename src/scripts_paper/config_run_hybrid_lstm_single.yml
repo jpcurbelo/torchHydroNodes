@@ -41,6 +41,7 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 batch_size: 256
 
+# Dropout rate for the model
 dropout: 0.2
 
 # Optimizer to use [adam, sgd]

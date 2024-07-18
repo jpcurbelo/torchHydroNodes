@@ -18,10 +18,13 @@ class MLP(BaseNNModel):
 
         # Hidden Layers
         self.hidden = nn.ModuleList()
+        self.dropouts = nn.ModuleList()
         for li, hidden in enumerate(self.hidden_size[:-1]):
             layer = nn.Linear(hidden, self.hidden_size[li+1])
             layer.name = f'hidden_layer_{li}'
             self.hidden.add_module(f'hidden{li+1}', layer)
+            # Initialize dropout layer
+            self.dropouts.add_module(f'dropout{li+1}', nn.Dropout(self.dropout))
 
         # Output Layer
         self.output_layer = nn.Linear(self.hidden_size[-1], self.output_size)
@@ -48,8 +51,9 @@ class MLP(BaseNNModel):
             # Pass through the input layer
             x = F.tanh(self.input_layer(inputs))
             # Hidden Layers
-            for hidden in self.hidden:
+            for hidden, dropout in zip(self.hidden, self.dropouts):
                 x = F.leaky_relu(hidden(x))
+                x = dropout(x)
             # Output Layer
             x = self.output_layer(x)
         else:
@@ -57,25 +61,16 @@ class MLP(BaseNNModel):
                 # Pass through the input layer
                 x = F.tanh(self.input_layer(inputs))
                 # Hidden Layers
-                for hidden in self.hidden:
+                for hidden, dropout in zip(self.hidden, self.dropouts):
                     x = F.leaky_relu(hidden(x))
+                    x = dropout(x)
                 # Output Layer
                 x = self.output_layer(x)
 
-
         # Retrieve the minimum values for the basins
         min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-
-        # print(basin_list[0], "self.torch_input_mins[b]", self.torch_input_mins[basin_list[0]])
-        # print(basin_list[0], "min_values", min_values)
-        # print(basin_list[0], "x_values", x)
-        # aux = input("Press Enter to continue..."    )
         
         # Clip the outputs
         x = torch.maximum(x, min_values)
 
         return x
-
-        
-
-

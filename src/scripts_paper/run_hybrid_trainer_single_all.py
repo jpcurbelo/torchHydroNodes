@@ -25,14 +25,15 @@ from src.modelzoo_hybrid import (
     get_hybrid_model,
     get_trainer,
 )
+from utils import get_basin_id
 
-nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}'
-run_folder = f'runs_hybrid_single_{nnmodel_type}'
+run_folder = f'ZZZruns_hybrid_single_{nnmodel_type}'
 
-MAX_WORKERS = 8
+MAX_WORKERS = 1
 
 def train_model_for_basin(nn_model_dir, project_path):
     '''
@@ -55,13 +56,7 @@ def train_model_for_basin(nn_model_dir, project_path):
             raise FileNotFoundError(f'Configuration file {config_file} not found!')
         
     # Extract the basin name from the nn_model_dir
-    # basin = nn_model_dir.split('_')[-3]
-    # Use a regular expression to find an 8-digit number in the string
-    match = re.search(r'\d{8}', nn_model_dir)
-    if match:
-        basin = match.group(0)
-    else:
-        basin = None
+    basin = get_basin_id(nn_model_dir)
 
     # Create 1_basin_{basin}.txt file
     basin_file = f'1_basin_{basin}_{nnmodel_type}.txt'
@@ -137,6 +132,8 @@ def main():
     
     # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
     max_workers = MAX_WORKERS
+
+    print(f'Number of workers: {max_workers}')
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]

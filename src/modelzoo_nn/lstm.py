@@ -17,7 +17,7 @@ class LSTM(BaseNNModel):
         self.lstm = nn.LSTM(input_size=self.num_dynamic, 
                             hidden_size=self.hidden_size[0], 
                             num_layers=self.num_layers, 
-                            dropout=self.dropout, 
+                            dropout=self.dropout if self.num_layers > 1 else 0, 
                             batch_first=True)
 
         # Initialize the input gate linear layer for static inputs
@@ -46,7 +46,6 @@ class LSTM(BaseNNModel):
         if use_grad:
             lstm_out, _ = self.lstm(dynamic_inputs)
             if input_gate_activations is not None:
-                # lstm_out[:, :, :self.hidden_size[0]] = lstm_out[:, :, :self.hidden_size[0]] * input_gate_activations.unsqueeze
                 lstm_out = lstm_out * input_gate_activations.unsqueeze(1)  # Apply input gate activations
             lstm_out = self.dropout_layer(lstm_out)
             output = self.fc(lstm_out[:, -1, :])
@@ -57,6 +56,12 @@ class LSTM(BaseNNModel):
                     lstm_out = lstm_out * input_gate_activations.unsqueeze(1)
                 lstm_out = self.dropout_layer(lstm_out)
                 output = self.fc(lstm_out[:, -1, :])
+
+        # # Print the memory usage on the GPU
+        # allocated = torch.cuda.memory_allocated()
+        # reserved = torch.cuda.memory_reserved()
+        # print(use_grad, f"Memory Allocated: {allocated / (1024 ** 2):.2f} MB")
+        # print(use_grad, f"Memory Reserved: {reserved / (1024 ** 2):.2f} MB")
 
         # Retrieve the minimum values for the basins
         min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)

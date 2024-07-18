@@ -50,6 +50,9 @@ class BaseHybridModelTrainer:
 
     def train(self, is_resume=False):
 
+        print('BaseHybridModelTrainer - train - self.model:', self.model)
+        aux = input("Press Enter to continue...")
+
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
         if self.model.cfg.verbose:
@@ -233,6 +236,10 @@ class BaseHybridModelTrainer:
                     # Get model outputs
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
                     # Get model outputs
+
+                    print('epoch:', epoch)
+                    aux = input("Press Enter to continue...")
+
                     outputs = self.model(inputs, basin, use_grad=False)
                     # Reshape outputs
                     outputs = self.model.reshape_outputs(outputs)
