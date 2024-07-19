@@ -25,15 +25,22 @@ from src.modelzoo_hybrid import (
     get_hybrid_model,
     get_trainer,
 )
-from utils import get_basin_id
+from utils import (
+    get_basin_id,
+    check_finished_basins,
+    delete_unfinished_jobs,
+)
 
-nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
+nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}'
-run_folder = f'ZZZruns_hybrid_single_{nnmodel_type}'
+run_folder = f'runs_hybrid_single_{nnmodel_type}'
 
 MAX_WORKERS = 1
+
+CHECK_IF_FINISHED = 1
+DELETE_IF_UNFINISHED = 0
 
 def train_model_for_basin(nn_model_dir, project_path):
     '''
@@ -120,8 +127,10 @@ def train_model_for_basin(nn_model_dir, project_path):
     trainer.train()
 
     # Delete the basin_file and config_file_temp after training
-    os.remove(basin_file)
-    os.remove(config_file_temp)
+    if os.path.isfile(basin_file):
+        os.remove(basin_file)
+    if os.path.isfile(config_file_temp):
+        os.remove(config_file_temp)
 
 
 def main():
@@ -129,22 +138,43 @@ def main():
     # Load available nn_model_dir in pretrainer_runs_folder
     nn_model_dirs = sorted([d for d in os.listdir(pretrainer_runs_folder) \
                      if os.path.isdir(os.path.join(pretrainer_runs_folder, d))])
-    
-    # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
-    max_workers = MAX_WORKERS
 
-    print(f'Number of workers: {max_workers}')
-
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future.result()  # Will raise exception if training failed
-            except Exception as e:
-                print(f'Error in training model: {e}')
+    basins = [get_basin_id(nn_model_dir) for nn_model_dir in nn_model_dirs]
     
-    # for nn_model_dir in nn_model_dirs: 
-    #     train_model_for_basin(nn_model_dir, project_path)
+    if CHECK_IF_FINISHED and os.path.exists(script_path / run_folder):
+            
+            # Find basins that are already finished and delete the unfinished jobs
+            basin_finished, basin_unfinished = check_finished_basins(script_path / run_folder)
+
+            print(f"Finished basins: {len(basin_finished)}")
+            print(f"Unfinished basins: {len(basin_unfinished)}", basin_unfinished)
+
+            if DELETE_IF_UNFINISHED:
+                delete_unfinished_jobs(script_path / run_folder, basin_unfinished)
+
+            # Remove the finished basins from the list
+            basins_to_continue = [basin for basin in basins if basin.strip() not in basin_finished]
+
+            print(f"Basins to continue: {len(basins_to_continue)}")
+
+            # Update the list of basins
+            basins = basins_to_continue
+    
+    # # # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
+    # # max_workers = MAX_WORKERS
+
+    # # print(f'Number of workers: {max_workers}')
+
+    # # with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    # #     futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
+    # #     for future in concurrent.futures.as_completed(futures):
+    # #         try:
+    # #             future.result()  # Will raise exception if training failed
+    # #         except Exception as e:
+    # #             print(f'Error in training model: {e}')
+    
+    for nn_model_dir in nn_model_dirs[280:]: 
+        train_model_for_basin(nn_model_dir, project_path)
 
 
 if __name__ == "__main__":

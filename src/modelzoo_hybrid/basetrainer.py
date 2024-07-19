@@ -50,18 +50,18 @@ class BaseHybridModelTrainer:
 
     def train(self, is_resume=False):
 
-        print('BaseHybridModelTrainer - train - self.model:', self.model)
-        aux = input("Press Enter to continue...")
+        # print('BaseHybridModelTrainer - train - self.model:', self.model)
+        # aux = input("Press Enter to continue...")
 
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
         if self.model.cfg.verbose:
             print(f"-- Training the hybrid model on {self.model.device} --")
 
-        # Save the model weights - Epoch 0
-        # if not is_resume:
-        self.save_model()
-        self.save_plots(epoch=0)
+        # # Save the model weights - Epoch 0
+        # # if not is_resume:
+        # self.save_model()
+        # self.save_plots(epoch=0)
 
         best_loss = float('inf')  # Initialize best loss to a very high value
 
@@ -125,7 +125,7 @@ class BaseHybridModelTrainer:
             pbar.close()
 
             # Save the model weights and plots
-            if (epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0)):
+            if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:
                 
                 # aux = input("Press Enter to continue...")
                 
@@ -166,6 +166,7 @@ class BaseHybridModelTrainer:
         # Save the final model weights and plots
         if self.model.cfg.verbose:
             print("-- Training completed | Evaluating the model --")
+        self.save_plots(epoch=epoch + 1)
         self.evaluate()
 
     def save_model(self):
@@ -237,8 +238,8 @@ class BaseHybridModelTrainer:
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
                     # Get model outputs
 
-                    print('epoch:', epoch)
-                    aux = input("Press Enter to continue...")
+                    # print('epoch:', epoch)
+                    # aux = input("Press Enter to continue...")
 
                     outputs = self.model(inputs, basin, use_grad=False)
                     # Reshape outputs

@@ -40,5 +40,32 @@ def job_is_finished(folder_path:str):
     else:
         return False
 
+def check_finished_basins(runs_path):
+
+    # Extract runs folder
+    runs_folder = str(runs_path).split('/')[-1]
+
+    basin_finished = []
+    basin_unfinished = []
+    for folder in os.listdir(runs_folder):
+
+        basin = get_basin_id(folder)
+        if job_is_finished(runs_path / folder):
+            basin_finished.append(str(int(basin)))
+        else:
+            basin_unfinished.append(basin)
+
+    return sorted(basin_finished), sorted(basin_unfinished)
+
+def delete_unfinished_jobs(runs_folder, basins):
+
+    # Find folders that contain basin in their name
+    folders = [f for f in os.listdir(runs_folder) if any(basin in f for basin in basins)]
+    
+    # Delete the folders
+    for folder in folders:
+        os.system(f'rm -rf {runs_folder / folder}')
+
+
 if __name__ == "__main__":
     pass

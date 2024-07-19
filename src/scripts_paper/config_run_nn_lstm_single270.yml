@@ -3,7 +3,7 @@
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
 # NN model to use [mlp, lstm]
-nn_model: mlp
+nn_model: lstm
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -29,7 +29,7 @@ target_variables:
 scale_target_vars: True
 
 # Files to specify training, validation and test basins
-basin_file: 1_basin_mlp.txt
+basin_file: 1_basin_lstm.txt
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -65,15 +65,15 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 32
-  - 32
-  - 32
-  - 32
-  - 32
+  - 128
+
+# Length of the input sequence
+seq_length: 270
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: pretrainer_mlp_single
+# experiment_name: pretrainer_lstm_single365
+experiment_name: pretrainer_lstm_single270
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -88,7 +88,7 @@ precision: float32
 num_workers: 16
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 1
+verbose: 0
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
