@@ -178,7 +178,6 @@ def get_basin_interpolators(dataset, cfg, project_dir=project_dir):
 
     return interpolators
 
-
 def run_conceptual_model(config_file: Path, gpu: int = None):
 
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
@@ -290,7 +289,7 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     # print(model_nn)
 
     # Load the neural network model state dictionary if cfg.nn_model_dir exists
-    if cfg.nn_model_dir is not None:
+    if cfg.nn_model_dir is not False:
 
         print(f'-- Loading the neural network model state dictionary from {cfg.nn_model_dir}')
 
@@ -367,46 +366,46 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
     else:
         model_type = 'pretrainer'
     
-    # Load the configuration file and dataset
-    cfg, dataset = _load_cfg_and_ds(config_file, gpu, model=model_type)
+    # # Load the configuration file and dataset
+    # cfg, dataset = _load_cfg_and_ds(config_file, gpu, model=model_type)
 
-    # Load config_resume file
-    config_resume_file = run_dir / 'config_resume.yml'
-    if config_resume_file.exists():
-        with open(config_resume_file, 'r') as ymlfile:
-            cfg_resume = yaml.load(ymlfile, Loader=yaml.FullLoader)
-    else:
-        raise FileNotFoundError(f"File not found: {config_resume_file} (mandatory for resuming training)")
+    # # Load config_resume file
+    # config_resume_file = run_dir / 'config_resume.yml'
+    # if config_resume_file.exists():
+    #     with open(config_resume_file, 'r') as ymlfile:
+    #         cfg_resume = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    # else:
+    #     raise FileNotFoundError(f"File not found: {config_resume_file} (mandatory for resuming training)")
                                 
-    # Update the config file
-    cfg._cfg.update(cfg_resume)
+    # # Update the config file
+    # cfg._cfg.update(cfg_resume)
 
-    # Define and create resume_folder
-    resume_folder = run_dir / 'resume'
-    resume_folder.mkdir(parents=True, exist_ok=True)
+    # # Define and create resume_folder
+    # resume_folder = run_dir / 'resume'
+    # resume_folder.mkdir(parents=True, exist_ok=True)
 
-    # Update model_plots, model_results, and model_weights and create folders
-    cfg.plots_dir = resume_folder / 'model_plots'
-    cfg.plots_dir.mkdir(parents=True, exist_ok=True)
-    cfg.results_dir = resume_folder / 'model_results'
-    cfg.results_dir.mkdir(parents=True, exist_ok=True)
-    cfg.weights_dir = resume_folder / 'model_weights'
-    cfg.weights_dir.mkdir(parents=True, exist_ok=True)
+    # # Update model_plots, model_results, and model_weights and create folders
+    # cfg.plots_dir = resume_folder / 'model_plots'
+    # cfg.plots_dir.mkdir(parents=True, exist_ok=True)
+    # cfg.results_dir = resume_folder / 'model_results'
+    # cfg.results_dir.mkdir(parents=True, exist_ok=True)
+    # cfg.weights_dir = resume_folder / 'model_weights'
+    # cfg.weights_dir.mkdir(parents=True, exist_ok=True)
 
-    # print(f'-- Updated config file: {cfg._cfg}')
+    # # print(f'-- Updated config file: {cfg._cfg}')
 
-    # Conceptual model
-    model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
+    # # Conceptual model
+    # model_concept = get_concept_model(cfg, dataset.ds_train, dataset.scaler)
 
-    print(f'-- Conceptual model: {model_concept.__class__.__name__}')
+    # print(f'-- Conceptual model: {model_concept.__class__.__name__}')
 
-    # Neural network model
-    model_nn = get_nn_model(model_concept)
+    # # Neural network model
+    # model_nn = get_nn_model(model_concept)
 
-    # # Print state dictionary
-    # print(model_nn.state_dict())
+    # # # Print state dictionary
+    # # print(model_nn.state_dict())
 
-    print(f'-- Neural network model: {model_nn.__class__.__name__}')
+    # print(f'-- Neural network model: {model_nn.__class__.__name__}')
 
     # Load the neural network model state dictionary if run_dir/model_weights/*.pth exists
     model_path = run_dir / 'model_weights'
@@ -416,23 +415,23 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
         model_file = matching_files[0]
         # Load the state dictionary from the saved model
         state_dict = torch.load(model_file)
-        # print('state_dict:', state_dict)
-        # Load the state dictionary into the model
-        model_nn.load_state_dict(state_dict)
-        print(f'-- Loaded the model weights from {model_file}')
+        print('state_dict:', state_dict)
+        # # Load the state dictionary into the model
+        # model_nn.load_state_dict(state_dict)
+        # print(f'-- Loaded the model weights from {model_file}')
     else:
         print(f'-- No model weights found in {model_path}')
 
-    # Pretrainer
-    pretrainer = get_nn_pretrainer(model_nn, dataset)
+    # # Pretrainer
+    # pretrainer = get_nn_pretrainer(model_nn, dataset)
 
-    # Build the hybrid model
-    model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
+    # # Build the hybrid model
+    # model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
 
-    # Build the trainer 
-    trainer = get_trainer(model_hybrid)
-    # Train the model
-    trainer.train(is_resume=True)
+    # # Build the trainer 
+    # trainer = get_trainer(model_hybrid)
+    # # Train the model
+    # trainer.train(is_resume=True)
 
 
     
@@ -442,14 +441,14 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_test.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_mlp.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_lstm.yml
-# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster.yml
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster_lstm.yml
 # python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_mlp.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_lstm.yml
-# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 
 # python thn_run.py hybrid --action resume_training --run-dir ../examples/runs/1basin_hybrid_lstm_06431500_240704_125621

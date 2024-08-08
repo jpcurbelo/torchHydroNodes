@@ -51,7 +51,7 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 256
+batch_size: 512
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -76,7 +76,7 @@ seq_length: 270
 experiment_name: pretrainer_lstm_single270
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111

@@ -30,7 +30,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 10
+epochs: 200
 
 # Patience for early stopping
 patience: 20
@@ -41,8 +41,8 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 batch_size: 256
 
-# Dropout rate for the model
-dropout: 0.2
+# # Dropout rate for the model
+# dropout: 0.2
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -71,14 +71,14 @@ precision: float32
 num_workers: 8
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 1
+verbose: 0
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins: 1
 
 # # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-# log_every_n_epochs: 40
+# log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

@@ -22,13 +22,7 @@ def NSE_eval(y_true, y_pred):
         discussion of principles". Journal of Hydrology. 10 (3): 282-290. doi:10.1016/0022-1694(70)90255-6.
     '''
     
-    # print('Eval', 'y_true:', y_true.shape, 'y_pred:', y_pred.shape)
-    
     y_true, y_pred = remove_nans(y_true, y_pred)
-
-    # print('Eval', 'y_true:', y_true.shape, 'y_pred:', y_pred.shape)
-    # print('y_true:', y_true[:5], y_true[-5:])
-    # print('y_pred:', y_pred[:5], y_pred[-5:])
 
     numerator = np.sum(np.square(y_true - y_pred))
     denominator = np.sum(np.square(y_true - np.mean(y_true))) + np.finfo(float).eps
@@ -420,18 +414,24 @@ def remove_nans(y_true, y_pred):
     Remove NaNs from both the true and predicted arrays.
     
     Args:
-        y_true (np.ndarray): Array of true values.
-        y_pred (np.ndarray): Array of predicted values.
+        y_true (Union[np.ndarray, torch.Tensor]): Array or tensor of true values.
+        y_pred (Union[np.ndarray, torch.Tensor]): Array or tensor of predicted values.
         
     Returns:
-        Tuple[np.ndarray, np.ndarray]: Tuple containing the arrays of true and predicted values with NaNs removed.
+        Tuple[Union[np.ndarray, torch.Tensor], Union[np.ndarray, torch.Tensor]]: Tuple containing the arrays or tensors of true and predicted values with NaNs removed.
     """
-    # Find the indices where true values are not NaN
-    idx = np.where(~np.isnan(y_pred))[0] 
-
-    # Remove NaNs from both arrays using the indices
-    y_true_clean = y_true[idx]
-    y_pred_clean = y_pred[idx]
+    if isinstance(y_true, np.ndarray) and isinstance(y_pred, np.ndarray):
+        # NumPy arrays
+        idx = np.where(~np.isnan(y_pred))[0]
+        y_true_clean = y_true[idx]
+        y_pred_clean = y_pred[idx]
+    elif isinstance(y_true, torch.Tensor) and isinstance(y_pred, torch.Tensor):
+        # PyTorch tensors
+        idx = torch.nonzero(~torch.isnan(y_pred), as_tuple=False).squeeze()
+        y_true_clean = y_true[idx]
+        y_pred_clean = y_pred[idx]
+    else:
+        raise ValueError("Input arrays must be both NumPy arrays or both PyTorch tensors.")
     
     return y_true_clean, y_pred_clean
 
@@ -452,13 +452,7 @@ class NSEloss(nn.Module):
 
     def forward(self, y_true, y_pred):
 
-        # print('Loss', 'y_true:', y_true.shape, 'y_pred:', y_pred.shape)
-        # print('y_true:', y_true[:5], y_true[-5:])
-        # print('y_pred:', y_pred[:5], y_pred[-5:])
-
-        # # Exp to convert the log space to normal space
-        # y_true = torch.exp(y_true)
-        # y_pred = torch.exp(y_pred)
+        y_true, y_pred = remove_nans(y_true, y_pred)
 
         numerator = torch.sum(torch.square(y_true - y_pred))
         denominator = torch.sum(torch.square(y_true - torch.mean(y_true))) + np.finfo(float).eps

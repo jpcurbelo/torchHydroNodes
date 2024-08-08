@@ -10,21 +10,73 @@ odesmethod: euler
 # Files to specify training, validation and test basins
 basin_file: 1_basin_file.txt
 # basin_file: 1_basin_fileB.txt
-# basin_file: 4_basin_file.txt
-# basin_file: 569_basin_file_cluster1of6_63.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
-# nn_model_dir: NNpretrainer_250basins_1980_2010
-# nn_model_dir: NNpretrainer_01013500_1980_2010_1000ep
-# nn_model_dir: NNpretrainer_06431500_1980_2010
 
-# nn_model_dir: 4basin_pretrainer_lstm_240628_080705
-# nn_model_dir: cluster1_pretrainer_lstm_500ep
-nn_model_dir: 1basin_pretrainer_lstm_01013500_240716_154241
-# nn_model_dir: ZZ1basin_pretrainer_mlp_minclip_240716_142915
+# # nn_model_dir: 4basin_pretrainer_lstm_240628_080705
+# # nn_model_dir: cluster1_pretrainer_lstm_500ep
+# nn_model_dir: 1basin_pretrainer_lstm_01013500_240716_154241
+# # nn_model_dir: ZZ1basin_pretrainer_mlp_minclip_240716_142915
 
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_01013500_240802_092257
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_notRelu_01013500_240806_105256
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x2_relu_01013500_240807_081817
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x3_relu_01013500_240807_083924
+# # nn_model_dir: 1basin_pretrainer_lstm_270d_64x1_relu_01013500_240807_083026
+# nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_01013500_240807_083323
+nn_model_dir: 1basin_pretrainer_lstm_270d_64x6_relu_01013500_240807_154744
+# # nn_model_dir: 1basin_pretrainer_lstm_270d_64x3_relu_01013500_240807_083454
+
+# nn_model_dir: 1basin_pretrainer_lstm_270d_256x1_01013500_240802_092547
+# nn_model_dir: 1basin_pretrainer_lstm_365d_128x1_01013500_240802_092403
+# nn_model_dir: 1basin_pretrainer_lstm_365d_256x1_01013500_240802_092510
+# nn_model_dir: 1basin_pretrainer_lstm_180d_128x1_01013500_240802_110404
+# nn_model_dir: 1basin_pretrainer_lstm_180d_256x1_01013500_240802_110445
+
+# # If not nn_model_dir, specify the model and parameters to use:
+# ###############################################################
+# # NN model to use [mlp, lstm]
+# nn_model: mlp
+
+# # # Length of the input sequence
+# # seq_length: 270
+
+# nn_dynamic_inputs:
+#   - s_snow
+#   - s_water
+#   - prcp
+#   - tmean
+
+# nn_mech_targets:
+#   - ps_bucket
+#   - pr_bucket
+#   - m_bucket
+#   - et_bucket
+#   - q_bucket
+
+# target_variables: 
+#   - obs_runoff
+
+# # Hidden layers for the NN model
+# # hidden_size:
+# #   - 128
+
+# hidden_size: 
+#   # - 32
+#   # - 32
+#   # - 32
+#   # - 32
+#   # - 32
+
+#   - 64
+#   - 64
+#   - 64
+
+# # # # # # If shuffle, shuffles the batches in the data loader
+# # # # # shuffle: True
+# ###############################################################
 
 scale_target_vars: True
 
@@ -36,34 +88,23 @@ train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
 
-# train_start_date: "01/10/1990"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2005"
-
-# train_start_date: "01/10/1997"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2003"
-
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 100
 
 # Patience for early stopping
-patience: 20
+patience: 10
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 7304
-# batch_size: -1
-# batch_size: 512
+# batch_size: 7036
 batch_size: 256
 
+# # Dropout rate for the NN model
 # dropout: 0.4
 
 # # Length of the input sequence
@@ -77,15 +118,17 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: 1basin_hybrid_mlp
-# experiment_name: 1basin_hybrid_lstm
-experiment_name: 1basin_hybrid_lstm_01013500
-# experiment_name: 1basin_hybrid_lstm_06431500
-# experiment_name: cluster1_hybrid_lstm
+# experiment_name: 1basin_hybrid_lstm_01013500
+# experiment_name: 1basin_hybrid_lstm_270d_128x1
+# experiment_name: ZZZZZ1basin_hybrid_mlp_01013500
+# experiment_name: 1basin_hybrid_lstm_270d_128x1_256b_relu_mse
+# experiment_name: 1basin_hybrid_lstm_270d_128x1_7036b_relu_nse
+experiment_name: 1basin_hybrid_lstm_270d_64x6_256b_relu_nse
+
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
 
@@ -107,11 +150,9 @@ verbose: 1
 log_n_basins: 1
   # - 1013500
   # - 6431500
-  # 2
-  # 1single1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 40
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

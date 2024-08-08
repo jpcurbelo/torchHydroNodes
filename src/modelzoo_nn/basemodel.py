@@ -18,7 +18,8 @@ class BaseNNModel(nn.Module):
         self.dtype = self.concept_model.cfg.precision['torch']
         self.scaler = self.concept_model.scaler
 
-        self.num_dynamic = len(self.concept_model.cfg.nn_dynamic_inputs)
+        print('self.concept_model.cfg.nn_dynamic_inputs', self.concept_model.cfg.nn_dynamic_inputs)
+        self.num_dynamic = len(self.concept_model.cfg.nn_dynamic_inputs) 
         self.num_static = len(self.concept_model.cfg.static_attributes)
         self.include_static = self.num_static > 0
         self.input_size = self.num_dynamic + self.num_static

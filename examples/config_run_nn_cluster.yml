@@ -29,13 +29,14 @@ target_variables:
 scale_target_vars: True
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file_cluster1of6_63.txt
+# basin_file: 569_basin_file_cluster1of6_63.txt
 # basin_file: 569_basin_file_cluster2of6_56.txt
 # basin_file: 569_basin_file_cluster3of6_190.txt
 # basin_file: 569_basin_file_cluster4of6_99.txt
 # basin_file: 569_basin_file_cluster5of6_68.txt
 # basin_file: 569_basin_file_cluster6of6_93.txt
 # basin_file: 569_basin_file.txt
+basin_file: cluster_files/569_basin_file_cluster2of17_46_10first.txt
 # n_first_basins: 100
 # n_random_basins: 100
 
@@ -53,7 +54,7 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs: 300
+epochs: 200
 
 # Patience for early stopping
 patience: 20
@@ -86,16 +87,17 @@ hidden_size:
   # - 32
   # - 32
 
-  - 128
-  - 128
+  - 256
+  # - 128
 
 # # Dropout rate for the NN model
 # dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: cluster1_pretrainer_run
+# experiment_name: cluster1_pretrainer_run
 # experiment_name: 569basin_pretrainer_run
+experiment_name: AAAcluster2of17_10_pretrainer_lstm_256x1
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -114,7 +116,7 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 4
+log_n_basins: 2
   # - 1013500
   # - 6431500
   # - 1022500

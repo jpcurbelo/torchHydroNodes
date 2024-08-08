@@ -14,10 +14,13 @@ odesmethod: euler
 # basin_file: 569_basin_file_cluster4of6_99.txt  #ok
 # basin_file: 569_basin_file_cluster5of6_68.txt
 # basin_file: 569_basin_file_cluster6of6_93.txt #ok
-basin_file: cluster_files/569_basin_file_cluster2of17_46.txt
+# basin_file: cluster_files/569_basin_file_cluster2of17_46.txt
+# basin_file: cluster_files/569_basin_file_cluster2of17_46_10first.txt
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt
+basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt
 
-# Number of first and random basins to use for training and testing
-n_random_basins: 10
+# # Number of first and random basins to use for training and testing
+# n_random_basins: 10
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -25,7 +28,13 @@ data_dir: M0_results_569basins_1980_2010_RK23
 
 # nn_model_dir: cluster1_pretrainer_mlp_200ep
 # nn_model_dir: cluster1_pretrainer_lstm_500ep
-nn_model_dir: cluster2of6_pretrainer_lstm_256x1_minclip_240716_152109
+# nn_model_dir: cluster2of6_pretrainer_lstm_256x1_minclip_240716_152109
+# nn_model_dir: AAAcluster2of17_10_pretrainer_lstm_240727_164808
+# nn_model_dir: AAAcluster2of17_10_pretrainer_lstm_256x1_240729_162845
+# nn_model_dir: cluster2of17_pretrainer_mlp_cedar
+# nn_model_dir: cluster2of17_5f_pretrainer_lstm_270d_128x1_240807_095514
+nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_240807_132135
+
 
 scale_target_vars: True
 
@@ -48,7 +57,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 100
 
 # Patience for early stopping
 patience: 20
@@ -58,8 +67,8 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304
+# batch_size: 512
 batch_size: 256
-# batch_size: 1024
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -74,10 +83,13 @@ learning_rate:
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: cluster1_hybrid_lstm
-experiment_name: ZZZZcluster2of17_hybrid_lstm
+# experiment_name: ZZZZcluster2of17_hybrid_lstm
+# experiment_name: AAAcluster2of17_10_hybrid_lstm
+experiment_name: cluster2of17_10f_hybrid_lstm_270d_128x1_256b
+# experiment_name: ZZZcluster2of17_10_hybrid_mlp_cedar
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111
@@ -101,7 +113,7 @@ log_n_basins: 2
   # # 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

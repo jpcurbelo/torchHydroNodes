@@ -67,10 +67,10 @@ class MLP(BaseNNModel):
                 # Output Layer
                 x = self.output_layer(x)
 
-        # Retrieve the minimum values for the basins
-        min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        # # Retrieve the minimum values for the basins
+        # min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
         
-        # Clip the outputs
-        x = torch.maximum(x, min_values)
+        # # Clip the outputs
+        # x = torch.maximum(x, min_values)
 
         return x

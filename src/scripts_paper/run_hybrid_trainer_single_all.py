@@ -31,11 +31,19 @@ from utils import (
     delete_unfinished_jobs,
 )
 
-nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
-pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}'
-run_folder = f'runs_hybrid_single_{nnmodel_type}'
+
+# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5'
+
+# # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
+# # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
+
+pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
+run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
 
 MAX_WORKERS = 1
 
@@ -143,22 +151,35 @@ def main():
     
     if CHECK_IF_FINISHED and os.path.exists(script_path / run_folder):
             
+    
+            # Debugging step: Strip newline characters from basin IDs if present
+            basins_str = sorted([str(int(basin.strip())) for basin in basins])
+            
             # Find basins that are already finished and delete the unfinished jobs
             basin_finished, basin_unfinished = check_finished_basins(script_path / run_folder)
 
+            print(f"Total basins: {len(basins_str)}")
             print(f"Finished basins: {len(basin_finished)}")
             print(f"Unfinished basins: {len(basin_unfinished)}", basin_unfinished)
 
             if DELETE_IF_UNFINISHED:
                 delete_unfinished_jobs(script_path / run_folder, basin_unfinished)
 
+            print(f"Num Basins to continue: {len(basins_str) - len(basin_finished)}")
+            print('basins_str', basins_str[:5])
+            print('basin_finished', basin_finished[:5])
+
             # Remove the finished basins from the list
-            basins_to_continue = [basin for basin in basins if basin.strip() not in basin_finished]
+            # # basins_to_continue = [basin for basin in basins if basin.strip() not in basin_finished]
+            basins_to_continue = [basin for basin in basins_str if basin not in basin_finished]
 
             print(f"Basins to continue: {len(basins_to_continue)}")
 
             # Update the list of basins
             basins = basins_to_continue
+
+    else:
+        basins = [str(int(basin)) for basin in basins]
     
     # # # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
     # # max_workers = MAX_WORKERS
@@ -172,9 +193,26 @@ def main():
     # #             future.result()  # Will raise exception if training failed
     # #         except Exception as e:
     # #             print(f'Error in training model: {e}')
+
+    # print('basins', len(basins))
+    # aux = input('Continue?')
+
+
     
-    for nn_model_dir in nn_model_dirs[280:]: 
-        train_model_for_basin(nn_model_dir, project_path)
+    # latest run single_lstm
+    # for nn_model_dir in nn_model_dirs[:10]: 
+
+    for nn_model_dir in nn_model_dirs[40:60]: 
+
+        # print(nn_model_dir)
+        # Extract the basin name from the nn_model_dir
+        basin = str(int(get_basin_id(nn_model_dir)))
+        # print('basin', basin, basin in basins)
+        # aux = input('Continue?')
+
+        if basin in basins:
+            print(nn_model_dir)
+            train_model_for_basin(nn_model_dir, project_path)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,12 @@ from src.utils.metrics import (
     compute_all_metrics,
 )
 
-from src.utils.load_process_data import EarlyStopping
+from src.utils.load_process_data import (
+    EarlyStopping,
+    calculate_tensor_memory,
+    get_free_gpu_memory,
+    run_job_with_memory_check
+)
 
 
 class BaseHybridModelTrainer:
@@ -58,10 +63,19 @@ class BaseHybridModelTrainer:
         if self.model.cfg.verbose:
             print(f"-- Training the hybrid model on {self.model.device} --")
 
-        # # Save the model weights - Epoch 0
-        # # if not is_resume:
-        # self.save_model()
-        # self.save_plots(epoch=0)
+
+        # print(f"0-Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+
+        # # # Print the memory usage on the GPU
+        # # allocated = torch.cuda.memory_allocated()
+        # # reserved = torch.cuda.memory_reserved()
+        # # print(use_grad, f"Memory Allocated: {allocated / (1024 ** 2):.2f} MB")
+        # # print(use_grad, f"Memory Reserved: {reserved / (1024 ** 2):.2f} MB")
+
+        # Save the model weights - Epoch 0
+        # if not is_resume:
+        self.save_model()
+        self.save_plots(epoch=0)
 
         best_loss = float('inf')  # Initialize best loss to a very high value
 
@@ -76,6 +90,8 @@ class BaseHybridModelTrainer:
             epoch_loss = 0.0
             num_batches_seen = 0
             for (inputs, targets, basin_ids) in pbar:
+
+                # print('inputs:', inputs.shape, 'batch', num_batches_seen+1)
 
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
@@ -122,6 +138,20 @@ class BaseHybridModelTrainer:
                 self.model.optimizer.step()
                 ##############################################################
 
+                # print("### Memory usage after backward pass")
+                # memory_after = torch.cuda.memory_allocated(self.model.device)
+                # print(f"Memory Allocated: {memory_after / (1024 ** 2):.2f} MB")
+
+                # Delete variables to free memory
+                del inputs, targets, q_sim, loss
+                # Clear the cache at the end of each batch
+                torch.cuda.empty_cache()
+
+                # print("### Memory usage after clearing cache")
+                # memory_after = torch.cuda.memory_allocated(self.model.device)
+                # print(f"Memory Allocated: {memory_after / (1024 ** 2):.2f} MB")
+
+
             pbar.close()
 
             # Save the model weights and plots
@@ -166,8 +196,8 @@ class BaseHybridModelTrainer:
         # Save the final model weights and plots
         if self.model.cfg.verbose:
             print("-- Training completed | Evaluating the model --")
+        self.evaluate() # Here the model weights are updated to the best saved model
         self.save_plots(epoch=epoch + 1)
-        self.evaluate()
 
     def save_model(self):
         '''Save the model weights and plots'''
@@ -197,7 +227,6 @@ class BaseHybridModelTrainer:
             for basin in pbar_basins:
 
                 # Clear CUDA cache at the beginning of each basin
-                
                 torch.cuda.empty_cache()
 
                 pbar_basins.set_description(f'* Plotting basin {basin}')
@@ -236,12 +265,40 @@ class BaseHybridModelTrainer:
 
                     # Get model outputs
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
-                    # Get model outputs
+                    
+                    input_memory = calculate_tensor_memory(inputs.shape, inputs.dtype)
+                    print(f"Memory required for inputs: {input_memory / (1024 ** 2):.2f} MB", inputs.shape, inputs.dtype)
 
                     # print('epoch:', epoch)
-                    # aux = input("Press Enter to continue...")
+                    # aux = input("Press Enter to continue...before")
+
+                    # print("Memory usage before forward pass")
+                    # memory_before = torch.cuda.memory_allocated(self.model.device)
+                    # print(f"Memory Allocated: {memory_before / (1024 ** 2):.2f} MB")
+
+
+                    output_memory = calculate_tensor_memory(inputs.shape[0], inputs.dtype)
+                    print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", inputs.shape[0], inputs.dtype)
+                    # free_memory = get_free_gpu_memory()
 
                     outputs = self.model(inputs, basin, use_grad=False)
+                    # outputs = run_job_with_memory_check(model, inputs, basin, output_shape, output_dtype, use_grad=False)
+
+                    output_memory = calculate_tensor_memory(outputs.shape, outputs.dtype)
+                    print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", outputs.shape, outputs.dtype)
+
+                    print('inputs:', inputs.shape)
+                    print('outputs:', outputs.shape)
+                    print('outputs[:5]:', outputs[:5])
+                    print('outputs[-5:]:', outputs[-5:])
+                    aux = input("Press Enter to continue...")
+
+                    # print("Memory usage after forward pass")
+                    # memory_after = torch.cuda.memory_allocated(self.model.device)
+                    # print(f"Memory Allocated: {memory_after / (1024 ** 2):.2f} MB")
+
+                    # aux = input("Press Enter to continue...after")
+
                     # Reshape outputs
                     outputs = self.model.reshape_outputs(outputs)
 

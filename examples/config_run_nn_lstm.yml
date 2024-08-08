@@ -61,8 +61,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
@@ -99,7 +99,7 @@ clip_gradient_norm: 1.0
 batch_size: 512
 
 # Length of the input sequence
-seq_length: 365
+seq_length: 270
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -113,7 +113,12 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 128
+  - 64
+  - 64
+  - 64
+  - 64
+  - 64
+  - 64
 
 # # Dropout rate for the NN model
 # dropout: 0.4
@@ -121,10 +126,8 @@ hidden_size:
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_pretrainer_lstm_01013500
-# experiment_name: 4basin_pretrainer_lstm
-# experiment_name: 4basin_pretrainer_lstm_static_128x1_minscale
-# experiment_name: Z4basin_pretrainer_lstm_static_128x1_runoff
-experiment_name: 1basin_pretrainer_lstm_06431500
+# experiment_name: 1basin_pretrainer_lstm_270d_128x2_relu
+experiment_name: 1basin_pretrainer_lstm_270d_64x6_relu
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -149,8 +152,8 @@ log_n_basins: 1
   # - 1022500
   # - 1030500
 
-# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+# # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+# log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

@@ -176,9 +176,9 @@ class NNpretrainer(ExpHydroCommon):
                 target_vals = []
                 for outvar in output_var_names:
                     # if outvar == 'q_bucket':
-                    #     print('outvar:', outvar, torch.min(tensor_dict[outvar][idx] + 1e-10))
+                    #     print('outvar:', outvar, torch.min(tensor_dict[outvar][idx] + np.finfo(float).eps))
 
-                    target_vals.append(torch.min(tensor_dict[outvar][idx] + 1e-10))
+                    target_vals.append(torch.min(tensor_dict[outvar][idx] + np.finfo(float).eps))
 
                 self.nnmodel.torch_input_mins[basin] = torch.tensor(target_vals, dtype=self.dtype)
 
@@ -216,8 +216,14 @@ class NNpretrainer(ExpHydroCommon):
         pin_memory = True if not 'cpu' in str(self.device) else False
         # pin_memory = False
 
+        # print('self.cfg.shuffle', self.cfg.shuffle)
         # Create custom batch sampler
+        # print('self.batch_size:', self.batch_size, input_tensor.shape)
+
         batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
+
+        # print('batch_sampler:', batch_sampler.__len__())
+        # aux = input('Press enter to continue')
 
         # Create DataLoader with custom batch sampler
         dataloader = DataLoader(dataset, batch_sampler=batch_sampler, 
@@ -237,6 +243,9 @@ class NNpretrainer(ExpHydroCommon):
 
         nan_count = 0  # Counter for NaN occurrences
         for epoch in range(self.epochs):
+
+            # Clear CUDA cache at the beginning of each epoch
+            torch.cuda.empty_cache()
 
             epoch_loss = 0
             pbar = tqdm(self.dataloader, disable=self.cfg.disable_pbar, file=sys.stdout)
@@ -300,6 +309,10 @@ class NNpretrainer(ExpHydroCommon):
                 # Update progress bar with current average loss
                 avg_loss = epoch_loss / num_batches_seen
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
+
+                # Delete variables to free memory
+                del inputs, targets, predictions, loss
+                torch.cuda.empty_cache()
 
             pbar.close()
 
@@ -365,6 +378,9 @@ class NNpretrainer(ExpHydroCommon):
         Returns:
             None
         '''
+
+        # Clear CUDA cache to free memory
+        torch.cuda.empty_cache()
 
         # Extract keys that start with 'ds_'
         ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_') \

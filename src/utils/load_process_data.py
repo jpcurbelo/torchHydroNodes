@@ -12,6 +12,7 @@ import random
 from scipy.interpolate import Akima1DInterpolator
 import xarray as xr
 import torch.nn as nn
+import time
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -94,6 +95,17 @@ def dump_config(cfg, filename: str = 'config.yml'):
 
 def update_hybrid_cfg(cfg, model_type: str='pretrainer', 
                       nn_model_path=project_dir / 'data'):
+    '''
+    Update the configuration data for the hybrid model.
+    
+    - Args:
+        cfg: dict, configuration data.
+        model_type: str, type of the model (pretrainer, hybrid).
+        nn_model_path: str, path to the neural network model.
+    
+    - Returns:
+        cfg: dict, configuration data.
+    '''
 
     if model_type == 'pretrainer':
 
@@ -110,46 +122,85 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer',
 
 
     elif model_type == 'hybrid':
-        # Load vars from the nn_model
-        nn_cfg_dir = nn_model_path / cfg.nn_model_dir / 'config.yml'
-        
-        # Load the nn_model config file
-        if nn_cfg_dir.exists():
-            with open(nn_cfg_dir, 'r') as ymlfile:
-                cfg_nn = yaml.load(ymlfile, Loader=yaml.FullLoader)
+
+        print('cfg.nn_model_dir', cfg.nn_model_dir)
+
+        if not cfg.nn_model_dir:
+            print('cfg.nn_model_dir is not defined - parameters should be defined in the config file')
         else:
-            raise FileNotFoundError(f"File not found: {nn_cfg_dir}")
 
-        cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
-        cfg.hidden_size = cfg_nn['hidden_size']
-        cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
-        cfg.target_variables = cfg_nn['target_variables']
-        if 'seq_length' in cfg_nn:
-            cfg.seq_length = cfg_nn['seq_length']
-        if 'dropout' in cfg_nn:
-            cfg.dropout = cfg_nn['dropout']
-        cfg.nn_model = cfg_nn['nn_model']
-
-        # Handle statics
-        if 'static_attributes' in cfg_nn and cfg_nn['static_attributes']:
-            cfg.static_attributes = cfg_nn['static_attributes']
-            concept_cfg_dir = project_dir / 'data' / cfg_nn['data_dir'] / 'config.yml'
-            # Load the concept model config file
-            if concept_cfg_dir.exists():
-                with open(concept_cfg_dir, 'r') as ymlfile:
-                    cfg_concept = yaml.load(ymlfile, Loader=yaml.FullLoader)
+            # Load vars from the nn_model
+            nn_cfg_dir = nn_model_path / cfg.nn_model_dir / 'config.yml'
+            
+            # Load the nn_model config file
+            if nn_cfg_dir.exists():
+                with open(nn_cfg_dir, 'r') as ymlfile:
+                    cfg_nn = yaml.load(ymlfile, Loader=yaml.FullLoader)
             else:
-                raise FileNotFoundError(f"File not found: {concept_cfg_dir}")
-            cfg.concept_data_dir = cfg_concept['concept_data_dir']
-            cfg.dataset = cfg_concept['dataset']
-        else:
-            cfg.static_attributes = []
+                raise FileNotFoundError(f"File not found: {nn_cfg_dir}")
+
+            cfg.nn_dynamic_inputs = cfg_nn['nn_dynamic_inputs']
+            # print('cfg.nn_dynamic_inputs', cfg.nn_dynamic_inputs)
+            # aux = input('Press enter to continue')
+            cfg.hidden_size = cfg_nn['hidden_size']
+            cfg.nn_mech_targets = cfg_nn['nn_mech_targets']
+            cfg.target_variables = cfg_nn['target_variables']
+            if 'seq_length' in cfg_nn:
+                cfg.seq_length = cfg_nn['seq_length']
+            if 'dropout' in cfg_nn:
+                cfg.dropout = cfg_nn['dropout']
+            cfg.nn_model = cfg_nn['nn_model']
+
+            # Handle statics
+            if 'static_attributes' in cfg_nn and cfg_nn['static_attributes']:
+                cfg.static_attributes = cfg_nn['static_attributes']
+                concept_cfg_dir = project_dir / 'data' / cfg_nn['data_dir'] / 'config.yml'
+                # Load the concept model config file
+                if concept_cfg_dir.exists():
+                    with open(concept_cfg_dir, 'r') as ymlfile:
+                        cfg_concept = yaml.load(ymlfile, Loader=yaml.FullLoader)
+                else:
+                    raise FileNotFoundError(f"File not found: {concept_cfg_dir}")
+                cfg.concept_data_dir = cfg_concept['concept_data_dir']
+                cfg.dataset = cfg_concept['dataset']
+            else:
+                cfg.static_attributes = []
 
         # Save the configuration data to a ymal file
         config_fname = 'config.yml'
         _ = dump_config(cfg._cfg, config_fname)
 
     return cfg
+
+
+
+def calculate_tensor_memory(tensor_shape, dtype):
+    element_size = torch.tensor([], dtype=dtype).element_size()
+    num_elements = torch.prod(torch.tensor(tensor_shape)).item()
+    return num_elements * element_size
+
+def get_free_gpu_memory():
+    torch.cuda.synchronize()
+    free_memory = torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_reserved()
+    return free_memory
+
+def can_run_job(required_memory):
+    free_memory = get_free_gpu_memory()
+    return free_memory >= required_memory
+
+def run_job_with_memory_check(model, inputs, basin, output_shape, output_dtype, use_grad=False):
+    required_memory = calculate_tensor_memory(output_shape, output_dtype)
+
+    while not can_run_job(required_memory):
+        print("Waiting for free memory...")
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        time.sleep(1)  # Wait for 1 second before checking again
+
+    with torch.set_grad_enabled(use_grad):
+        outputs = model(inputs, basin)
+    return outputs
+
 
 
 ## Classes
@@ -557,7 +608,7 @@ class Config(object):
 
     @property
     def nn_model_dir(self) -> Path:
-        return self._get_property_value("nn_model_dir", default=None)
+        return self._get_property_value("nn_model_dir", default=False)
 
     @property
     def precision(self) -> dict:
@@ -699,6 +750,10 @@ class Config(object):
         return self._get_property_value("batch_size", default=256)
 
     @property
+    def shuffle(self) -> bool:
+        return self._get_property_value("shuffle", default=False)
+
+    @property
     def num_workers(self) -> int:
         return self._get_property_value("num_workers", default=8)
     
@@ -809,6 +864,8 @@ class BasinBatchSampler(Sampler):
                 self.basin_to_indices[basin] = []
             self.basin_to_indices[basin].append(idx)
         
+        # print('self.basin_to_indices', self.basin_to_indices)
+
         # Generate batches
         self.batches = self._create_batches()
 
@@ -914,7 +971,7 @@ class ExpHydroCommon:
 
     def scale_target_vars(self, is_trainer=False):
        
-        epsilon = 1e-10  # Small constant to avoid division by zero and log of zero
+        epsilon = np.finfo(float).eps  # Small constant to avoid division by zero and log of zero
 
         # print(self.dataset)
 
@@ -1199,7 +1256,6 @@ class ExpHydroODEs(nn.Module):
         ds1_dt = p_rain + m - et - q
 
         return torch.stack([ds0_dt, ds1_dt], dim=-1)
-
 
 class EarlyStopping:
     def __init__(self, patience=5, min_delta=1e-4):
