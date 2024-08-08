@@ -442,15 +442,19 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_mlp.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_lstm.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster_lstm.yml
-# python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
+# python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_cluster_mlp.yml
+
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_mlp.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_lstm.yml
-# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster.yml
 
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster_lstm.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid_cluster_mlp.yml
+
+# python thn_run.py pretrainer --action evaluate --run-dir ../examples/runs/pretrainer_run_240530_105452
 # python thn_run.py hybrid --action resume_training --run-dir ../examples/runs/1basin_hybrid_lstm_06431500_240704_125621
 
 if __name__ == "__main__":

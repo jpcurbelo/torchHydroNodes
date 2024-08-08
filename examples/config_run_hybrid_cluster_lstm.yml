@@ -8,13 +8,6 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-# basin_file: cluster_files/569_basin_file_cluster1of6_63.txt #ok
-# basin_file: 569_basin_file_cluster2of6_56.txt
-# basin_file: 569_basin_file_cluster3of6_190.txt #ok
-# basin_file: 569_basin_file_cluster4of6_99.txt  #ok
-# basin_file: 569_basin_file_cluster5of6_68.txt
-# basin_file: 569_basin_file_cluster6of6_93.txt #ok
-# basin_file: cluster_files/569_basin_file_cluster2of17_46.txt
 # basin_file: cluster_files/569_basin_file_cluster2of17_46_10first.txt
 # basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt
 basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt
@@ -32,8 +25,12 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # nn_model_dir: AAAcluster2of17_10_pretrainer_lstm_240727_164808
 # nn_model_dir: AAAcluster2of17_10_pretrainer_lstm_256x1_240729_162845
 # nn_model_dir: cluster2of17_pretrainer_mlp_cedar
+
 # nn_model_dir: cluster2of17_5f_pretrainer_lstm_270d_128x1_240807_095514
-nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_240807_132135
+# nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_240807_132135
+nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_static_240808_145647
+
+# nn_model_dir: cluster2of17_5f_pretrainer_mlp_32x5_240808_113706
 
 
 scale_target_vars: True
@@ -45,16 +42,9 @@ train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
-
-# train_start_date: "01/10/1997"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2003"
 
 # Loss function to use [mse, nse, nse-nh]
-loss: nse
+loss: nse-nh
 
 # Number of epochs to train the model
 epochs: 100
@@ -85,11 +75,13 @@ learning_rate:
 # experiment_name: cluster1_hybrid_lstm
 # experiment_name: ZZZZcluster2of17_hybrid_lstm
 # experiment_name: AAAcluster2of17_10_hybrid_lstm
-experiment_name: cluster2of17_10f_hybrid_lstm_270d_128x1_256b
 # experiment_name: ZZZcluster2of17_10_hybrid_mlp_cedar
 
+experiment_name: cluster2of17_10f_hybrid_lstm_270d_128x1_256b_static_nse-nh
+# experiment_name: cluster2of17_5f_hybrid_mlp_32x5_256b_nse-nh
+
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -98,11 +90,10 @@ seed: 1111
 precision: float32
 
 # Number of parallel workers used in the data pipeline
-num_workers: 16
+num_workers: 8
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
 verbose: 1
-
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500

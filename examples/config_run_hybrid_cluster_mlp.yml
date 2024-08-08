@@ -4,33 +4,39 @@
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 hybrid_model: exphydroM100
 concept_model: exphydro
-# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, rk2, adaptive_heun]
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-basin_file: This is to be updated!!! # do not delete this line
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt
+basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt
+
+# # Number of first and random basins to use for training and testing
+# n_random_basins: 10
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
 
-nn_model_dir: This is to be updated!!! # do not delete this line
+# nn_model_dir: cluster2of17_5f_pretrainer_mlp_32x5_240808_113706
+# nn_model_dir: cluster2of17_5f_pretrainer_mlp_32x5_static_240808_133240
+nn_model_dir: cluster2of17_10f_pretrainer_mlp_32x5_static_240808_135224
 
 scale_target_vars: True
 
 # --- Training configurations --- #
 
-# Period to train, validate and test the model (they should be consecutive)
+# # Period to train, validate and test the model (they should be consecutive)
 train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
 
 # Loss function to use [mse, nse, nse-nh]
-loss: nse
+loss: nse-nh
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 100
 
 # Patience for early stopping
 patience: 20
@@ -39,10 +45,9 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 512
-
-# # Dropout rate for the model
-# dropout: 0.2
+# batch_size: 7304
+# batch_size: 512
+batch_size: 256
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -52,11 +57,12 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: hybrid_mlp_single
+# experiment_name: cluster2of17_5f_hybrid_mlp_32x5_256b_nse-nh
+experiment_name: cluster2of17_10f_hybrid_mlp_32x5_256b_static_nse-nh
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu
@@ -71,14 +77,18 @@ precision: float32
 num_workers: 8
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 0
+verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 1
+log_n_basins: 2
+  # - 1013500
+  # # - 6431500
+  # # 2
+  # # 1
 
-# # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-# log_every_n_epochs: 40
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

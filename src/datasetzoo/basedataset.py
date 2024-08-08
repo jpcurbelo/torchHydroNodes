@@ -361,14 +361,14 @@ class BaseDataset(Dataset):
             None
         '''
         
-        self.scaler["static_std"] = df.std()
+        self.scaler["static_std"] = df.std().replace(0, 1)  # Replace zero std with 1
         self.scaler["static_mean"] = df.mean()
 
         # Normalize the static attributes
-        df = (df - self.scaler["static_mean"]) / self.scaler["static_std"]
+        df_normalized = (df - self.scaler["static_mean"]) / self.scaler["static_std"]
 
         # Convert to xarray Dataset
-        ds_static = xr.Dataset.from_dataframe(df)
+        ds_static = xr.Dataset.from_dataframe(df_normalized)
 
         return ds_static
 

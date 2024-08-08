@@ -8,8 +8,8 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-basin_file: 1_basin_file.txt
-# basin_file: 1_basin_fileB.txt
+# basin_file: 1_basin_file.txt
+basin_file: 1_basin_fileB.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -26,8 +26,10 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # nn_model_dir: 1basin_pretrainer_lstm_270d_128x3_relu_01013500_240807_083924
 # # nn_model_dir: 1basin_pretrainer_lstm_270d_64x1_relu_01013500_240807_083026
 # nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_01013500_240807_083323
-nn_model_dir: 1basin_pretrainer_lstm_270d_64x6_relu_01013500_240807_154744
-# # nn_model_dir: 1basin_pretrainer_lstm_270d_64x3_relu_01013500_240807_083454
+# nn_model_dir: 1basin_pretrainer_lstm_270d_64x6_relu_01013500_240807_154744
+
+nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_06431500_240807_194801
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_06431500_240807_194925
 
 # nn_model_dir: 1basin_pretrainer_lstm_270d_256x1_01013500_240802_092547
 # nn_model_dir: 1basin_pretrainer_lstm_365d_128x1_01013500_240802_092403
@@ -92,10 +94,10 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 200
 
 # Patience for early stopping
-patience: 10
+patience: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -118,19 +120,19 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_hybrid_lstm_01013500
 # experiment_name: 1basin_hybrid_lstm_270d_128x1
 # experiment_name: ZZZZZ1basin_hybrid_mlp_01013500
-# experiment_name: 1basin_hybrid_lstm_270d_128x1_256b_relu_mse
+# experiment_name: 1basin_hybrid_lstm_270d_128x1_256b_relu_nse
 # experiment_name: 1basin_hybrid_lstm_270d_128x1_7036b_relu_nse
-experiment_name: 1basin_hybrid_lstm_270d_64x6_256b_relu_nse
+experiment_name: 1basin_hybrid_lstm_270d_64x2_256b_relu_nse
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111

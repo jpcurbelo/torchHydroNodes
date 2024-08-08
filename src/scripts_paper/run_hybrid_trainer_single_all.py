@@ -31,19 +31,19 @@ from utils import (
     delete_unfinished_jobs,
 )
 
-nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
+nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
-# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5'
+pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
+run_folder = f'runs_hybrid_single_{nnmodel_type}32x5'
 
 # # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
 
-pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
-run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
+# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b'
+# # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
 
 MAX_WORKERS = 1
 
@@ -202,7 +202,10 @@ def main():
     # latest run single_lstm
     # for nn_model_dir in nn_model_dirs[:10]: 
 
-    for nn_model_dir in nn_model_dirs[40:60]: 
+    # Filter the nn_model_dirs based on the basins
+    nn_model_dirs = [dir for dir in nn_model_dirs[:] if str(int(get_basin_id(dir))) in basins]
+
+    for nn_model_dir in nn_model_dirs[22:]: 
 
         # print(nn_model_dir)
         # Extract the basin name from the nn_model_dir

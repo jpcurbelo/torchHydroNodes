@@ -68,7 +68,7 @@ class LSTM(BaseNNModel):
         # Retrieve the minimum values for the basins
         min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
         # Clip the outputs
-        output = torch.max(output, min_values)
+        output = torch.maximum(output, min_values)
 
         # # Clear the cache
         # torch.cuda.empty_cache()

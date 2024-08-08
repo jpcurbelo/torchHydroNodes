@@ -56,6 +56,17 @@ class Pretrainer(BaseDataset):
         return df
 
     def _load_attributes(self) -> pd.DataFrame:
+
+        # print('Loading static attributes...')
+        # # print(os.listdir('.'))
+        # # print(os.listdir('..'))
+        # # print(os.listdir('../..'))
+        # # print(os.listdir('../../..'))
+        # # print(os.listdir('../../../..'))
+        # # print(os.listdir('../../../../..'))
+        # print(os.listdir('../../../../../../gladwell'))
+        # print(os.listdir('../../../../../../gladwell/hydrology'))
+        # print(os.listdir('../../../../../../gladwell/hydrology/SUMMA'))
         
         attributes_path = Path(self.cfg.concept_data_dir) / 'camels_attributes_v2.0'
 
@@ -96,6 +107,12 @@ class Pretrainer(BaseDataset):
 
         # Rename 'gauge_id' to 'basin'
         df.index.name = 'basin'
+
+        # print('Attributes loaded.')
+        # print(df)
+        # Save to csv in self.cfg.run_dir
+        df.to_csv(self.cfg.run_dir / 'static_attributes.csv')
+        # aux = input("Press Enter to continue...")
 
         return df
 

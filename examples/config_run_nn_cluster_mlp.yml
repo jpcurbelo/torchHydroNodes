@@ -3,7 +3,7 @@
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
 # NN model to use [mlp, lstm]
-nn_model: lstm
+nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -58,7 +58,7 @@ static_attributes:
 scale_target_vars: True
 
 # Files to specify training, validation and test basins
-# basin_file: cluster_files/569_basin_file_cluster1of6_63.txt
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt 
 basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt 
 
 # --- Training configurations --- #
@@ -96,31 +96,25 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.001
+  initial: 0.0001
   decay: 0.5
   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
-  # - 32
-  # - 32
-  # - 32
-  # - 32
-  # - 32
-
-  # - 32
-  # - 32
-
-  - 128
-  # - 128
+  - 32
+  - 32
+  - 32
+  - 32
+  - 32
 
 # # Dropout rate for the NN model
 # dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: cluster2of17_10f_pretrainer_lstm_270d_128x1
-experiment_name: cluster2of17_10f_pretrainer_lstm_270d_128x1_static
+# experiment_name: cluster2of17_5f_pretrainer_mlp_32x5_static
+experiment_name: cluster2of17_10f_pretrainer_mlp_32x5_static
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0

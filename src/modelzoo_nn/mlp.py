@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import xarray
+import numpy as np
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.modelzoo_nn.basemodel import BaseNNModel
@@ -37,7 +38,11 @@ class MLP(BaseNNModel):
         stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
 
         # Normalize the dynamic inputs
-        dynamic_inputs = (dynamic_inputs - means) / (stds + 1e-10)
+        dynamic_inputs = (dynamic_inputs - means) / (stds + np.finfo(float).eps)
+
+        # print('basin_list', basin_list[0])
+        # print('dynamic_inputs', dynamic_inputs.shape)
+        # print('static_inputs', static_inputs.shape, static_inputs[:5])
 
         # Concatenate static inputs if included
         if self.include_static and static_inputs is not None:
@@ -46,6 +51,9 @@ class MLP(BaseNNModel):
             inputs = torch.cat((dynamic_inputs, static_inputs), dim=1)
         else:
             inputs = dynamic_inputs
+
+        # print('inputs', inputs.shape)
+        # aux = input("Press Enter to continue...")
 
         if use_grad:
             # Pass through the input layer
@@ -67,10 +75,12 @@ class MLP(BaseNNModel):
                 # Output Layer
                 x = self.output_layer(x)
 
-        # # Retrieve the minimum values for the basins
-        # min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        # Retrieve the minimum values for the basins
+        min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
         
-        # # Clip the outputs
-        # x = torch.maximum(x, min_values)
+        # Clip the outputs
+        x = torch.maximum(x, min_values)
+
+        # print('output', x.shape, x[:5])
 
         return x

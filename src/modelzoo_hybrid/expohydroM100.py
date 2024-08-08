@@ -200,7 +200,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
     def hybrid_model_mlp(self, t, y):
 
-        print(f"IN -Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+        # print(f"IN -Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
         # # Flush time
         # sys.stdout.write(f"t \r{t}")
@@ -250,8 +250,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
                                         static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin,
-                                        use_grad=self.use_grads)[0]
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins,
+                                        use_grad=self.use_grad)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q
         p_snow, p_rain, m, et, q = m100_outputs[0], m100_outputs[1], m100_outputs[2], \
@@ -271,8 +271,13 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = p_rain + m - et - q
 
-        print(f"OUT-Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
-        aux = input("Press Enter to continue...")
+        # print(f"OUT-Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
+        # aux = input("Press Enter to continue...")
+
+        # Clear temporary variables
+        del s0, s1, precp, temp, lday, inputs_nn, m100_outputs, p_snow, p_rain, m, et, q
+        # Clear the cache
+        torch.cuda.empty_cache()
 
         return torch.stack([ds0_dt, ds1_dt], dim=-1)
 

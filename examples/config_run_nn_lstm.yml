@@ -61,8 +61,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-basin_file: 1_basin_file.txt
-# basin_file: 1_basin_fileB.txt
+# basin_file: 1_basin_file.txt
+basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
@@ -113,12 +113,7 @@ learning_rate:
 
 # Hidden layers for the NN model
 hidden_size: 
-  - 64
-  - 64
-  - 64
-  - 64
-  - 64
-  - 64
+  - 128
 
 # # Dropout rate for the NN model
 # dropout: 0.4
@@ -126,8 +121,8 @@ hidden_size:
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_pretrainer_lstm_01013500
-# experiment_name: 1basin_pretrainer_lstm_270d_128x2_relu
-experiment_name: 1basin_pretrainer_lstm_270d_64x6_relu
+experiment_name: 1basin_pretrainer_lstm_270d_128x1_relu
+# experiment_name: 1basin_pretrainer_lstm_270d_64x2_relu
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1

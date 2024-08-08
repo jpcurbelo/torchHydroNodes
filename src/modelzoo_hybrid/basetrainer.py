@@ -266,8 +266,8 @@ class BaseHybridModelTrainer:
                     # Get model outputs
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
                     
-                    input_memory = calculate_tensor_memory(inputs.shape, inputs.dtype)
-                    print(f"Memory required for inputs: {input_memory / (1024 ** 2):.2f} MB", inputs.shape, inputs.dtype)
+                    # input_memory = calculate_tensor_memory(inputs.shape, inputs.dtype)
+                    # print(f"Memory required for inputs: {input_memory / (1024 ** 2):.2f} MB", inputs.shape, inputs.dtype)
 
                     # print('epoch:', epoch)
                     # aux = input("Press Enter to continue...before")
@@ -277,21 +277,21 @@ class BaseHybridModelTrainer:
                     # print(f"Memory Allocated: {memory_before / (1024 ** 2):.2f} MB")
 
 
-                    output_memory = calculate_tensor_memory(inputs.shape[0], inputs.dtype)
-                    print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", inputs.shape[0], inputs.dtype)
-                    # free_memory = get_free_gpu_memory()
+                    # output_memory = calculate_tensor_memory(inputs.shape[0], inputs.dtype)
+                    # print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", inputs.shape[0], inputs.dtype)
+                    # # free_memory = get_free_gpu_memory()
 
                     outputs = self.model(inputs, basin, use_grad=False)
                     # outputs = run_job_with_memory_check(model, inputs, basin, output_shape, output_dtype, use_grad=False)
 
-                    output_memory = calculate_tensor_memory(outputs.shape, outputs.dtype)
-                    print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", outputs.shape, outputs.dtype)
+                    # output_memory = calculate_tensor_memory(outputs.shape, outputs.dtype)
+                    # print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", outputs.shape, outputs.dtype)
 
-                    print('inputs:', inputs.shape)
-                    print('outputs:', outputs.shape)
-                    print('outputs[:5]:', outputs[:5])
-                    print('outputs[-5:]:', outputs[-5:])
-                    aux = input("Press Enter to continue...")
+                    # print('inputs:', inputs.shape)
+                    # print('outputs:', outputs.shape)
+                    # print('outputs[:5]:', outputs[:5])
+                    # print('outputs[-5:]:', outputs[-5:])
+                    # aux = input("Press Enter to continue...")
 
                     # print("Memory usage after forward pass")
                     # memory_after = torch.cuda.memory_allocated(self.model.device)
