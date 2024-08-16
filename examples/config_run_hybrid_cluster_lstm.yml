@@ -11,6 +11,7 @@ odesmethod: euler
 # basin_file: cluster_files/569_basin_file_cluster2of17_46_10first.txt
 # basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt
 basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_20first.txt
 
 # # Number of first and random basins to use for training and testing
 # n_random_basins: 10
@@ -19,19 +20,13 @@ basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_1
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
 
-# nn_model_dir: cluster1_pretrainer_mlp_200ep
-# nn_model_dir: cluster1_pretrainer_lstm_500ep
-# nn_model_dir: cluster2of6_pretrainer_lstm_256x1_minclip_240716_152109
-# nn_model_dir: AAAcluster2of17_10_pretrainer_lstm_240727_164808
-# nn_model_dir: AAAcluster2of17_10_pretrainer_lstm_256x1_240729_162845
-# nn_model_dir: cluster2of17_pretrainer_mlp_cedar
-
 # nn_model_dir: cluster2of17_5f_pretrainer_lstm_270d_128x1_240807_095514
 # nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_240807_132135
-nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_static_240808_145647
-
-# nn_model_dir: cluster2of17_5f_pretrainer_mlp_32x5_240808_113706
-
+# nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_128x1_static_240808_145647
+# nn_model_dir: cluster2of17_10f_pretrainer_lstm_270d_256x1_static_240809_124324
+# nn_model_dir: cluster2of17_20f_pretrainer_lstm_270d_128x1_static_240809_124914
+# nn_model_dir: cluster2of17_10f_pretrainer_lstm_365d_128x1_static_240811_165722
+nn_model_dir: cluster2of17_10f_pretrainer_lstm_365d_256x1_static_240811_165758
 
 scale_target_vars: True
 
@@ -66,7 +61,7 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.001
+  initial: 0.0001
   decay: 0.5
   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
@@ -77,7 +72,8 @@ learning_rate:
 # experiment_name: AAAcluster2of17_10_hybrid_lstm
 # experiment_name: ZZZcluster2of17_10_hybrid_mlp_cedar
 
-experiment_name: cluster2of17_10f_hybrid_lstm_270d_128x1_256b_static_nse-nh
+# experiment_name: cluster2of17_20f_hybrid_lstm_270d_128x1_256b_static_nse-nh
+experiment_name: cluster2of17_20f_hybrid_lstm_365d_256x1_256b_static_nse-nh
 # experiment_name: cluster2of17_5f_hybrid_mlp_32x5_256b_nse-nh
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]

@@ -8,8 +8,11 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
+basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46.txt
 # basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt
-basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_20first.txt
+
 
 # # Number of first and random basins to use for training and testing
 # n_random_basins: 10
@@ -18,9 +21,11 @@ basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_1
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
 
+nn_model_dir: cluster2of17_pretrainer_mlp_32x5_static_240811_165218
 # nn_model_dir: cluster2of17_5f_pretrainer_mlp_32x5_240808_113706
 # nn_model_dir: cluster2of17_5f_pretrainer_mlp_32x5_static_240808_133240
-nn_model_dir: cluster2of17_10f_pretrainer_mlp_32x5_static_240808_135224
+# nn_model_dir: cluster2of17_20f_pretrainer_mlp_32x5_static_240808_135224
+# nn_model_dir: cluster2of17_20f_pretrainer_mlp_32x5_static_240811_165110
 
 scale_target_vars: True
 
@@ -61,11 +66,12 @@ learning_rate:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
+experiment_name: cluster2of17_hybrid_mlp_32x5_256b_static_nse-nh
 # experiment_name: cluster2of17_5f_hybrid_mlp_32x5_256b_nse-nh
-experiment_name: cluster2of17_10f_hybrid_mlp_32x5_256b_static_nse-nh
+# experiment_name: cluster2of17_20f_hybrid_mlp_32x5_256b_static_nse-nh
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cpu
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111

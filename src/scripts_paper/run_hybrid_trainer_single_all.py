@@ -36,7 +36,8 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
 pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
-run_folder = f'runs_hybrid_single_{nnmodel_type}32x5'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_512b_bosh3'
+run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
 
 # # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
@@ -45,7 +46,9 @@ run_folder = f'runs_hybrid_single_{nnmodel_type}32x5'
 # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b'
 # # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
 
-MAX_WORKERS = 1
+USE_PROCESS_POOL = 1
+MAX_WORKERS = 64
+# MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
 DELETE_IF_UNFINISHED = 0
@@ -180,42 +183,36 @@ def main():
 
     else:
         basins = [str(int(basin)) for basin in basins]
-    
-    # # # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
-    # # max_workers = MAX_WORKERS
-
-    # # print(f'Number of workers: {max_workers}')
-
-    # # with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-    # #     futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
-    # #     for future in concurrent.futures.as_completed(futures):
-    # #         try:
-    # #             future.result()  # Will raise exception if training failed
-    # #         except Exception as e:
-    # #             print(f'Error in training model: {e}')
-
-    # print('basins', len(basins))
-    # aux = input('Continue?')
-
-
-    
-    # latest run single_lstm
-    # for nn_model_dir in nn_model_dirs[:10]: 
 
     # Filter the nn_model_dirs based on the basins
     nn_model_dirs = [dir for dir in nn_model_dirs[:] if str(int(get_basin_id(dir))) in basins]
+    
+    # Train the model for each basin
+    if USE_PROCESS_POOL:
 
-    for nn_model_dir in nn_model_dirs[22:]: 
+        max_workers = MAX_WORKERS
+        # print(f'Number of workers: {max_workers}')
 
-        # print(nn_model_dir)
-        # Extract the basin name from the nn_model_dir
-        basin = str(int(get_basin_id(nn_model_dir)))
-        # print('basin', basin, basin in basins)
-        # aux = input('Continue?')
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    future.result()  # Will raise exception if training failed
+                except Exception as e:
+                    print(f'Error in training model: {e}')
 
-        if basin in basins:
-            print(nn_model_dir)
-            train_model_for_basin(nn_model_dir, project_path)
+    else:
+        for nn_model_dir in nn_model_dirs[:]: 
+
+            # print(nn_model_dir)
+            # Extract the basin name from the nn_model_dir
+            basin = str(int(get_basin_id(nn_model_dir)))
+            # print('basin', basin, basin in basins)
+            # aux = input('Continue?')
+
+            if basin in basins:
+                print(nn_model_dir)
+                train_model_for_basin(nn_model_dir, project_path)
 
 
 if __name__ == "__main__":

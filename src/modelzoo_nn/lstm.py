@@ -65,13 +65,13 @@ class LSTM(BaseNNModel):
         # print(use_grad, f"Memory Reserved: {reserved / (1024 ** 2):.2f} MB")
 
         
-        # Retrieve the minimum values for the basins
-        min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-        # Clip the outputs
-        output = torch.maximum(output, min_values)
+        # # Retrieve the minimum values for the basins
+        # min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        # # Clip the outputs
+        # output = torch.maximum(output, min_values)
 
-        # # Clear the cache
-        # torch.cuda.empty_cache()
+        # # # Clear the cache
+        # # torch.cuda.empty_cache()
         
         return output
     

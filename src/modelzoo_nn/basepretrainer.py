@@ -162,6 +162,9 @@ class NNpretrainer(ExpHydroCommon):
         else:
             input_var_names = self.input_var_names
             output_var_names = self.output_var_names
+
+        # print('input_var_names:', input_var_names)
+        # aux = input('Press enter to continue')
         
         input_tensors = [tensor_dict[var] for var in input_var_names]
         output_tensors = [tensor_dict[var] for var in output_var_names]

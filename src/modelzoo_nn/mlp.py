@@ -20,6 +20,8 @@ class MLP(BaseNNModel):
         # Hidden Layers
         self.hidden = nn.ModuleList()
         self.dropouts = nn.ModuleList()
+        # self.dropout_layer = nn.Dropout(self.dropout) 
+        # self.dropout_layer.name = 'dropout_layer'
         for li, hidden in enumerate(self.hidden_size[:-1]):
             layer = nn.Linear(hidden, self.hidden_size[li+1])
             layer.name = f'hidden_layer_{li}'
@@ -60,8 +62,10 @@ class MLP(BaseNNModel):
             x = F.tanh(self.input_layer(inputs))
             # Hidden Layers
             for hidden, dropout in zip(self.hidden, self.dropouts):
+            # for hidden in self.hidden:
                 x = F.leaky_relu(hidden(x))
                 x = dropout(x)
+            # x = self.dropout_layer(x)
             # Output Layer
             x = self.output_layer(x)
         else:
@@ -70,16 +74,18 @@ class MLP(BaseNNModel):
                 x = F.tanh(self.input_layer(inputs))
                 # Hidden Layers
                 for hidden, dropout in zip(self.hidden, self.dropouts):
+                # for hidden in self.hidden:
                     x = F.leaky_relu(hidden(x))
                     x = dropout(x)
+                # x = self.dropout_layer(x)
                 # Output Layer
                 x = self.output_layer(x)
 
-        # Retrieve the minimum values for the basins
-        min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        # # Retrieve the minimum values for the basins
+        # min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
         
-        # Clip the outputs
-        x = torch.maximum(x, min_values)
+        # # Clip the outputs
+        # x = torch.maximum(x, min_values)
 
         # print('output', x.shape, x[:5])
 

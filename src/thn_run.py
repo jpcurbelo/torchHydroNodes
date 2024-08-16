@@ -313,6 +313,10 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
 
+    # # # Pretrain the model if no pre-trained model is loaded
+    # # if cfg.nn_model_dir is False:
+    # #     pretrainer.train()
+
     # Build the hybrid model
     model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
 

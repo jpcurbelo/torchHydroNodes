@@ -27,15 +27,18 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # # nn_model_dir: 1basin_pretrainer_lstm_270d_64x1_relu_01013500_240807_083026
 # nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_01013500_240807_083323
 # nn_model_dir: 1basin_pretrainer_lstm_270d_64x6_relu_01013500_240807_154744
+# nn_model_dir: 1basin_pretrainer_lstm_270d_256x1_relu_01013500_240811_165341
 
-nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_06431500_240807_194801
-# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_06431500_240807_194925
+# nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_06431500_240807_194801
+nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_06431500_240807_194925
 
-# nn_model_dir: 1basin_pretrainer_lstm_270d_256x1_01013500_240802_092547
-# nn_model_dir: 1basin_pretrainer_lstm_365d_128x1_01013500_240802_092403
-# nn_model_dir: 1basin_pretrainer_lstm_365d_256x1_01013500_240802_092510
-# nn_model_dir: 1basin_pretrainer_lstm_180d_128x1_01013500_240802_110404
-# nn_model_dir: 1basin_pretrainer_lstm_180d_256x1_01013500_240802_110445
+# nn_model_dir: 1basin_pretrainer_mlp_32x5_01013500_240812_202403
+# nn_model_dir: 1basin_pretrainer_mlp_32x5_01013500_240813_191809   #good
+# nn_model_dir: 1basin_pretrainer_mlp_32x5_drop02_01013500_240814_105507
+# nn_model_dir: 1basin_pretrainer_mlp_32x5_noClip_01013500_240814_110823  #good
+
+# nn_model_dir: 1basin_pretrainer_mlp_32x5_06431500_240813_180815   #good
+# nn_model_dir: 1basin_pretrainer_mlp_32x5_noClip_06431500_240814_111533
 
 # # If not nn_model_dir, specify the model and parameters to use:
 # ###############################################################
@@ -97,17 +100,18 @@ loss: nse
 epochs: 200
 
 # Patience for early stopping
-patience: 20
+patience: 30
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 7036
-batch_size: 256
+# batch_size: 7304    # for mlp
+batch_size: 7036   # for lstm
+# batch_size: 256
 
 # # Dropout rate for the NN model
-# dropout: 0.4
+# dropout: 0.2
 
 # # Length of the input sequence
 # seq_length: 270
@@ -118,9 +122,9 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.001
+  initial: 0.0001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -128,11 +132,30 @@ learning_rate:
 # experiment_name: 1basin_hybrid_lstm_270d_128x1
 # experiment_name: ZZZZZ1basin_hybrid_mlp_01013500
 # experiment_name: 1basin_hybrid_lstm_270d_128x1_256b_relu_nse
+# experiment_name: 1basin_hybrid_lstm_270d_256x1_256b_relu_nse
 # experiment_name: 1basin_hybrid_lstm_270d_128x1_7036b_relu_nse
-experiment_name: 1basin_hybrid_lstm_270d_64x2_256b_relu_nse
+# experiment_name: 1basin_hybrid_lstm_270d_64x2_256b_relu_nse_bosh3
+
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_256b_nse_euler
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_256b_nse_euler_noClip
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_256b_nse_bosh3
+# experiment_name: 1basin_hybrid_mlp_32x5_7304b_nse_euler
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_euler_drop02
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_256b_nse_euler_noClip
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_256b_nse_bosh3_noClip
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_euler_noClip
+# experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_bosh3_noClip
+
+# experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_euler_200ep
+experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_euler_200ep
+# experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_bosh3_200ep
+# experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_bosh3_200ep
+
+# experiment_name: ZZZ1basin_hybrid_mlp_32x5_7304b_nse_euler_400ep
+# experiment_name: ZZZ1basin_hybrid_mlp_32x5_7304b_nse_bosh3_400ep
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -141,7 +164,7 @@ seed: 1111
 precision: float32
 
 # Number of parallel workers used in the data pipeline
-num_workers: 8
+num_workers: 16
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
 verbose: 1

@@ -22,7 +22,7 @@ concept_model: exphydro
 # Method to solve the ODEs (using solve_ivp from scipy.integrate)
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 # Options: RK45, RK23, DOP853, Radau, BDF, LSODA
-odesmethod: DOP853
+odesmethod: RK23
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -47,9 +47,10 @@ metrics:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: 569concept_rk45
-# experiment_name: 4concept_run_dop853
-# experiment_name: M0_results_569basins_1980_2010_RK23
+# experiment_name: M0_results_569basins_1980_2010_RK4
+experiment_name: M0_results_569basins_1980_2010_RK23_tol33
+# experiment_name: M0_results_569basins_1980_2010_LSODA_tol36
+# experiment_name: M0_results_569basins_1980_2010_RK45_tol36
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu

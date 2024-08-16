@@ -8,8 +8,8 @@ nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-# data_dir: M0_results_569basins_1980_2010_RK23
-data_dir: M0_results_4basins_1980_2010_RK23
+data_dir: M0_results_569basins_1980_2010_RK23
+# data_dir: M0_results_4basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
@@ -27,34 +27,34 @@ nn_mech_targets:
 target_variables: 
   - obs_runoff
 
-static_attributes:
-  - elev_mean
-  - slope_mean
-  - area_gages2
-  - frac_forest
-  - lai_max
-  - lai_diff
-  - gvf_max
-  - gvf_diff
-  - soil_depth_pelletier
-  - soil_depth_statsgo
-  - soil_porosity
-  - soil_conductivity
-  - max_water_content
-  - sand_frac
-  - silt_frac
-  - clay_frac
-  - carbonate_rocks_frac
-  - geol_permeability
-  - p_mean
-  - pet_mean
-  - aridity
-  - frac_snow
-  - high_prec_freq
-  - high_prec_dur
-  - low_prec_freq
-  - low_prec_dur
-  - p_seasonality
+# static_attributes:
+#   - elev_mean
+#   - slope_mean
+#   - area_gages2
+#   - frac_forest
+#   - lai_max
+#   - lai_diff
+#   - gvf_max
+#   - gvf_diff
+#   - soil_depth_pelletier
+#   - soil_depth_statsgo
+#   - soil_porosity
+#   - soil_conductivity
+#   - max_water_content
+#   - sand_frac
+#   - silt_frac
+#   - clay_frac
+#   - carbonate_rocks_frac
+#   - geol_permeability
+#   - p_mean
+#   - pet_mean
+#   - aridity
+#   - frac_snow
+#   - high_prec_freq
+#   - high_prec_dur
+#   - low_prec_freq
+#   - low_prec_dur
+#   - p_seasonality
 
 
 scale_target_vars: True
@@ -63,7 +63,8 @@ scale_target_vars: True
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
 # basin_file: 1_basin_file.txt
-basin_file: 4_basin_file.txt
+basin_file: 1_basin_fileB.txt
+# basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
 # n_random_basins: 100
@@ -94,9 +95,9 @@ patience: 5
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 7304
+batch_size: 7304
 # batch_size: 256
-batch_size: 256
+# batch_size: 256
 
 # Length of the input sequence
 seq_length: 270
@@ -128,7 +129,8 @@ dropout: 0.4
 # Experiment name, used as folder name
 # experiment_name: 100_basins_pretrainer_run
 # experiment_name: ZZZZ1basin_pretrainer_lstm
-experiment_name: ZZZZ4basin_pretrainer_mlp_static
+# experiment_name: ZZZZ4basin_pretrainer_mlp_static
+experiment_name: ZZZZ1basin_pretrainer_mlp_06431500
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
@@ -147,14 +149,14 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 4
+log_n_basins: 1
   # - 1013500
   # - 6431500
   # - 1022500
   # - 1030500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

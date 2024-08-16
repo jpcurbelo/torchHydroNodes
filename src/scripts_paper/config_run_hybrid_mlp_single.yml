@@ -39,7 +39,8 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 512
+# batch_size: 256
+batch_size: 7304
 
 # # Dropout rate for the model
 # dropout: 0.2
@@ -50,9 +51,9 @@ optimizer: adam
 # # Learning rate for the optimizer
 # learning_rate: 0.001
 learning_rate:
-  initial: 0.001
+  initial: 0.0001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name

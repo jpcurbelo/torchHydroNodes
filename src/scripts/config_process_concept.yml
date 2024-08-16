@@ -1,0 +1,40 @@
+# Folder where the data is stored
+# results_folder: ../../data/M0_results_569basins_1980_2010_RK23
+# results_folder: ../../data/M0_results_569basins_1980_2010_RK23_tol36_240815_071129
+# results_folder: ../../data/M0_results_569basins_1980_2010_LSODA_tol36_240815_071831
+results_folder: ../../examples/runs/M0_results_569basins_1980_2010_RK45_tol36_240816_140420
+
+# Folder (to be created) where the processed data will be stored
+# plots_folder: plots_conceptualRK23
+# plots_folder: plots_conceptualRK23_tol36
+plots_folder: plots_conceptualLSODA_tol36
+
+# graph_title: Conceptual model (exp-hydro) - RK23_tol36
+# graph_title: Conceptual model (exp-hydro) - LSODA_tol36
+graph_title: Conceptual model (exp-hydro) - RK45_tol36
+
+# Periods to be processed
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less

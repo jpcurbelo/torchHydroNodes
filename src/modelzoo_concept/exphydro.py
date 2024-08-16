@@ -15,6 +15,12 @@ from src.utils.load_process_data import (
     Config,
     ExpHydroCommon,
 )
+
+class EulerResult:
+    def __init__(self, t, y):
+        self.t = t
+        self.y = y
+
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 class ExpHydro(BaseConceptModel, ExpHydroCommon):
     
@@ -55,9 +61,6 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         s1 = y[1]
 
         # Interpolate the input variables
-        # precp = self.precp_interp(t, extrapolate='periodic')
-        # temp = self.temp_interp(t, extrapolate='periodic')
-        # lday = self.lday_interp(t, extrapolate='periodic')
         precp = self.precp_interp(t, )
         temp = self.temp_interp(t, )
         lday = self.lday_interp(t, )
@@ -66,29 +69,10 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         q_out = Qb(s1, f, smax, qmax, self.step_function) + Qs(s1, smax, self.step_function)
         m_out = M(s0, temp, df, tmax, self.step_function)
 
-        # print('s0', s0)
-        # print('s1', s1)
-        # print('f', f)
-        # print('Smax', smax)
-        # print('Qmax', qmax)
-        # print('Df', df)
-        # print('Tmax', tmax)
-        # print('Tmin', tmin)
-        # print('precp', precp)
-        # print('temp', temp)
-        # print('lday', lday)
-        # print('Q_out', q_out)
-        # print('M_out', m_out)
-        
         # Eq 1 - Hoge_EtAl_HESS_2022
         ds0_dt = Ps(precp, temp, tmin, self.step_function) - m_out
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = Pr(precp, temp, tmin, self.step_function) + m_out - ET(s1, temp, lday, smax, self.step_function) - q_out
-
-        
-        # print('dS0_dt', ds0_dt, type(ds0_dt))
-        # print('dS1_dt', ds1_dt, type(ds1_dt))
-        # aux = input('Press Enter to continue...')
 
         return [ds0_dt, ds1_dt]
            
@@ -137,14 +121,26 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
 
         # Run the model
         # print('ode method1:', self.odesmethod )
-        y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
-                         args=params, 
-                         method=self.odesmethod,
-                        # method='LSODA',
-                        #  method='DOP853',
-                        # rtol=1e-9, atol=1e-12,
-                        rtol=1e-6, atol=1e-9,
-                    )
+        if self.odesmethod.lower() in ['euler', 'rk2', 'rk4']:           
+            # Use the desired method: "euler", "rk2", or "rk4"
+            y = self.solve_ivp_custom(
+                self.conceptual_model, 
+                t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), 
+                y0=y0, 
+                t_eval=self.time_series, 
+                args=params,
+                method="rk4"  # Change this to "euler", "rk2", or "rk4" as needed
+            )
+        else:
+            # Use the scipy's solve_ivp method with the desired method
+            y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
+                            args=params, 
+                            method=self.odesmethod,
+                            # method='LSODA',
+                            #  method='DOP853',
+                            rtol=1e-3, atol=1e-3,
+                            # rtol=1e-3, atol=1e-6,
+                        )
         
         # Extract snow and water series -> two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022
         s_snow = y.y[0]
@@ -162,6 +158,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Evapotranspiration
         et_bucket = ET(s_water, self.temp_basin, self.lday_basin, smax, self.step_function)
         et_bucket = np.maximum(et_bucket, self.eps)
+
         # Melting
         m_bucket = M(s_snow, self.temp_basin, df, tmax, self.step_function)
         m_bucket = np.maximum(m_bucket, self.eps)
@@ -247,6 +244,67 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
 
             # Update self.time_series
 
+    @staticmethod
+    def solve_ivp_custom(fun, t_span, y0, t_eval=None, args=(), method="euler"):
+        """
+        Solve an initial value problem (IVP) for a system of ODEs using Euler, RK2, or RK4 method.
+        
+        Parameters:
+        - fun: callable
+            Right-hand side of the system. The calling signature is `fun(t, y, *args)`.
+        - t_span: 2-tuple of floats
+            Interval of integration (t0, tf). The solver starts with t=t0 and integrates until it reaches t=tf.
+        - y0: array_like, shape (n,)
+            Initial state.
+        - t_eval: array_like or None, shape (m,), optional
+            Times at which to store the computed solution. If None (default), use solver's own time steps.
+        - args: tuple, optional
+            Extra arguments to pass to the user-defined function.
+        - method: str, optional
+            The integration method to use: "euler", "rk2", or "rk4". Default is "euler".
+        
+        Returns:
+        - EulerResult object with attributes:
+            - t: ndarray, shape (n_points,)
+              Time points.
+            - y: ndarray, shape (n, n_points)
+              Solution values at `t`, where each row corresponds to one of the state variables.
+        """
+        if t_eval is None:
+            t_eval = np.linspace(t_span[0], t_span[1], 100)
+        
+        y = np.zeros((len(t_eval), len(y0)))
+        y[0] = y0
+
+        if method == "euler":
+            for i in range(1, len(t_eval)):
+                dt = t_eval[i] - t_eval[i - 1]
+                dydt = fun(t_eval[i - 1], y[i - 1], *args)
+                y[i] = y[i - 1] + dt * np.array(dydt)
+        
+        elif method == "rk2":
+            for i in range(1, len(t_eval)):
+                dt = t_eval[i] - t_eval[i - 1]
+                k1 = np.array(fun(t_eval[i - 1], y[i - 1], *args))
+                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1, *args))
+                y[i] = y[i - 1] + dt * k2
+
+        elif method == "rk4":
+            for i in range(1, len(t_eval)):
+                dt = t_eval[i] - t_eval[i - 1]
+                k1 = np.array(fun(t_eval[i - 1], y[i - 1], *args))
+                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1, *args))
+                k3 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k2, *args))
+                k4 = np.array(fun(t_eval[i - 1] + dt, y[i - 1] + dt * k3, *args))
+                y[i] = y[i - 1] + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
+
+        else:
+            raise ValueError(f"Unknown method '{method}'. Supported methods are 'euler', 'rk2', 'rk4'.")
+
+        # Transpose the solution array to have each state variable in a row
+        y = y.T
+
+        return EulerResult(t_eval, y)
 
     @property
     def nn_outputs(self):
@@ -259,33 +317,27 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         
 ## Auxiliary functions
 # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
-# return step_fct(S1) * step_fct(S1 - Smax) * Qmax + step_fct(S1) * step_fct(Smax - S1) * Qmax * np.exp(-f * (Smax - S1))
 Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
                                         + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
-                                        
+# Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
+#     + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(np.clip(-f * (smax - s1), a_min=-700, a_max=700))   
+
 # Qspill is the snowmelt is available to infiltrate into the catchment bucket, but the storage S has reached full capacity smax.
-# Qs = lambda S1, Smax: step_fct(S1) * step_fct(S1 - Smax) * (S1 - Smax)
 Qs = lambda s1, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * (s1 - smax)
 
 # Precipitation as snow (A1) - Hoge_EtAl_HESS_2022
-# Ps = lambda P, T, Tmin: step_fct(Tmin - T) * P
 Ps = lambda p, temp, tmin, step_fct: step_fct(tmin - temp) * p
 
 # Precipitation as snow (A2) - Hoge_EtAl_HESS_2022
-# Pr = lambda P, T, Tmin: step_fct(T - Tmin) * P
 Pr = lambda p, temp, tmin, step_fct: step_fct(temp - tmin) * p
 
 # Melting (A4) - Hoge_EtAl_HESS_2022
-#  return step_fct(T - Tmax) * step_fct(S0) * np.minimum(S0, Df * (T - Tmax))
 M = lambda s0, temp, df, tmax, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
 
 
 # Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
-# ET = lambda S1, T, Lday, Smax: step_fct(S1) * step_fct(S1 - Smax) * PET(T, Lday) + \
-#                                step_fct(S1) * step_fct(Smax - S1) * PET(T, Lday) * (S1 / Smax)
 ET = lambda s1, temp, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(temp, lday)  \
                             + step_fct(s1) * step_fct(smax - s1) * PET(temp, lday) * (s1 / smax)
                                                  
 # Potential evapotranspiration - Hamon’s formula (Hamon, 1963) - Hoge_EtAl_HESS_2022 
-# return 29.8 * Lday * 0.611 * np.exp((17.3 * T) / (T + 237.3)) / (T + 273.2)  
 PET = lambda temp, lday: 29.8 * lday * 0.611 * np.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)    

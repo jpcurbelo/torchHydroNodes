@@ -58,8 +58,10 @@ static_attributes:
 scale_target_vars: True
 
 # Files to specify training, validation and test basins
+basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46.txt 
 # basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_5first.txt 
-basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt 
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_10first.txt 
+# basin_file: cluster_files/569_basins_17clusters/569_basin_file_cluster2of17_46_20first.txt 
 
 # --- Training configurations --- #
 
@@ -113,8 +115,10 @@ hidden_size:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
+experiment_name: cluster2of17_pretrainer_mlp_32x5_static
 # experiment_name: cluster2of17_5f_pretrainer_mlp_32x5_static
-experiment_name: cluster2of17_10f_pretrainer_mlp_32x5_static
+# experiment_name: cluster2of17_10f_pretrainer_mlp_32x5_static
+# experiment_name: cluster2of17_20f_pretrainer_mlp_32x5_static
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0

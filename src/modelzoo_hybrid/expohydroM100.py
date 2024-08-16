@@ -96,12 +96,12 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Define rtol and atol
         # Higher rtol and atol values will make the ODE solver faster but less accurate
-        if self.odesmethod in ['euler', 'rk4', 'midpoint']:
+        if self.odesmethod in ['euler', 'rk4', 'midpoint', 'bosh3']:
+            rtol = 1e-3
+            atol = 1e-3
+        elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
             rtol = 1e-3
             atol = 1e-6
-        elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'bosh3', 'adaptive_heun', 'heun3']:
-            rtol = 1e-4
-            atol = 1e-7
         elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
             rtol = 1e-6
             atol = 1e-9
@@ -121,9 +121,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
             s_snow_nn  = y[:, 0, 0]
             s_water_nn = y[:, 0, 1]
-            # Relu the state variables
-            s_snow_nn = torch.maximum(s_snow_nn, torch.tensor(0.0)).to(self.device)
-            s_water_nn = torch.maximum(s_water_nn, torch.tensor(0.0)).to(self.device)
+            # # Relu the state variables
+            # s_snow_nn = torch.maximum(s_snow_nn, torch.tensor(0.0)).to(self.device)
+            # s_water_nn = torch.maximum(s_water_nn, torch.tensor(0.0)).to(self.device)
 
             # Stack tensors to create inputs for the neural network
             inputs_nn = torch.stack([s_snow_nn, s_water_nn, self.precp_series, self.tmean_series], dim=-1)
@@ -235,7 +235,6 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # lday = self.lday_series[idx] + (self.lday_series[idx + 1] - self.lday_series[idx]) \
         #     * (t - self.time_series[idx]) / (self.time_series[idx + 1] - self.time_series[idx])
         
-
         # Compute ET from the pretrainer.nnmodel
         inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
 
@@ -308,7 +307,6 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         temp = torch.tensor(temp, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
         lday = torch.tensor(lday, dtype=self.data_type_torch).to(self.device)
         # # print(f"Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
-
 
         # # Find left index for the interpolation
         # idx = torch.searchsorted(self.time_series, t, side='right') - 1

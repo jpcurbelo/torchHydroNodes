@@ -62,7 +62,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-basin_file: 1_basin_file.txt
+# basin_file: 1_basin_file.txt
+basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
@@ -87,25 +88,25 @@ epochs: 200
 # Patience for early stopping
 patience: 20
 
-# If a value, clips the gradients during training to that norm.
-clip_gradient_norm: 1.0
+# # If a value, clips the gradients during training to that norm.
+# clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 7304
+batch_size: 7304
 # batch_size: 128
 # batch_size: 256
 # batch_size: 1024
-batch_size: 256
+# batch_size: 256
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.001
-  decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+learning_rate: 0.01
+# learning_rate:
+#   initial: 0.001
+#   decay: 0.5
+#   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
@@ -121,12 +122,16 @@ hidden_size:
   # - 64
   # - 32
 
+# # Dropout rate for the NN model
+# dropout: 0.2
+
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 569basin_pretrainer_mlp
 # experiment_name: 4basin_pretrainer_mlp
 # experiment_name: 4basin_pretrainer_mlp_static
-experiment_name: ZZ1basin_pretrainer_mlp_minclip
+# experiment_name: 1basin_pretrainer_mlp_32x5
+experiment_name: YY1basin_pretrainer_mlp_32x5_noClip
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:0
