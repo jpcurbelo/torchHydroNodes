@@ -174,6 +174,10 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer',
 
 
 
+def infer_output_shape_from_input(input_shape):
+    # The output shape is determined by the first dimension of the input shape
+    return (input_shape[0],)
+
 def calculate_tensor_memory(tensor_shape, dtype):
     element_size = torch.tensor([], dtype=dtype).element_size()
     num_elements = torch.prod(torch.tensor(tensor_shape)).item()
@@ -188,8 +192,13 @@ def can_run_job(required_memory):
     free_memory = get_free_gpu_memory()
     return free_memory >= required_memory
 
-def run_job_with_memory_check(model, inputs, basin, output_shape, output_dtype, use_grad=False):
-    required_memory = calculate_tensor_memory(output_shape, output_dtype)
+def run_job_with_memory_check(model, ds_basin, input_var_names, basin, input_shape, input_dtype, use_grad=False):
+    inputs = model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
+    output_shape = infer_output_shape_from_input(inputs.shape)
+    
+    input_memory = calculate_tensor_memory(inputs.shape, input_dtype)
+    output_memory = calculate_tensor_memory(output_shape, input_dtype)
+    required_memory = input_memory + output_memory
 
     while not can_run_job(required_memory):
         print("Waiting for free memory...")

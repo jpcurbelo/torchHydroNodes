@@ -48,18 +48,27 @@ def check_finished_basins(runs_path):
     basin_finished = []
     basin_unfinished = []
     basin_repeated = []
-    print(f'Checking finished basins in {runs_folder}...', len(os.listdir(runs_path)))
-    for folder in os.listdir(runs_folder):
+    basin_folder_list = os.listdir(runs_path)
+    print(f'Checking finished basins in {runs_folder}...', len(basin_folder_list))
+    # Remove model_metrics folder from basin_folder_list if it is present
+    if 'model_metrics' in basin_folder_list:
+        basin_folder_list.remove('model_metrics')
+
+    for folder in basin_folder_list:
 
         basin = get_basin_id(folder)
+
         if job_is_finished(runs_path / folder):
             if basin in basin_finished:
                 basin_repeated.append(basin)
             basin_finished.append(str(int(basin)))
         else:
+            # if basin is not None:
             basin_unfinished.append(basin)
 
     print('Repeated basins:', basin_repeated)
+    print('Finished basins:', len(basin_finished))
+    print('Unfinished basins:', len(basin_unfinished))
 
     return sorted(basin_finished), sorted(basin_unfinished)
 

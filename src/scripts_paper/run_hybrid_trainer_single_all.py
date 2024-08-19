@@ -35,9 +35,11 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
-pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_512b_bosh3'
-run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
+# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
+pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr34_200ep'
+run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
 
 # # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
@@ -47,7 +49,7 @@ run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
 # # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 64
+MAX_WORKERS = 32
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
@@ -186,6 +188,8 @@ def main():
 
     # Filter the nn_model_dirs based on the basins
     nn_model_dirs = [dir for dir in nn_model_dirs[:] if str(int(get_basin_id(dir))) in basins]
+
+    print(f"Total basins to be trained: {len(nn_model_dirs)}")
     
     # Train the model for each basin
     if USE_PROCESS_POOL:

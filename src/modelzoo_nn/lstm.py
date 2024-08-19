@@ -31,8 +31,13 @@ class LSTM(BaseNNModel):
         self.fc = nn.Linear(self.hidden_size[-1], self.output_size)
 
     def forward(self, dynamic_inputs, basin_list, static_inputs=None, use_grad=True):
-        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+
+        # print(f"Dynamic Inputs: {dynamic_inputs.device}")
+        # # modwel parameters device
+        # print(f"Model Parameters: {next(self.parameters()).device}")
+
+        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
+        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
         
         means = means.unsqueeze(1)
         stds = stds.unsqueeze(1)

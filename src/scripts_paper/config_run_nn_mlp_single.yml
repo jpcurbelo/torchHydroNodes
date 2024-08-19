@@ -51,17 +51,17 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 256
+batch_size: 7304
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.001
-  decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+learning_rate: 0.01
+# learning_rate:
+#   initial: 0.001
+#   decay: 0.5
+#   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
@@ -76,7 +76,7 @@ hidden_size:
 experiment_name: pretrainer_mlp_single
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -88,14 +88,14 @@ precision: float32
 num_workers: 16
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 1
+verbose: 0
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins: 1
 
-# # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-# log_every_n_epochs: 200 
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 50 
 
 # Metrics to use for evaluation (after training)
 metrics:

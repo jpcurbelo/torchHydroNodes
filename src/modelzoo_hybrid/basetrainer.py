@@ -27,6 +27,7 @@ class BaseHybridModelTrainer:
     def __init__(self, model):
         
         self.model = model
+        self.device_to_train = self.model.device
 
         self.target = self.model.cfg.concept_target[0]
         # print('BaseHybridModelTrainer - self.target:', self.target)
@@ -61,7 +62,7 @@ class BaseHybridModelTrainer:
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
         if self.model.cfg.verbose:
-            print(f"-- Training the hybrid model on {self.model.device} --")
+            print(f"-- Training the hybrid model on {self.device_to_train} --")
 
 
         # print(f"0-Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
@@ -97,8 +98,8 @@ class BaseHybridModelTrainer:
                 self.model.optimizer.zero_grad()
 
                 # Transfer to device
-                inputs = inputs.to(self.model.device)
-                targets = targets.to(self.model.device)
+                inputs = inputs.to(self.device_to_train)
+                targets = targets.to(self.device_to_train)
 
                 # Forward pass
                 q_sim = self.model(inputs, basin_ids[0])
@@ -281,8 +282,11 @@ class BaseHybridModelTrainer:
                     # print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", inputs.shape[0], inputs.dtype)
                     # # free_memory = get_free_gpu_memory()
 
+                    # No GPU memory control - this is standard
                     outputs = self.model(inputs, basin, use_grad=False)
-                    # outputs = run_job_with_memory_check(model, inputs, basin, output_shape, output_dtype, use_grad=False)
+
+                    # outputs = run_job_with_memory_check(self.model, ds_basin,  input_var_names, basin, inputs.shape, inputs.dtype, use_grad=False)
+                    # # # outputs = run_job_with_memory_check(self.model, inputs, basin, output_shape, output_dtype, use_grad=False)
 
                     # output_memory = calculate_tensor_memory(outputs.shape, outputs.dtype)
                     # print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", outputs.shape, outputs.dtype)
@@ -457,3 +461,48 @@ class BaseHybridModelTrainer:
 
             # Save the results to a CSV file
             df_results.to_csv(metrics_file_path, index=False)
+
+
+# # ####################################################################################################
+# # def infer_output_shape_from_input(input_shape):
+# #     # The output shape is determined by the first dimension of the input shape
+# #     return (input_shape[0],)
+
+# # def calculate_tensor_memory(tensor_shape, dtype):
+# #     element_size = torch.tensor([], dtype=dtype).element_size()
+# #     num_elements = torch.prod(torch.tensor(tensor_shape)).item()
+# #     return num_elements * element_size
+
+# # def get_free_gpu_memory():
+# #     torch.cuda.synchronize()
+# #     free_memory = torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_reserved()
+# #     return free_memory
+
+# # def can_run_job(required_memory):
+# #     free_memory = get_free_gpu_memory()
+# #     return free_memory >= required_memory
+
+# # import time
+# # def run_job_with_memory_check(model, ds_basin, input_var_names, basin, input_shape, input_dtype, use_grad=False):
+# #     inputs = model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
+# #     output_shape = infer_output_shape_from_input(inputs.shape)
+    
+# #     input_memory = calculate_tensor_memory(inputs.shape, input_dtype)
+# #     output_memory = calculate_tensor_memory(output_shape, input_dtype)
+# #     required_memory = input_memory + output_memory
+
+# #     print('input_memory:', input_memory)
+# #     print('output_memory:', output_memory)
+# #     print('required_memory:', required_memory)
+
+# #     aux = input('Press enter to continue')
+
+# #     while not can_run_job(required_memory):
+# #         print("Waiting for free memory...")
+# #         torch.cuda.empty_cache()
+# #         torch.cuda.synchronize()
+# #         time.sleep(1)  # Wait for 1 second before checking again
+
+# #     with torch.set_grad_enabled(use_grad):
+# #         outputs = model(inputs, basin)
+# #     return outputs

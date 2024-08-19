@@ -2,16 +2,20 @@
 # results_folder: ../../data/M0_results_569basins_1980_2010_RK23
 # results_folder: ../../data/M0_results_569basins_1980_2010_RK23_tol36_240815_071129
 # results_folder: ../../data/M0_results_569basins_1980_2010_LSODA_tol36_240815_071831
-results_folder: ../../examples/runs/M0_results_569basins_1980_2010_RK45_tol36_240816_140420
+# results_folder: ../../examples/runs/M0_results_569basins_1980_2010_RK45_tol36_240816_140420
+# results_folder: ../../examples/runs/M0_results_569basins_1980_2010_RK4_240816_165349
+# results_folder: ../../examples/runs/M0_results_569basins_1980_2010_RK23_tol33_240816_165631
+results_folder: ../../examples/runs/M0_results_569basins_1980_2010_RK23_tol39_240816_153209
 
 # Folder (to be created) where the processed data will be stored
-# plots_folder: plots_conceptualRK23
+plots_folder: plots_conceptualRK23_tol39
 # plots_folder: plots_conceptualRK23_tol36
-plots_folder: plots_conceptualLSODA_tol36
+# plots_folder: plots_conceptualRK4
 
-# graph_title: Conceptual model (exp-hydro) - RK23_tol36
+graph_title: Conceptual model (exp-hydro) - RK23_tol39
 # graph_title: Conceptual model (exp-hydro) - LSODA_tol36
-graph_title: Conceptual model (exp-hydro) - RK45_tol36
+# graph_title: Conceptual model (exp-hydro) - RK45_tol36
+# graph_title: Conceptual model (exp-hydro) - RK4
 
 # Periods to be processed
 periods:

@@ -31,15 +31,16 @@ basin_file_all = '../../examples/569_basin_file.txt'
 nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
 
 # config_file = Path(f'config_run_nn_{nnmodel_type}_single.yml')
-# run_folder = f'runs_pretrainer_single_{nnmodel_type}'
+# # run_folder = f'runs_pretrainer_single_{nnmodel_type}'
+# run_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
 
 config_file = Path(f'config_run_nn_{nnmodel_type}_single270.yml')
-run_folder = f'runs_pretrainer_single_{nnmodel_type}270_128h'
+run_folder = f'runs_pretrainer_single_{nnmodel_type}270_128h_7304b_lr3_200ep'
 
-MAX_WORKERS = 1
+MAX_WORKERS = 32
 
 CHECK_IF_FINISHED = 1
-DELETE_IF_UNFINISHED = 1
+DELETE_IF_UNFINISHED = 0
 
 def train_model_for_basin(basin, config_file, project_path):
     '''
@@ -84,11 +85,6 @@ def main():
     if os.path.exists(basin_file_all):
         with open(basin_file_all, 'r') as f:
             basins = f.readlines()
-            
-        # # max_workers = os.cpu_count()  # Adjust this based on your system and GPU availability
-        # max_workers = MAX_WORKERS
-
-        # print(f"Training models for {len(basins)} basins using {max_workers} workers.")
 
         if CHECK_IF_FINISHED and os.path.exists(script_path / run_folder):
 
@@ -111,15 +107,6 @@ def main():
             # Remove the finished basins from the list
             basins_to_continue = [basin for basin in basins_str if basin not in basin_finished]
 
-            # # # print(f"Basins to continue: {len(basins_to_continue)}")
-
-            # # # print('Basins', basins_str[:5])
-            # # # print('Finished', basin_finished[:5])
-            # # # print('Continue', basins_to_continue[:5])
-
-            # # # # Differences between basins_str and basin_finished
-            # # # print('Differences:', len(set(basins_str) - set(basin_finished)))
-
             count_t = 0
             count_y = 0
             count_n = 0
@@ -130,37 +117,15 @@ def main():
                 else:
                     count_n += 1
 
-            print('Count_t:', count_t)
-            print('Count_y:', count_y)
-            print('Count_n:', count_n)
-
-            # # # basins_int = [int(basin.strip()) for basin in basins]
-            # # # basins_finished_int = [int(basin.strip()) for basin in basin_finished]
-            # # # # basins_to_continue_int = [basin for basin in basins_int if basin not in basins_finished_int]
-            # # # basins_to_continue_int = []
-            # # # for basin in basins_int:
-            # # #     if basin not in basins_finished_int:
-            # # #         basins_to_continue_int.append(basin)
-            # # #         print(basin, len(basins_to_continue_int))
-
-            # # # print('Basins_int', len(basins_int), basins_int[:5])
-            # # # print('Finished_int', len(basins_finished_int), basins_finished_int[:5])
-            # # # print('Continue_int', len(basins_to_continue_int), basins_to_continue_int[:5])
+            print('Count_total:', count_t)
+            print('Count_done :', count_y)
+            print('Count_todo :', count_n)
 
             # Update the list of basins
             basins = basins_to_continue
 
-
-        # # with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # #     futures = [executor.submit(train_model_for_basin, basin, config_file, project_path) for basin in basins]
-        # #     for future in concurrent.futures.as_completed(futures):
-        # #         try:
-        # #             future.result()  # Will raise exception if training failed
-        # #         except Exception as e:
-        # #             print(f"Training failed for a basin: {e}")
-
-        # # for basin in basins[:100]:
-        for basin in basins[:]:
+        # Train the model for each basin
+        for basin in basins[50:]:
             train_model_for_basin(basin, config_file, project_path)
 
     else:

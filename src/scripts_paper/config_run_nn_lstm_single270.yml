@@ -51,7 +51,8 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 512
+# batch_size: 512
+# batch_size: 7036   # for lstm
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -61,7 +62,7 @@ optimizer: adam
 learning_rate:
   initial: 0.001
   decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
@@ -73,10 +74,10 @@ seq_length: 270
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: pretrainer_lstm_single365
-experiment_name: pretrainer_lstm_single270
+experiment_name: pretrainer_lstm_single270_128x1_7036b
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111
@@ -94,8 +95,8 @@ verbose: 0
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins: 1
 
-# # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-# log_every_n_epochs: 200 
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 100 
 
 # Metrics to use for evaluation (after training)
 metrics:

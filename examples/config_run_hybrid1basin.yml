@@ -107,8 +107,8 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 7304    # for mlp
-batch_size: 7036   # for lstm
-# batch_size: 256
+# batch_size: 7036   # for lstm
+batch_size: 256
 
 # # Dropout rate for the NN model
 # dropout: 0.2
@@ -146,8 +146,8 @@ learning_rate:
 # experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_euler_noClip
 # experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_bosh3_noClip
 
-# experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_euler_200ep
-experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_euler_200ep
+experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_euler_200ep
+# experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_euler_200ep
 # experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_bosh3_200ep
 # experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_bosh3_200ep
 
@@ -155,7 +155,7 @@ experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_euler_200ep
 # experiment_name: ZZZ1basin_hybrid_mlp_32x5_7304b_nse_bosh3_400ep
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111

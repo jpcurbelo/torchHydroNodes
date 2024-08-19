@@ -421,6 +421,7 @@ class NNpretrainer(ExpHydroCommon):
                         outputs = self.nnmodel(inputs, basin_list, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
                     else:
                         outputs = self.nnmodel(inputs, basin_list, use_grad=False)
+                        # outputs = run_job_with_memory_check(self.nnmodel, ds_basin,  self.input_var_names, basin, inputs.shape, inputs.dtype(), use_grad=False)
 
                     # Reshape outputs
                     outputs = self.reshape_outputs(outputs)
@@ -582,3 +583,5 @@ class NNpretrainer(ExpHydroCommon):
 
             # Save the results to a CSV file
             df_results.to_csv(metrics_file_path, index=False)
+
+############################################################################################################

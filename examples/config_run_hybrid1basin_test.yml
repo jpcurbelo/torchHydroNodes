@@ -80,10 +80,10 @@ learning_rate:
 # experiment_name: 1basin_hybrid_lstm_01013500
 # experiment_name: 1basin_hybrid_lstm_270d_128x1
 # experiment_name: ZZZZZ1basin_hybrid_mlp_01013500
-experiment_name: ZZ1basin_hybrid_lstm_270d_128x1
+experiment_name: ZZZZZZZZZZ1basin_hybrid_lstm_270d_128x1
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -105,7 +105,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 1
 
 # Metrics to use for evaluation (after training)
 metrics:
