@@ -45,7 +45,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.scale_target_vars(is_trainer=True)
     
 
-    def forward(self, inputs, basins, use_grad=True):
+    def forward(self, inputs, basin, use_grad=True):
 
         self.use_grad = use_grad
 
@@ -86,12 +86,12 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.tmean_lstm = torch.cat((self.tmean_lstm[0].unsqueeze(0), self.tmean_lstm), dim=0)    #.to(self.device)
 
         # Make basin global to be used in hybrid_model
-        self.basins = basins
+        self.basin = basin
 
         # Set the interpolators 
-        self.precp_interp = self.interpolators[self.basins]['prcp']
-        self.temp_interp = self.interpolators[self.basins]['tmean']
-        self.lday_interp = self.interpolators[self.basins]['dayl']
+        self.precp_interp = self.interpolators[self.basin]['prcp']
+        self.temp_interp = self.interpolators[self.basin]['tmean']
+        self.lday_interp = self.interpolators[self.basin]['dayl']
 
         # # Profile the ODE solver
         # time_start = time.time()
@@ -109,7 +109,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             atol = 1e-9
 
         ode_solver = torchdiffeq.odeint
-        print("About to call the ODE solver")
+        # print("About to call the ODE solver")
         if len(inputs.shape) == 2:
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0], self.s_water[0]], dim=0).unsqueeze(0)    #.to(self.device)
@@ -166,16 +166,16 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         #!!!!!!!!This output is already in log space - has to be converted back to normal space when the model is called
         # Assuming nnmodel returns a tensor of shape (batch_size, numOfVars)
         # output = self.pretrainer.nnmodel(inputs_nn, [self.basin], use_grad=self.use_grad)
-        print("About to call the NN model - end of ODE solver")
+        # print("About to call the NN model - end of ODE solver")
         if self.pretrainer.nnmodel.include_static:
-            q_output = self.pretrainer.nnmodel(inputs_nn, [self.basins], 
-                                    static_inputs=self.pretrainer.nnmodel.torch_static[self.basins], 
+            q_output = self.pretrainer.nnmodel(inputs_nn, self.basin, 
+                                    static_inputs=self.pretrainer.nnmodel.torch_static[self.basin], 
                                     use_grad=self.use_grad)[:, -1]
             # return self.pretrainer.nnmodel(inputs_nn.to(self.device), [self.basins],
             #                         static_inputs=self.pretrainer.nnmodel.torch_static[self.basins],
             #                         use_grad=self.use_grad)[:, -1]
         else:
-            q_output = self.pretrainer.nnmodel(inputs_nn, [self.basins], 
+            q_output = self.pretrainer.nnmodel(inputs_nn, self.basin, 
                                     use_grad=self.use_grad)[:, -1]
             # return self.pretrainer.nnmodel(inputs_nn.to(self.device), [self.basins],
             #                         use_grad=self.use_grad)[:, -1]
@@ -242,18 +242,18 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Compute ET from the pretrainer.nnmodel
         inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
 
-        basins = self.basins
-        if not isinstance(basins, list):
-            basins = [basins]
+        basin = self.basin
+        # if not isinstance(basins, list):
+        #     basins = [basins]
 
         # m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
         # Forward pass
         if self.pretrainer.nnmodel.include_static:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins, 
-                                        static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]],
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin, 
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[basin],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins,
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin,
                                         use_grad=self.use_grad)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q
@@ -348,9 +348,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, self.precp_lstm, self.tmean_lstm], dim=-1)  
         # print(f"Memory usage after stacking inputs: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
-        basins = self.basins
-        if not isinstance(basins, list):
-            basins = [basins]
+        basin = self.basin
+        # if not isinstance(basins, list):
+        #     basins = [basins]
         # print(f"Memory usage after preparing basin: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
 
@@ -358,11 +358,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin, use_grad=self.use_grad)[0] 
         if self.pretrainer.nnmodel.include_static:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins, 
-                                        static_inputs=self.pretrainer.nnmodel.torch_static[basins[0]],
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin, 
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[basin],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basins,
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin,
                                         use_grad=self.use_grad)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q

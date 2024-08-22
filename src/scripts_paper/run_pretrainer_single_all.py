@@ -35,7 +35,7 @@ nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
 # run_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
 
 config_file = Path(f'config_run_nn_{nnmodel_type}_single270.yml')
-run_folder = f'runs_pretrainer_single_{nnmodel_type}270_128h_7304b_lr3_200ep'
+run_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h_7036b_lr3_200ep'
 
 MAX_WORKERS = 32
 
@@ -124,9 +124,9 @@ def main():
             # Update the list of basins
             basins = basins_to_continue
 
-        # Train the model for each basin
-        for basin in basins[50:]:
-            train_model_for_basin(basin, config_file, project_path)
+        # # Train the model for each basin
+        # for basin in basins[:]:
+        #     train_model_for_basin(basin, config_file, project_path)
 
     else:
         print(f"File {basin_file_all} not found.")

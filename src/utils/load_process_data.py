@@ -633,8 +633,12 @@ class Config(object):
 
     @property
     def loss(self) -> str:
-        return self._get_property_value("loss", default="MSE")
-    
+        return self._get_property_value("loss", default="nse")
+
+    @property
+    def loss_pretrain(self) -> str:
+        return self._get_property_value("loss_pretrain", default="mse")
+
     @property
     def verbose(self) -> int:
         """Defines level of verbosity.
@@ -771,6 +775,10 @@ class Config(object):
         return self._get_property_value("epochs", default=10)
     
     @property
+    def epochs_pretrain(self) -> int:
+        return self._get_property_value("epochs_pretrain", default=10)
+
+    @property
     def patience(self) -> int:
         return self._get_property_value("patience", default=10)
 
@@ -781,6 +789,10 @@ class Config(object):
     @property
     def learning_rate(self) -> float:
         return self._get_property_value("learning_rate", default=0.001)
+
+    @property
+    def lr_pretrain(self) -> float:
+        return self._get_property_value("lr_pretrain", default=0.001)
 
     @property
     def log_n_basins(self) -> int:
@@ -830,8 +842,8 @@ class Config(object):
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size, shuffle=False):
         self.dataset_len = dataset_len
-        if batch_size == -1:
-            batch_size = dataset_len
+        # if batch_size == -1:
+        #     batch_size = dataset_len
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.num_batches = (dataset_len + batch_size - 1) // batch_size
@@ -861,8 +873,8 @@ class CustomDatasetToNN(Dataset):
 class BasinBatchSampler(Sampler):
     def __init__(self, basin_ids, batch_size, shuffle=False):
         self.basin_ids = basin_ids
-        if batch_size == -1:
-            batch_size = len(basin_ids)
+        # if batch_size == -1:
+        #     batch_size = len(basin_ids)
         self.batch_size = batch_size
         self.shuffle = shuffle
         
@@ -980,7 +992,8 @@ class ExpHydroCommon:
 
     def scale_target_vars(self, is_trainer=False):
        
-        epsilon = np.finfo(float).eps  # Small constant to avoid division by zero and log of zero
+        # epsilon = np.finfo(float).eps  # Small constant to avoid division by zero and log of zero
+        epsilon = 1e-10
 
         # print(self.dataset)
 
@@ -1000,7 +1013,10 @@ class ExpHydroCommon:
             ## Prain -> arcsinh
             self.dataset['pr_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['pr_bucket'].values))
             ## M -> arcsinh
-            self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
+            # self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(self.dataset['m_bucket'].values))
+            self.dataset['m_bucket'] = (('basin', 'date'), np.arcsinh(
+                    np.where(self.dataset['m_bucket'].values < 0.0, 0.0, self.dataset['m_bucket'].values)
+                ))  # Avoid arcsinh(0)
 
             ## ET -> log(ET / dayl)
             # self.dataset['et_bucket'] = (
@@ -1008,20 +1024,21 @@ class ExpHydroCommon:
             #     np.log(self.dataset['et_bucket'].values / (self.dataset['dayl'].values + epsilon))
             # )
             # Ensure both the numerator and denominator are adjusted to avoid division by zero
-            et_bucket_values = self.dataset['et_bucket'].values
+            # et_bucket_values = self.dataset['et_bucket'].values
+            et_bucket_values = np.where(self.dataset['et_bucket'].values < 0.0, epsilon, self.dataset['et_bucket'].values)
             dayl_values = self.dataset['dayl'].values
 
-            # Adjust both values to prevent division by zero
-            et_bucket_values = np.where(et_bucket_values == 0, epsilon, et_bucket_values)
-            dayl_values = np.where(dayl_values == 0, epsilon, dayl_values)
+            # # Adjust both values to prevent division by zero
+            # et_bucket_values = np.where(et_bucket_values == 0, epsilon, et_bucket_values)
+            # dayl_values = np.where(dayl_values == 0, epsilon, dayl_values)
 
-            # Calculate the log and handle -inf values
-            log_values = np.log(et_bucket_values / dayl_values)
+            # # Calculate the log and handle -inf values
+            # log_values = np.log(et_bucket_values / dayl_values)
+            # # Optionally replace -inf values with a defined minimum value or handle them as needed
+            # log_values = np.where(np.isinf(log_values), -1/epsilon, log_values)
+            # self.dataset['et_bucket'] = (('basin', 'date'), log_values)
 
-            # Optionally replace -inf values with a defined minimum value or handle them as needed
-            log_values = np.where(np.isinf(log_values), -1/epsilon, log_values)
-
-            self.dataset['et_bucket'] = (('basin', 'date'), log_values)
+            self.dataset['et_bucket'] = (('basin', 'date'), np.log(et_bucket_values / dayl_values))
 
             ## Q -> log(Q)
             # q_values = self.dataset['q_bucket'].values
@@ -1037,7 +1054,7 @@ class ExpHydroCommon:
             # # # Print the indices of the rows with negative values
             # # print("Indices of rows with negative values:", problematic_row_indices)
 
-            self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values == 0, epsilon, q_values)))  # Avoid log(0)
+            self.dataset['q_bucket'] = (('basin', 'date'), np.log(np.where(q_values < 0.0, epsilon, q_values)))  # Avoid log(0)
             # self.dataset['q_bucket'] = (('basin', 'date'), np.log(q_values))  
 
         # return self.dataset

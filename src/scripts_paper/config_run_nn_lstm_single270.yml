@@ -52,7 +52,7 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
 # batch_size: 512
-# batch_size: 7036   # for lstm
+batch_size: 7036   # for lstm
 
 # Optimizer to use [adam, sgd]
 optimizer: adam

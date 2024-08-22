@@ -76,7 +76,7 @@ hidden_size:
 experiment_name: pretrainer_mlp_single
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111

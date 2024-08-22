@@ -1,4 +1,3 @@
-import os
 import sys
 import argparse
 from pathlib import Path
@@ -8,6 +7,7 @@ import yaml
 import xarray as xr
 import numpy as np
 from scipy.interpolate import Akima1DInterpolator
+import time
 
 # Make sure code directory is in path,
 # Add the parent directory of your project to the Python path
@@ -313,9 +313,12 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
 
-    # # # Pretrain the model if no pre-trained model is loaded
-    # # if cfg.nn_model_dir is False:
-    # #     pretrainer.train()
+    # Pretrain the model if no pre-trained model is loaded
+    if cfg.nn_model_dir is False:
+        start_time = time.time()
+        # Pretrain the model
+        pretrainer.train(loss=cfg.loss_pretrain, lr=cfg.lr_pretrain, epochs=cfg.epochs_pretrain)
+        print(f'-- Pretraining took {time.time() - start_time:.2f}s')
 
     # Build the hybrid model
     model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)

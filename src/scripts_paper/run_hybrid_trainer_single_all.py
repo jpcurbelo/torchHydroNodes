@@ -31,29 +31,31 @@ from utils import (
     delete_unfinished_jobs,
 )
 
-nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
-# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
-pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr34_200ep'
-run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
+# # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
+# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
+# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr34_200ep'
+# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler_lr4_150ep'
+# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
 
 # # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
 
 # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b'
-# # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
+pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h_7036b_lr3_200ep'
+run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_7036b_bosh3_lr34_100ep'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
 
-USE_PROCESS_POOL = 1
-MAX_WORKERS = 32
+USE_PROCESS_POOL = 0
+MAX_WORKERS = 64
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
-DELETE_IF_UNFINISHED = 0
+DELETE_IF_UNFINISHED = 1
 
 def train_model_for_basin(nn_model_dir, project_path):
     '''
@@ -206,7 +208,7 @@ def main():
                     print(f'Error in training model: {e}')
 
     else:
-        for nn_model_dir in nn_model_dirs[:]: 
+        for nn_model_dir in nn_model_dirs[:20]: 
 
             # print(nn_model_dir)
             # Extract the basin name from the nn_model_dir

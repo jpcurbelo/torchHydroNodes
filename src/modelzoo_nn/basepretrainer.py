@@ -8,13 +8,14 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import numpy as np
 import pandas as pd
-import xarray as xr
+from torch.cuda.amp import GradScaler, autocast
+import time
 
 from src.modelzoo_nn.basemodel import BaseNNModel
 from src.datasetzoo.basedataset import BaseDataset
 from src.utils.metrics import loss_name_func_dict
 from src.utils.load_process_data import (
-    BatchSampler, 
+    # BatchSampler, 
     CustomDatasetToNN,
     BasinBatchSampler,
     ExpHydroCommon,
@@ -29,6 +30,7 @@ from src.utils.load_process_data import EarlyStopping
 class NNpretrainer(ExpHydroCommon):
 
     def __init__(self, nnmodel: BaseNNModel, fulldataset: BaseDataset):
+                # # loss='mse', lr=0.001, batch_size=-1, epochs=100):
         
         self.fulldataset = fulldataset
         self.nnmodel = nnmodel
@@ -91,38 +93,7 @@ class NNpretrainer(ExpHydroCommon):
         self.num_batches = len(self.dataloader)
 
         # Optimizer and scheduler
-        if hasattr(self.cfg, 'optimizer'):
-            if self.cfg.optimizer.lower() == 'adam':
-                optimizer_class = torch.optim.Adam
-            elif self.cfg.optimizer.lower() == 'sgd':
-                optimizer_class = torch.optim.SGD
-            else:
-                raise NotImplementedError(f"Optimizer {self.cfg.optimizer} not implemented")
-
-            if hasattr(self.cfg, 'learning_rate'):
-                if isinstance(self.cfg.learning_rate, float):
-                    self.optimizer = optimizer_class(self.nnmodel.parameters(), lr=self.cfg.learning_rate)
-                    self.scheduler = None
-                elif isinstance(self.cfg.learning_rate, dict) and \
-                    'initial' in self.cfg.learning_rate and \
-                    'decay' in self.cfg.learning_rate and \
-                    ('decay_step_fraction' in self.cfg.learning_rate and \
-                        self.cfg.learning_rate['decay_step_fraction'] <= self.epochs):
-                        self.optimizer = optimizer_class(self.nnmodel.parameters(), lr=self.cfg.learning_rate['initial'])
-                        # Learning rate scheduler
-                        self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 
-                                                                        step_size=self.epochs // self.cfg.learning_rate['decay_step_fraction'],
-                                                                        gamma=self.cfg.learning_rate['decay'])
-                else:
-                    raise ValueError("Learning rate not specified correctly in the config (should be a float or a dictionary" +
-                        "with 'initial', 'decay', and 'decay_step_fraction' keys) and " +
-                        "'decay_step_fraction' can be at most equal to the number of epochs")
-            else:
-                self.optimizer = optimizer_class(self.nnmodel.parameters(), lr=0.001)
-                self.scheduler = None
-        else:
-            self.optimizer = torch.optim.Adam(self.nnmodel.parameters(), lr=0.001)
-            self.scheduler = None
+        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler()
 
         # Loss function setup
         try:
@@ -137,6 +108,57 @@ class NNpretrainer(ExpHydroCommon):
             # Optionally, set a default loss function
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
+
+        # ## Pretrainer Initialized
+        # # loss_pretrain: mse
+        # # lr_pretrain: 0.001
+        # # batch_size_pretrain: -1
+        # # epochs_pretrain: 100
+        # print('Pretrainer Initialized')
+        # print(f'loss_pretrain: {self.loss}')
+        # print(f'lr_pretrain: {self.optimizer.param_groups[0]["lr"]}')
+        # print(f'batch_size_pretrain: {self.batch_size}')
+        # print(f'epochs_pretrain: {self.epochs}')
+
+
+    def setup_optimizer_and_scheduler(self):
+        # Determine optimizer class based on configuration
+        if hasattr(self.cfg, 'optimizer'):
+            optimizer_name = self.cfg.optimizer.lower()
+            if optimizer_name == 'adam':
+                optimizer_class = torch.optim.Adam
+            elif optimizer_name == 'sgd':
+                optimizer_class = torch.optim.SGD
+            else:
+                raise NotImplementedError(f"Optimizer {self.cfg.optimizer} not implemented")
+        else:
+            optimizer_class = torch.optim.Adam  # Default to Adam if no optimizer is specified
+
+        # Determine learning rate and scheduler
+        if hasattr(self.cfg, 'learning_rate'):
+            lr = self.cfg.learning_rate
+            if isinstance(lr, float):
+                optimizer = optimizer_class(self.nnmodel.parameters(), lr=lr)
+                scheduler = None
+            elif isinstance(lr, dict) and \
+                'initial' in lr and \
+                'decay' in lr and \
+                ('decay_step_fraction' in lr and \
+                    lr['decay_step_fraction'] <= self.epochs):
+                optimizer = optimizer_class(self.nnmodel.parameters(), lr=lr['initial'])
+                # Learning rate scheduler
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 
+                                                            step_size=self.epochs // lr['decay_step_fraction'],
+                                                            gamma=lr['decay'])
+            else:
+                raise ValueError("Learning rate not specified correctly in the config. "
+                                 "It should be a float or a dictionary with 'initial', 'decay', and 'decay_step_fraction' keys. "
+                                 "'decay_step_fraction' can be at most equal to the number of epochs.")
+        else:
+            optimizer = optimizer_class(self.nnmodel.parameters(), lr=0.001)  # Default learning rate if none is specified
+            scheduler = None
+
+        return optimizer, scheduler
 
     def create_dataloaders(self, is_trainer=False):
         '''Create the dataloaders for the pretrainer'''
@@ -216,13 +238,23 @@ class NNpretrainer(ExpHydroCommon):
         # Create a custom dataset with the input and output tensors and basin IDs
         dataset = CustomDatasetToNN(input_tensor, output_tensor, basin_ids)
 
-        pin_memory = True if not 'cpu' in str(self.device) else False
+        # print('dataset:', dataset.__dict__.keys())
+        # print('input_tensor', dataset.input_tensor.shape)
+        # print('output_tensor', dataset.output_tensor.shape)
+        # print('basin_ids', len(dataset.basin_ids))
+        # print('num_dates', num_dates)
+        # aux = input('Press enter to continue')
+
+        # pin_memory = True if 'cuda' in str(self.device) else False
         # pin_memory = False
+        pin_memory = 'cuda' in str(self.device)
 
         # print('self.cfg.shuffle', self.cfg.shuffle)
         # Create custom batch sampler
         # print('self.batch_size:', self.batch_size, input_tensor.shape)
 
+        if self.batch_size == -1:
+            self.batch_size = num_dates
         batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
 
         # print('batch_sampler:', batch_sampler.__len__())
@@ -234,76 +266,169 @@ class NNpretrainer(ExpHydroCommon):
 
         return dataloader
     
-    def train(self, max_nan_batches=10):
+
+    # # loss_pretrain: mse
+    # # lr_pretrain: 0.001
+    # # batch_size_pretrain: -1
+    # # epochs_pretrain: 100
+    
+    def train(self, max_nan_batches=10, loss=None, lr=None, epochs=None):
+
+        # Determine the training behavior based on whether loss, lr, or epochs have been provided
+        if loss is not None:
+            self.loss = loss_name_func_dict[loss.lower()]
+        if lr is not None:
+            self.optimizer.param_groups[0]['lr'] = lr
+            self.scheduler = None
+        if epochs is not None:
+            self.epochs = epochs
+        if any([loss, lr, epochs]):
+            verbose = False
+            disable_pbar = True
+            save_model_results = False
+        else:
+            verbose = self.cfg.verbose
+            disable_pbar = self.cfg.disable_pbar
+            save_model_results = True
 
         early_stopping = EarlyStopping(patience=self.cfg.patience)
 
         # if self.cfg.verbose:
-        print("-- Pretraining the neural network model --")
+        print('-' * 60)
+        print(f"-- Pretraining the neural network model -- ({self.device})")
+        print('-' * 60)
 
-        # # Save the plots for the initial model weights
-        # self.save_plots(epoch=0)
+        nan_count = 0
+        scaler = GradScaler()  # For mixed precision training
 
-        nan_count = 0  # Counter for NaN occurrences
+        total_forward_time = 0.0
+        total_backward_time = 0.0
+        total_data_loading_time = 0.0
+        total_optimization_time = 0.0
+        total_other_time = 0.0
+
         for epoch in range(self.epochs):
 
-            # Clear CUDA cache at the beginning of each epoch
-            torch.cuda.empty_cache()
+            # # Clear CUDA cache at the beginning of each epoch
+            # torch.cuda.empty_cache()
+
+            start_epoch_time = time.time()
 
             epoch_loss = 0
-            pbar = tqdm(self.dataloader, disable=self.cfg.disable_pbar, file=sys.stdout)
+            pbar = tqdm(self.dataloader, disable=disable_pbar, file=sys.stdout)
             pbar.set_description(f'# Epoch {epoch + 1:05d}')
 
             num_batches_seen = 0
+
+
+            dataloader_start = time.time()
+            for batch_idx, (inputs, targets, basin_ids) in enumerate(self.dataloader):
+                dataloader_end = time.time()
+                print(f"Batch {batch_idx} loading time: {dataloader_end - dataloader_start:.4f}s")
+                dataloader_start = dataloader_end
+
+
+            start_time_call_pbar = time.time()
             for (inputs, targets, basin_ids) in pbar:
+
+                print('time_call_pbar:', time.time() - start_time_call_pbar)
 
                 # Zero the parameter gradients
                 self.optimizer.zero_grad()
 
+                # print('inputs:', inputs.device)
+                # print('targets:', targets.device)
+                # aux = input('Press enter to continue')
+
+                start_time_data_loading = time.time()
+
+                inputs = inputs.to(self.device, non_blocking=True)
+                targets = targets.to(self.device, non_blocking=True)
+
+                total_data_loading_time += time.time() - start_time_data_loading
+
+                # # Forward pass
+                # if self.nnmodel.include_static:
+                #     predictions = self.nnmodel(inputs, basin_ids[0], 
+                #                                static_inputs=self.nnmodel.torch_static[basin_ids[0]])
+                # else:
+                #     predictions = self.nnmodel(inputs, basin_ids[0])
+
+
+                # # Find the indices of NaNs in the predictions
+                # nan_mask = torch.isnan(predictions)
+                # nan_indices = torch.where(nan_mask)[0]
+
+                # if len(nan_indices) > 0:
+                #     nan_count += 1
+
+                #     # Find the basins with NaNs in the predictions
+                #     nan_basins = set([basin_ids[i] for i in nan_indices])
+                #     print(f"Basins with NaNs in the predictions: {nan_basins}")
+
+                #     # Drop the NaNs from the predictions and targets
+                #     predictions = predictions[~nan_mask]
+                #     targets = targets[~nan_mask]
+
+                #     print(f"Dropped {len(nan_indices)} NaNs from predictions in batch {num_batches_seen + 1}")
+
+                #     if nan_count > max_nan_batches:
+                #         print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
+                #         return
+
+                # loss = self.loss(targets, predictions) 
+
+                # # Backward pass
+                # loss.backward()
+
                 # Forward pass
-                if self.nnmodel.include_static:
-                    predictions = self.nnmodel(inputs.to(self.device), basin_ids, 
-                                               static_inputs=self.nnmodel.torch_static[basin_ids[0]])
-                else:
-                    predictions = self.nnmodel(inputs.to(self.device), basin_ids)
+                torch.cuda.synchronize()  # Ensure all prior GPU operations are complete
 
-                # Move targets to the same device as predictions
-                targets = targets.to(self.device)
+                start_time_forward = time.time()
 
-                # Find the indices of NaNs in the predictions
-                nan_mask = torch.isnan(predictions)
-                nan_indices = torch.where(nan_mask)[0]
+                with autocast():  # Mixed precision context
+   
+                    if self.nnmodel.include_static:
+                        predictions = self.nnmodel(inputs, basin_ids[0], 
+                                                static_inputs=self.nnmodel.torch_static[basin_ids[0]])
+                    else:
+                        predictions = self.nnmodel(inputs, basin_ids[0])
+                    
+                    nan_mask = torch.isnan(predictions)
+                    if nan_mask.any():
+                        nan_count += 1
+                        predictions = predictions[~nan_mask]
+                        targets = targets[~nan_mask]
+                        if nan_count > max_nan_batches:
+                            print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
+                            return
 
-                if len(nan_indices) > 0:
-                    nan_count += 1
+                    loss = self.loss(targets, predictions)
 
-                    # Find the basins with NaNs in the predictions
-                    nan_basins = set([basin_ids[i] for i in nan_indices])
-                    print(f"Basins with NaNs in the predictions: {nan_basins}")
+                torch.cuda.synchronize()  # Ensure all prior GPU operations are complete
 
-                    # Drop the NaNs from the predictions and targets
-                    predictions = predictions[~nan_mask]
-                    targets = targets[~nan_mask]
-
-                    print(f"Dropped {len(nan_indices)} NaNs from predictions in batch {num_batches_seen + 1}")
-
-                    if nan_count > max_nan_batches:
-                        print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
-                        return
-
-                # Compute the loss
-                loss = self.loss(targets, predictions) 
-                # print(num_batches_seen, loss.item())
+                forward_time = time.time() - start_time_forward
+                total_forward_time += forward_time
+                
+                start_time_backward = time.time()
 
                 # Backward pass
-                loss.backward()
+                scaler.scale(loss).backward()
+
+                backward_time = time.time() - start_time_backward
+                total_backward_time += backward_time
+
+                start_time_optimization = time.time()
 
                 # Gradient clipping
                 if self.cfg.clip_gradient_norm is not None:
                     torch.nn.utils.clip_grad_norm_(self.nnmodel.parameters(), self.cfg.clip_gradient_norm)
 
                 # Update the weights
-                self.optimizer.step()
+                scaler.step(self.optimizer)
+                scaler.update()
+
+                total_optimization_time += time.time() - start_time_optimization
 
                 # Accumulate the loss
                 epoch_loss += loss.item()
@@ -313,14 +438,18 @@ class NNpretrainer(ExpHydroCommon):
                 avg_loss = epoch_loss / num_batches_seen
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
-                # Delete variables to free memory
-                del inputs, targets, predictions, loss
-                torch.cuda.empty_cache()
+                # # Delete variables to free memory
+                # del inputs, targets, predictions, loss
+                # torch.cuda.empty_cache()
+
+                start_time_call_pbar = time.time()
 
             pbar.close()
 
-            if (epoch == 0 or ((epoch + 1) % self.log_every_n_epochs == 0)):
-                if self.cfg.verbose:
+            start_time_other = time.time()
+
+            if save_model_results and (epoch == 0 or ((epoch + 1) % self.log_every_n_epochs == 0)):
+                if verbose:
                     print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
                 # Save the model weights
                 self.save_model()
@@ -339,25 +468,41 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Check if learning rate has changed
                 new_lr = self.optimizer.param_groups[0]['lr']
-                if self.cfg.verbose and current_lr != new_lr:
+                if verbose and current_lr != new_lr:
                     print(f"Learning rate updated to {new_lr}")
 
             # Print the average loss for the epoch if not verbose (pbar is disabled)
-            if not self.cfg.verbose:
+            if not verbose and save_model_results:
                 print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
-        # Save the final model weights and plots
-        # if self.cfg.verbose:
-        #     print("-- Training completed | Evaluating the model --")
-        if self.cfg.verbose:
-            print("-- Saving final model weights --")
-        self.save_model()
-        if self.cfg.verbose:
-            print("-- Saving final plots --")
-        self.save_plots()
-        if self.cfg.verbose:
-            print("-- Evaluating the model --")
-        self.evaluate()
+            total_other_time += time.time() - start_time_other
+
+            print('epoch_time:', time.time() - start_epoch_time)
+
+        # start_plot_time = time.time()
+        # # Save the final model weights and plots
+        # if verbose:
+        #     print("-- Saving final plots --")
+        # self.save_plots()
+        # if save_model_results:
+        #     if verbose:
+        #         print("-- Saving final model weights --")
+        #     self.save_model()
+        #     if verbose:
+        #         print("-- Evaluating the model --")
+        #     self.evaluate()
+        # total_plot_time = time.time() - start_plot_time
+
+        # # Reset optimizer and scheduler to the initial learning rate for the next training
+        # self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler()
+
+        print(f'total_data_loading_time: {total_data_loading_time:.2f}s')
+        print(f'total_forward_time: {total_forward_time:.2f}s')
+        print(f'total_backward_time: {total_backward_time:.2f}s')
+        print(f'total_optimization_time: {total_optimization_time:.2f}s')
+        print(f'total_other_time: {total_other_time:.2f}s')
+        # print(f'total_plot_time: {total_plot_time:.2f}s')
+
 
     def save_model(self):
         '''Save the model weights'''
@@ -414,13 +559,13 @@ class NNpretrainer(ExpHydroCommon):
                     inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
 
                     # Get model outputs
-                    basin_list = [basin for _ in range(inputs.shape[0])]
+                    # basin_list = [basin for _ in range(inputs.shape[0])]
 
                     # Forward pass
                     if self.nnmodel.include_static:
-                        outputs = self.nnmodel(inputs, basin_list, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                        outputs = self.nnmodel(inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
                     else:
-                        outputs = self.nnmodel(inputs, basin_list, use_grad=False)
+                        outputs = self.nnmodel(inputs, basin, use_grad=False)
                         # outputs = run_job_with_memory_check(self.nnmodel, ds_basin,  self.input_var_names, basin, inputs.shape, inputs.dtype(), use_grad=False)
 
                     # Reshape outputs
@@ -468,7 +613,7 @@ class NNpretrainer(ExpHydroCommon):
                         if epoch is not None:
                             plt.savefig(basin_dir / f'{var}_{basin}_{period_name}_epoch{epoch}.png', dpi=75)
                         else:
-                            plt.savefig(basin_dir / f'{var}_{basin}_{period_name}.png', dpi=75)
+                            plt.savefig(basin_dir / f'_{var}_{basin}_{period_name}.png', dpi=75)
                         plt.close('all')
 
                 # Clear CUDA cache to free memory
@@ -517,12 +662,12 @@ class NNpretrainer(ExpHydroCommon):
                 inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
 
                 # Get model outputs
-                basin_list = [basin for _ in range(inputs.shape[0])]
+                # basin_list = [basin for _ in range(inputs.shape[0])]
                 # Forward pass
                 if self.nnmodel.include_static:
-                    outputs = self.nnmodel(inputs, basin_list, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                    outputs = self.nnmodel(inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
                 else:
-                    outputs = self.nnmodel(inputs, basin_list, use_grad=False)
+                    outputs = self.nnmodel(inputs, basin, use_grad=False)
 
                 # Reshape outputs
                 outputs = self.reshape_outputs(outputs)

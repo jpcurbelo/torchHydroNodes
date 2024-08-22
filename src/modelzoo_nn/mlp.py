@@ -33,14 +33,23 @@ class MLP(BaseNNModel):
         self.output_layer = nn.Linear(self.hidden_size[-1], self.output_size)
         self.output_layer.name = 'output_layer'
 
-    def forward(self, dynamic_inputs, basin_list, static_inputs=None, use_grad=True):
+    def forward(self, dynamic_inputs, basin_id, static_inputs=None, use_grad=True):
 
-        # Gather means and stds for the batch
-        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        # # Gather means and stds for the batch
+        # means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+        # stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
+
+        # print('basin_id', basin_id)
+        # print(self.torch_input_means[basin_id].shape)
+        # print(self.torch_input_stds[basin_id].shape)
+        # print('dynamic_inputs', dynamic_inputs.shape)
+        # aux = input("Press Enter to continue...")
+
+        mean = self.torch_input_means[basin_id]  #.to(dynamic_inputs.device)
+        std = self.torch_input_stds[basin_id]    #.to(dynamic_inputs.device)
 
         # Normalize the dynamic inputs
-        dynamic_inputs = (dynamic_inputs - means) / (stds + np.finfo(float).eps)
+        dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
 
         # print('basin_list', basin_list[0])
         # print('dynamic_inputs', dynamic_inputs.shape)
