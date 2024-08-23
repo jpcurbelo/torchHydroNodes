@@ -45,11 +45,21 @@ class MLP(BaseNNModel):
         # print('dynamic_inputs', dynamic_inputs.shape)
         # aux = input("Press Enter to continue...")
 
+        # print('dynamic_inputs', dynamic_inputs.device)
+
         mean = self.torch_input_means[basin_id]  #.to(dynamic_inputs.device)
         std = self.torch_input_stds[basin_id]    #.to(dynamic_inputs.device)
 
+        # print('basin_id', basin_id)
+        # print('mean', mean)
+        # print('std', std)
+        # print('dynamic_inputs', dynamic_inputs[:5,:])
+
         # Normalize the dynamic inputs
         dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
+
+        # print('dynamic_inputs', dynamic_inputs[:5,:])
+        # aux = input("Press Enter to continue...")
 
         # print('basin_list', basin_list[0])
         # print('dynamic_inputs', dynamic_inputs.shape)

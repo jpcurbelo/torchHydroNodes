@@ -242,18 +242,18 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Compute ET from the pretrainer.nnmodel
         inputs_nn = torch.stack([s0, s1, precp, temp], dim=-1)
 
-        basin = self.basin
+        # basin = self.basin
         # if not isinstance(basins, list):
         #     basins = [basins]
 
         # m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin)[0] #.to(self.device)
         # Forward pass
         if self.pretrainer.nnmodel.include_static:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin, 
-                                        static_inputs=self.pretrainer.nnmodel.torch_static[basin],
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin, 
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[self.basin],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin,
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin,
                                         use_grad=self.use_grad)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q
@@ -262,6 +262,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         
         # Scale back to original values for the ODEs and Relu the Mechanism Quantities    
         if self.cfg.scale_target_vars:
+            # print('Scaling back to original values')
             p_snow = torch.relu(torch.sinh(p_snow) * self.step_function(-temp[0]))
             p_rain = torch.relu(torch.sinh(p_rain))
             m = torch.relu(self.step_function(s0) * torch.sinh(m))

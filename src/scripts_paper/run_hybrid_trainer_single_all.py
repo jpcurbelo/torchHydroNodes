@@ -147,12 +147,11 @@ def train_model_for_basin(nn_model_dir, project_path):
     if os.path.isfile(config_file_temp):
         os.remove(config_file_temp)
 
-
 def main():
 
     # Load available nn_model_dir in pretrainer_runs_folder
     nn_model_dirs = sorted([d for d in os.listdir(pretrainer_runs_folder) \
-                     if os.path.isdir(os.path.join(pretrainer_runs_folder, d))])
+                    if os.path.isdir(os.path.join(pretrainer_runs_folder, d))])
 
     basins = [get_basin_id(nn_model_dir) for nn_model_dir in nn_model_dirs]
     

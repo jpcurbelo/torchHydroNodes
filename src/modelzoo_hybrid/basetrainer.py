@@ -5,7 +5,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from torch.cuda.amp import autocast, GradScaler
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -68,8 +67,6 @@ class BaseHybridModelTrainer:
         self.save_plots(epoch=0)
 
         best_loss = float('inf')  # Initialize best loss to a very high value
-        scaler = GradScaler()  # Initialize the GradScaler for mixed precision training
-
         for epoch in range(self.model.epochs):
 
             # Clear CUDA cache at the beginning of each epoch
@@ -91,18 +88,29 @@ class BaseHybridModelTrainer:
                 targets = targets.to(self.device_to_train, non_blocking=True) 
 
                 # Forward pass
-                with autocast():  # Use mixed precision for the forward pass
-                    q_sim = self.model(inputs, basin_ids[0])
+                q_sim = self.model(inputs, basin_ids[0])
 
-                    if isinstance(self.loss, NSElossNH):
-                        std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
-                        std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.device_to_train)
-                        loss = self.loss(targets[:, -1], q_sim, std_val)
+                if isinstance(self.loss, NSElossNH):
+                    std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
+                    std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.device_to_train)
+                    loss = self.loss(targets[:, -1], q_sim, std_val)   ####torch.exp(
+                else:
+                    if self.model.cfg.scale_target_vars:
+                        loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim))
+                        # # loss = self.loss(targets[:, -1], torch.exp(q_sim))
                     else:
-                        if self.model.cfg.scale_target_vars:
-                            loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim))
-                        else:
-                            loss = self.loss(targets[:, -1], q_sim)
+                        loss = self.loss(targets[:, -1], q_sim)
+
+                ##############################################################
+                # Backward pass
+                loss.backward()
+
+                # Gradient clipping
+                if self.model.cfg.clip_gradient_norm is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
+
+                # Update the weights
+                self.model.optimizer.step()
 
                 # Accumulate the loss
                 epoch_loss += loss.item()
@@ -112,23 +120,9 @@ class BaseHybridModelTrainer:
                 avg_loss = epoch_loss / num_batches_seen
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
-                ##############################################################
-                # # # Backward pass
-                # # loss.backward()
-                # Backward pass with mixed precision
-                scaler.scale(loss).backward()
-
-                # Gradient clipping
-                if self.model.cfg.clip_gradient_norm is not None:
-                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.model.cfg.clip_gradient_norm)
-
-                # Update the weights
-                # self.model.optimizer.step()
-                scaler.step(self.model.optimizer)
-                scaler.update()
-
                 # Delete variables to free memory
                 del inputs, targets, q_sim, loss
+                torch.cuda.empty_cache()
 
             pbar.close()
 
@@ -145,7 +139,6 @@ class BaseHybridModelTrainer:
                 self.save_plots(epoch=epoch+1)
 
             # Check for the best model and save it
-            # print('________________Epoch:', epoch, 'avg_loss:', avg_loss, 'best_loss:', best_loss)
             if avg_loss < best_loss:
                 best_loss = avg_loss
                 self.save_model()
@@ -195,9 +188,6 @@ class BaseHybridModelTrainer:
         and for each dataset period
         '''
 
-        # # Load the saved model state
-        # self.model.pretrainer.nnmodel.load_state_dict(nnmodel_state)
-
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
         if self.model.pretrainer.basins_to_log is not None:
 
@@ -246,42 +236,10 @@ class BaseHybridModelTrainer:
 
                     # Get model outputs
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
-                    
-                    # input_memory = calculate_tensor_memory(inputs.shape, inputs.dtype)
-                    # print(f"Memory required for inputs: {input_memory / (1024 ** 2):.2f} MB", inputs.shape, inputs.dtype)
-
-                    # print('epoch:', epoch)
-                    # aux = input("Press Enter to continue...before")
-
-                    # print("Memory usage before forward pass")
-                    # memory_before = torch.cuda.memory_allocated(self.model.device)
-                    # print(f"Memory Allocated: {memory_before / (1024 ** 2):.2f} MB")
-
-
-                    # output_memory = calculate_tensor_memory(inputs.shape[0], inputs.dtype)
-                    # print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", inputs.shape[0], inputs.dtype)
-                    # # free_memory = get_free_gpu_memory()
 
                     # No GPU memory control - this is standard
                     outputs = self.model(inputs, basin, use_grad=False)
-
                     # outputs = run_job_with_memory_check(self.model, ds_basin,  input_var_names, basin, inputs.shape, inputs.dtype, use_grad=False)
-                    # # # outputs = run_job_with_memory_check(self.model, inputs, basin, output_shape, output_dtype, use_grad=False)
-
-                    # output_memory = calculate_tensor_memory(outputs.shape, outputs.dtype)
-                    # print(f"Memory required for outputs: {output_memory / (1024 ** 2):.2f} MB", outputs.shape, outputs.dtype)
-
-                    # print('inputs:', inputs.shape)
-                    # print('outputs:', outputs.shape)
-                    # print('outputs[:5]:', outputs[:5])
-                    # print('outputs[-5:]:', outputs[-5:])
-                    # aux = input("Press Enter to continue...")
-
-                    # print("Memory usage after forward pass")
-                    # memory_after = torch.cuda.memory_allocated(self.model.device)
-                    # print(f"Memory Allocated: {memory_after / (1024 ** 2):.2f} MB")
-
-                    # aux = input("Press Enter to continue...after")
 
                     # Reshape outputs
                     outputs = self.model.reshape_outputs(outputs)
@@ -309,7 +267,6 @@ class BaseHybridModelTrainer:
                     plt.legend()
 
                     nse_val = NSE_eval(y_obs, y_sim)
-                    # print(period_name, f'NSE: {nse_val:.3f}')
 
                     plt.title(f'{self.target} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
 
@@ -444,45 +401,3 @@ class BaseHybridModelTrainer:
 
 
 # # ####################################################################################################
-# # def infer_output_shape_from_input(input_shape):
-# #     # The output shape is determined by the first dimension of the input shape
-# #     return (input_shape[0],)
-
-# # def calculate_tensor_memory(tensor_shape, dtype):
-# #     element_size = torch.tensor([], dtype=dtype).element_size()
-# #     num_elements = torch.prod(torch.tensor(tensor_shape)).item()
-# #     return num_elements * element_size
-
-# # def get_free_gpu_memory():
-# #     torch.cuda.synchronize()
-# #     free_memory = torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_reserved()
-# #     return free_memory
-
-# # def can_run_job(required_memory):
-# #     free_memory = get_free_gpu_memory()
-# #     return free_memory >= required_memory
-
-# # import time
-# # def run_job_with_memory_check(model, ds_basin, input_var_names, basin, input_shape, input_dtype, use_grad=False):
-# #     inputs = model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
-# #     output_shape = infer_output_shape_from_input(inputs.shape)
-    
-# #     input_memory = calculate_tensor_memory(inputs.shape, input_dtype)
-# #     output_memory = calculate_tensor_memory(output_shape, input_dtype)
-# #     required_memory = input_memory + output_memory
-
-# #     print('input_memory:', input_memory)
-# #     print('output_memory:', output_memory)
-# #     print('required_memory:', required_memory)
-
-# #     aux = input('Press enter to continue')
-
-# #     while not can_run_job(required_memory):
-# #         print("Waiting for free memory...")
-# #         torch.cuda.empty_cache()
-# #         torch.cuda.synchronize()
-# #         time.sleep(1)  # Wait for 1 second before checking again
-
-# #     with torch.set_grad_enabled(use_grad):
-# #         outputs = model(inputs, basin)
-# #     return outputs
