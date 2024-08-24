@@ -8,8 +8,8 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -29,8 +29,8 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # nn_model_dir: 1basin_pretrainer_lstm_270d_64x6_relu_01013500_240807_154744
 # nn_model_dir: 1basin_pretrainer_lstm_270d_256x1_relu_01013500_240811_165341
 
-# nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_06431500_240807_194801
-nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_06431500_240807_194925
+# # nn_model_dir: 1basin_pretrainer_lstm_270d_64x2_relu_06431500_240807_194801
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_06431500_240807_194925
 
 # nn_model_dir: 1basin_pretrainer_mlp_32x5_01013500_240812_202403
 # nn_model_dir: 1basin_pretrainer_mlp_32x5_01013500_240813_191809   #good
@@ -40,48 +40,45 @@ nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_06431500_240807_194925
 # nn_model_dir: 1basin_pretrainer_mlp_32x5_06431500_240813_180815   #good
 # nn_model_dir: 1basin_pretrainer_mlp_32x5_noClip_06431500_240814_111533
 
-# # If not nn_model_dir, specify the model and parameters to use:
-# ###############################################################
-# # NN model to use [mlp, lstm]
-# nn_model: mlp
+# If not nn_model_dir, specify the model and parameters to use:
+###############################################################
+# NN model to use [mlp, lstm]
+nn_model: mlp
 
-# # # Length of the input sequence
-# # seq_length: 270
+# # Length of the input sequence
+# seq_length: 270 # if model is lstm
 
-# nn_dynamic_inputs:
-#   - s_snow
-#   - s_water
-#   - prcp
-#   - tmean
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  - tmean
 
-# nn_mech_targets:
-#   - ps_bucket
-#   - pr_bucket
-#   - m_bucket
-#   - et_bucket
-#   - q_bucket
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
 
-# target_variables: 
-#   - obs_runoff
+target_variables: 
+  - obs_runoff
 
-# # Hidden layers for the NN model
-# # hidden_size:
-# #   - 128
+# Hidden layers for the NN model
+# hidden_size:
+#   - 128
 
-# hidden_size: 
-#   # - 32
-#   # - 32
-#   # - 32
-#   # - 32
-#   # - 32
+hidden_size: 
+  - 32
+  - 32
+  - 32
+  - 32
+  - 32
 
-#   - 64
-#   - 64
-#   - 64
-
-# # # # # # If shuffle, shuffles the batches in the data loader
-# # # # # shuffle: True
-# ###############################################################
+loss_pretrain: mse
+lr_pretrain: 0.01
+epochs_pretrain: 200
+###############################################################
 
 scale_target_vars: True
 
@@ -97,10 +94,10 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 150
 
 # Patience for early stopping
-patience: 30
+patience: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -120,11 +117,11 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.0001
-  decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.0001
+#   decay: 0.5
+#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -146,7 +143,7 @@ learning_rate:
 # experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_euler_noClip
 # experiment_name: ZZ1basin_hybrid_mlp_32x5_7304b_nse_bosh3_noClip
 
-experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_euler_200ep
+# experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_euler_200ep
 # experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_euler_200ep
 # experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_bosh3_200ep
 # experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_7036b_nse_bosh3_200ep
@@ -154,8 +151,12 @@ experiment_name: ZZZ1basin_hybrid_lstm_270d_128x1_256b_nse_euler_200ep
 # experiment_name: ZZZ1basin_hybrid_mlp_32x5_7304b_nse_euler_400ep
 # experiment_name: ZZZ1basin_hybrid_mlp_32x5_7304b_nse_bosh3_400ep
 
+experiment_name: ZZZZZZZZZZZZZZZZZ1basin_hybrid_mlp_32x5_cpu
+
+
+
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111
@@ -177,7 +178,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 10
 
 # Metrics to use for evaluation (after training)
 metrics:

@@ -8,8 +8,8 @@ concept_model: exphydro
 odesmethod: euler
 
 # Files to specify training, validation and test basins
-basin_file: 1_basin_file.txt
-# basin_file: 1_basin_fileB.txt
+# basin_file: 1_basin_file.txt
+basin_file: 1_basin_fileB.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -21,7 +21,7 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # If not nn_model_dir, specify the model and parameters to use:
 ###############################################################
 # NN model to use [mlp, lstm]
-nn_model: lstm
+nn_model: mlp
 
 # # Length of the input sequence
 # seq_length: 270
@@ -43,20 +43,16 @@ target_variables:
   - obs_runoff
 
 # Hidden layers for the NN model
-hidden_size:
-  - 128
-
-# hidden_size: 
-#   - 32
-#   - 32
-#   - 32
-#   - 32
-#   - 32
+hidden_size: 
+  - 32
+  - 32
+  - 32
+  - 32
+  - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.05
-epochs_pretrain: 50
-seq_length: 270   # if model is lstm
+lr_pretrain: 0.01
+epochs_pretrain: 200
 ###############################################################
 
 scale_target_vars: True
@@ -78,7 +74,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 150
 
 # Patience for early stopping
 patience: 20
@@ -96,22 +92,17 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.0001
-  decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.0001
+#   decay: 0.5
+#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: 1basin_hybrid_lstm_01013500
-# experiment_name: 1basin_hybrid_lstm_270d_128x1
-# experiment_name: ZZZZZ1basin_hybrid_mlp_01013500
-# experiment_name: ZZZZZZZZZZ1basin_hybrid_lstm_270d_128x1
-# experiment_name: ZZZZZZZZZZ1basin_hybrid_mlp_32x5
-# experiment_name: ZZZZZZZZZZZZZZZZZ1basin_hybrid_mlp_32x5
-# experiment_name: ZZZZ_1basin_hybrid_mlp_32x5_bosh3
-experiment_name: ZZZZ_1basin_hybrid_lstm_270d_128x1_euler
+# experiment_name: _ZZZZ_1basin_hybrid_mlp_32x5_euler_lr4_150ep
+# experiment_name: _ZZZZ_01013500_hybrid_mlp_32x5_euler_lr4_150ep
+experiment_name: _ZZZZ_06431500_hybrid_mlp_32x5_euler_lr4_150ep
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cuda:1
@@ -136,7 +127,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

@@ -16,6 +16,46 @@ data_dir: M0_results_569basins_1980_2010_RK23
 
 nn_model_dir: This is to be updated!!! # do not delete this line
 
+# If not nn_model_dir, specify the model and parameters to use:
+###############################################################
+# NN model to use [mlp, lstm]
+nn_model: mlp
+
+# # Length of the input sequence
+# seq_length: 270 # if model is lstm
+
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  - tmean
+
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+
+target_variables: 
+  - obs_runoff
+
+# Hidden layers for the NN model
+# hidden_size:
+#   - 128
+
+hidden_size: 
+  - 32
+  - 32
+  - 32
+  - 32
+  - 32
+
+loss_pretrain: mse
+lr_pretrain: 0.01
+epochs_pretrain: 200
+###############################################################
+
 scale_target_vars: True
 
 # --- Training configurations --- #
@@ -30,7 +70,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 150
 
 # Patience for early stopping
 patience: 20
@@ -39,8 +79,8 @@ patience: 20
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 256
-batch_size: 7304
+batch_size: 256
+# batch_size: 7304
 
 # # Dropout rate for the model
 # dropout: 0.2
@@ -49,11 +89,11 @@ batch_size: 7304
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.001
-  decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.001
+#   decay: 0.5
+#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -63,14 +103,13 @@ experiment_name: hybrid_mlp_single
 device: cpu
 
 # Set seed for reproducibility
-seed: 1111
+seed: 111
 
 # Set precision for the model [float32, float64]
 precision: float32
 
 # Number of parallel workers used in the data pipeline
-num_workers: 8
-
+num_workers: 16
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
 verbose: 0
 
@@ -78,8 +117,8 @@ verbose: 0
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins: 1
 
-# # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-# log_every_n_epochs: 40
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

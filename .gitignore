@@ -7,6 +7,7 @@ src/scripts_paper/runs_pretrainer*
 src/scripts_paper/runs_hybrid*
 src/scripts_paper/ZZZruns_*
 src/scripts/plots*
+src/scripts_paper/AAruns_*
 
 # Files
 src/scripts_paper/*_temp_*.yml

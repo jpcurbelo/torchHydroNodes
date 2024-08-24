@@ -120,10 +120,9 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer',
 
         cfg.dataset = cfg_concept['dataset']
 
-
     elif model_type == 'hybrid':
 
-        print('cfg.nn_model_dir', cfg.nn_model_dir)
+        # print('cfg.nn_model_dir', cfg.nn_model_dir)
 
         if not cfg.nn_model_dir:
             print('cfg.nn_model_dir is not defined - parameters should be defined in the config file')

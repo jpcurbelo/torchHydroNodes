@@ -51,7 +51,6 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # print('use_grad', use_grad)
         # print(f"IN - Memory usage before forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
-        
 
         # Extract the state variables
         # If inputs shape is 2D, then is 'mlp' model
@@ -349,7 +348,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         inputs_nn = torch.stack([self.s_snow_lstm, self.s_water_lstm, self.precp_lstm, self.tmean_lstm], dim=-1)  
         # print(f"Memory usage after stacking inputs: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
 
-        basin = self.basin
+        # basin = self.basin
         # if not isinstance(basins, list):
         #     basins = [basins]
         # print(f"Memory usage after preparing basin: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
@@ -359,11 +358,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # m100_outputs = self.pretrainer.nnmodel(inputs_nn, basin, use_grad=self.use_grad)[0] 
         if self.pretrainer.nnmodel.include_static:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin, 
-                                        static_inputs=self.pretrainer.nnmodel.torch_static[basin],
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin, 
+                                        static_inputs=self.pretrainer.nnmodel.torch_static[self.basin],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), basin,
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin,
                                         use_grad=self.use_grad)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q

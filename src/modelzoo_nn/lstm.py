@@ -30,18 +30,27 @@ class LSTM(BaseNNModel):
         # Initialize the fully connected layer
         self.fc = nn.Linear(self.hidden_size[-1], self.output_size)
 
-    def forward(self, dynamic_inputs, basin_list, static_inputs=None, use_grad=True):
+    def forward(self, dynamic_inputs, basin_id, static_inputs=None, use_grad=True):
 
         # print(f"Dynamic Inputs: {dynamic_inputs.device}")
         # # modwel parameters device
         # print(f"Model Parameters: {next(self.parameters()).device}")
 
-        means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
-        stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
+        # means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
+        # stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
         
-        means = means.unsqueeze(1)
-        stds = stds.unsqueeze(1)
-        dynamic_inputs = (dynamic_inputs - means) / (stds + np.finfo(float).eps)
+        # means = means.unsqueeze(1)
+        # stds = stds.unsqueeze(1)
+
+        mean = self.torch_input_means[basin_id].unsqueeze(1)  #.to(dynamic_inputs.device)
+        std = self.torch_input_stds[basin_id].unsqueeze(1)    #.to(dynamic_inputs.device)
+
+        # Normalize the dynamic inputs
+        dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
+
+        # print('dynamic_inputs', dynamic_inputs.shape)
+        # print('mean', mean)
+        # print('std', std)
 
         if static_inputs is not None:
             # Compute the input gate activations using static inputs

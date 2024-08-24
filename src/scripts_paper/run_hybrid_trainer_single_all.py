@@ -37,27 +37,33 @@ config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
 # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
 # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
-# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr34_200ep'
-# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler_lr4_150ep'
-# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
+
+pretrainer_runs_folder = None
+basin_file_all = '../../examples/569_basin_file.txt'
+
+# # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr34_200ep'
+# # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
+# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler_lr4_150ep'
+# # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
+# run_folder = f'AAruns_hybrid_single_{nnmodel_type}32x5_256b_euler_lr4_150ep'
 
 # # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
 
-# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
-pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h_7036b_lr3_200ep'
-run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_7036b_bosh3_lr34_100ep'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
+# # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
+# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h_7036b_lr3_200ep'
+# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_7036b_bosh3_lr34_100ep'
+# # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
+run_folder = f'AAruns_hybrid_single_{nnmodel_type}270d_128h_256b_euler_lr4_100ep'
 
 USE_PROCESS_POOL = 0
-MAX_WORKERS = 64
+MAX_WORKERS = 2
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
-DELETE_IF_UNFINISHED = 1
+DELETE_IF_UNFINISHED = 0
 
-def train_model_for_basin(nn_model_dir, project_path):
+def train_model_for_basin(nn_model_dir, project_path, basin=None):
     '''
     Train the hybrid model for a single basin
 
@@ -78,7 +84,8 @@ def train_model_for_basin(nn_model_dir, project_path):
             raise FileNotFoundError(f'Configuration file {config_file} not found!')
         
     # Extract the basin name from the nn_model_dir
-    basin = get_basin_id(nn_model_dir)
+    if nn_model_dir is not None:
+        basin = get_basin_id(nn_model_dir)
 
     # Create 1_basin_{basin}.txt file
     basin_file = f'1_basin_{basin}_{nnmodel_type}.txt'
@@ -86,8 +93,13 @@ def train_model_for_basin(nn_model_dir, project_path):
         f.write(basin)
 
     # Update the configuration file with nn_model_dir and basin_file
-    cfg['nn_model_dir'] = pretrainer_runs_folder + '/' +nn_model_dir
     cfg['basin_file'] = basin_file
+    if nn_model_dir is not None:
+        cfg['nn_model_dir'] = pretrainer_runs_folder + '/' + nn_model_dir
+        print(Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
+    else:
+        # Remove the nn_model_dir from the configuration file
+        cfg.pop('nn_model_dir', None)
 
     # Create temporary configuration file config_file_temp_basin.yml
     config_file_temp = str(config_file).split('.')[0] + f'_temp_{basin}.yml'
@@ -95,7 +107,6 @@ def train_model_for_basin(nn_model_dir, project_path):
         yaml.dump(cfg, f)
 
     # Load the configuration file and dataset
-    print(Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
     cfg_run, dataset = _load_cfg_and_ds(Path(config_file_temp), model='hybrid', 
                                         run_folder=run_folder,
                                         # nn_model_path=Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
@@ -113,7 +124,7 @@ def train_model_for_basin(nn_model_dir, project_path):
     model_nn = get_nn_model(model_concept, dataset.ds_static)
 
     # Load the neural network model state dictionary if cfg.nn_model_dir exists
-    if cfg_run.nn_model_dir is not None:
+    if cfg_run.nn_model_dir is not False:
 
         pattern = 'pretrainer_*basins.pth'
 
@@ -132,6 +143,10 @@ def train_model_for_basin(nn_model_dir, project_path):
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
 
+    # Pretrain the model if no pre-trained model is loaded
+    if cfg_run.nn_model_dir is False:
+        pretrainer.train(loss=cfg_run.loss_pretrain, lr=cfg_run.lr_pretrain, epochs=cfg_run.epochs_pretrain)
+
     # Build the hybrid model
     model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
 
@@ -149,15 +164,24 @@ def train_model_for_basin(nn_model_dir, project_path):
 
 def main():
 
-    # Load available nn_model_dir in pretrainer_runs_folder
-    nn_model_dirs = sorted([d for d in os.listdir(pretrainer_runs_folder) \
-                    if os.path.isdir(os.path.join(pretrainer_runs_folder, d))])
+    if pretrainer_runs_folder is not None:
+        # Load available nn_model_dir in pretrainer_runs_folder
+        nn_model_dirs = sorted([d for d in os.listdir(pretrainer_runs_folder) \
+                        if os.path.isdir(os.path.join(pretrainer_runs_folder, d))])
+        
+        basins = [get_basin_id(nn_model_dir) for nn_model_dir in nn_model_dirs]
 
-    basins = [get_basin_id(nn_model_dir) for nn_model_dir in nn_model_dirs]
+    else:
+        print("pretrainer_runs_folder was not defined, then, pretrain on the fly")
+        # Read the basin_file_all
+        with open(basin_file_all, 'r') as f:
+            basins = f.readlines()
+
+        print(f"Total basins: {len(basins)}", basins[:5])
+        nn_model_dirs = [None] * len(basins)
     
     if CHECK_IF_FINISHED and os.path.exists(script_path / run_folder):
             
-    
             # Debugging step: Strip newline characters from basin IDs if present
             basins_str = sorted([str(int(basin.strip())) for basin in basins])
             
@@ -187,8 +211,13 @@ def main():
     else:
         basins = [str(int(basin)) for basin in basins]
 
-    # Filter the nn_model_dirs based on the basins
-    nn_model_dirs = [dir for dir in nn_model_dirs[:] if str(int(get_basin_id(dir))) in basins]
+    # Check if nn_model_dirs is not list of None
+    if pretrainer_runs_folder is not None:
+        # Filter the nn_model_dirs based on the basins
+        nn_model_dirs = [dir for dir in nn_model_dirs[:] if str(int(get_basin_id(dir))) in basins]
+    else:
+        # 8 places leading zeros
+        basins = sorted([str(int(basin)).zfill(8) for basin in basins])
 
     print(f"Total basins to be trained: {len(nn_model_dirs)}")
     
@@ -198,26 +227,41 @@ def main():
         max_workers = MAX_WORKERS
         # print(f'Number of workers: {max_workers}')
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    future.result()  # Will raise exception if training failed
-                except Exception as e:
-                    print(f'Error in training model: {e}')
+        if pretrainer_runs_folder is not None:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        future.result()  # Will raise exception if training failed
+                    except Exception as e:
+                        print(f'Error in training model: {e}')
+        else:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(train_model_for_basin, None, project_path, basin) for basin in basins]
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        future.result()  # Will raise exception if training failed
+                    except Exception as e:
+                        print(f'Error in training model: {e}')
 
     else:
-        for nn_model_dir in nn_model_dirs[:20]: 
+        if pretrainer_runs_folder is not None:
+            for nn_model_dir in nn_model_dirs: 
 
-            # print(nn_model_dir)
-            # Extract the basin name from the nn_model_dir
-            basin = str(int(get_basin_id(nn_model_dir)))
-            # print('basin', basin, basin in basins)
-            # aux = input('Continue?')
+                # print(nn_model_dir)
+                # Extract the basin name from the nn_model_dir
+                basin = str(int(get_basin_id(nn_model_dir)))
+                # print('basin', basin, basin in basins)
+                # aux = input('Continue?')
 
-            if basin in basins:
-                print(nn_model_dir)
-                train_model_for_basin(nn_model_dir, project_path)
+                if basin in basins:
+                    print(nn_model_dir)
+                    train_model_for_basin(nn_model_dir, project_path)
+        else:
+            for basin in basins:
+                print(basin)
+                train_model_for_basin(None, project_path, basin)
+
 
 
 if __name__ == "__main__":

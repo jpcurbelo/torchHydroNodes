@@ -57,10 +57,10 @@ class BaseHybridModelTrainer:
 
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
-        if self.model.cfg.verbose:
-            print('-' * 60)
-            print(f"-- Training the hybrid model on {self.device_to_train} --")
-            print('-' * 60)
+        # if self.model.cfg.verbose:
+        print('-' * 60)
+        print(f"-- Training the hybrid model on {self.device_to_train} --")
+        print('-' * 60)
 
         # Save the model weights - Epoch 0
         self.save_model()
@@ -236,6 +236,10 @@ class BaseHybridModelTrainer:
 
                     # Get model outputs
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
+                    
+                    # # print('inputs', inputs.shape)
+                    # # print('inputs', inputs.unsqueeze(0).shape)
+                    # # aux = input("Press Enter to continue...")
 
                     # No GPU memory control - this is standard
                     outputs = self.model(inputs, basin, use_grad=False)
@@ -336,8 +340,10 @@ class BaseHybridModelTrainer:
 
                 # Get the outputs from the hybrid model
                 inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
+
                 # Get model outputs
                 outputs = self.model(inputs, basin, use_grad=False)
+
                 # Reshape outputs
                 outputs = self.model.reshape_outputs(outputs)
 
