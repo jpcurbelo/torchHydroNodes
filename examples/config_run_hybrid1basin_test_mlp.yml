@@ -51,8 +51,8 @@ hidden_size:
   - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.01
-epochs_pretrain: 200
+lr_pretrain: 0.001
+epochs_pretrain: 500
 ###############################################################
 
 scale_target_vars: True
@@ -74,7 +74,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 150
+epochs: 30
 
 # Patience for early stopping
 patience: 20
@@ -92,11 +92,11 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-learning_rate: 0.0001
-# learning_rate:
-#   initial: 0.0001
-#   decay: 0.5
-#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+# learning_rate: 0.0001
+learning_rate:
+  initial: 0.001
+  decay: 0.5
+  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -105,7 +105,7 @@ learning_rate: 0.0001
 experiment_name: _ZZZZ_06431500_hybrid_mlp_32x5_euler_lr4_150ep
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111
@@ -127,7 +127,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 50
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

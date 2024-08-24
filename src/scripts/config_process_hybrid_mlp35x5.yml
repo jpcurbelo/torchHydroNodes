@@ -2,12 +2,13 @@
 # results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_512b_euler
 # results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_512b_bosh3
 # results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_7304b_bosh3_lr34_200ep
-results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_7304b_euler_lr4_150ep
+# results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_7304b_euler_lr4_150ep
+results_folder: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
 
 # Folder (to be created) where the processed data will be stored
-# plots_folder: plots_hybrid_mlp32x5_512b_euler
+plots_folder: AAplots_hybrid_mlp32x5_256b_euler_lr4_150ep
 # plots_folder: plots_hybrid_mlp32x5_7304b_bosh3
-plots_folder: plots_hybrid_mlp32x5_7304b_euler
+# plots_folder: plots_hybrid_mlp32x5_7304b_euler
 
 graph_title: Hybrid model (exp-hydro) - MLP/Euler
 # graph_title: Hybrid model (exp-hydro) - MLP/Bosh3
