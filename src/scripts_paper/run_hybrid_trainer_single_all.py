@@ -31,7 +31,7 @@ from utils import (
     delete_unfinished_jobs,
 )
 
-nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
+nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
@@ -45,7 +45,7 @@ basin_file_all = '../../examples/569_basin_file.txt'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
 # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler_lr4_150ep'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
-# run_folder = f'AAruns_hybrid_single_{nnmodel_type}32x5_256b_euler_lr4_150ep'
+run_folder = f'AAruns_hybrid_single_{nnmodel_type}32x5_256b_euler_lr4_150ep'
 
 # # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
 # # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
@@ -54,7 +54,7 @@ basin_file_all = '../../examples/569_basin_file.txt'
 # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h_7036b_lr3_200ep'
 # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_7036b_bosh3_lr34_100ep'
 # # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
-run_folder = f'AAruns_hybrid_single_{nnmodel_type}270d_128h_256b_euler_lr4_100ep'
+# run_folder = f'AAruns_hybrid_single_{nnmodel_type}270d_128h_256b_euler_lr4_100ep'
 
 USE_PROCESS_POOL = 0
 MAX_WORKERS = 2
@@ -62,6 +62,8 @@ MAX_WORKERS = 2
 
 CHECK_IF_FINISHED = 1
 DELETE_IF_UNFINISHED = 0
+
+ONLY_CHECK_FINISHED = 1
 
 def train_model_for_basin(nn_model_dir, project_path, basin=None):
     '''
@@ -195,9 +197,9 @@ def main():
             if DELETE_IF_UNFINISHED:
                 delete_unfinished_jobs(script_path / run_folder, basin_unfinished)
 
-            print(f"Num Basins to continue: {len(basins_str) - len(basin_finished)}")
-            print('basins_str', basins_str[:5])
-            print('basin_finished', basin_finished[:5])
+            # print(f"Num Basins to continue: {len(basins_str) - len(basin_finished)}")
+            # print('basins_str', basins_str[:5])
+            # print('basin_finished', basin_finished[:5])
 
             # Remove the finished basins from the list
             # # basins_to_continue = [basin for basin in basins if basin.strip() not in basin_finished]
@@ -219,7 +221,12 @@ def main():
         # 8 places leading zeros
         basins = sorted([str(int(basin)).zfill(8) for basin in basins])
 
-    print(f"Total basins to be trained: {len(nn_model_dirs)}")
+    print(f"Total basins to be trained: {len(basins)}")
+
+
+    if ONLY_CHECK_FINISHED:
+        return
+
     
     # Train the model for each basin
     if USE_PROCESS_POOL:
