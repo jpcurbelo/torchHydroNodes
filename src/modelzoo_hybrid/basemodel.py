@@ -27,6 +27,7 @@ class BaseHybridModel(ExpHydroCommon, nn.Module):
         # Method to solve ODEs
         if hasattr(cfg, 'odesmethod'):
             self.odesmethod = cfg.odesmethod
+            self.time_step = cfg.time_step
         else:
             self.odesmethod = 'RK23'
 

@@ -95,16 +95,23 @@ class MLP(BaseNNModel):
                 for hidden, dropout in zip(self.hidden, self.dropouts):
                 # for hidden in self.hidden:
                     x = F.leaky_relu(hidden(x))
+                    # # x = F.relu(hidden(x))
                     x = dropout(x)
                 # x = self.dropout_layer(x)
                 # Output Layer
                 x = self.output_layer(x)
 
         # # Retrieve the minimum values for the basins
-        # min_values = torch.stack([self.torch_input_mins[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-        
+        # min_values = self.torch_input_mins[basin_id]  #.to(dynamic_inputs.device)
+
+        # print('output', x.shape, x[:3])
+        # print('min_values', min_values.shape, min_values)
+      
         # # Clip the outputs
         # x = torch.maximum(x, min_values)
+
+        # print('output', x.shape, x[:3])
+        # aux = input("Press Enter to continue...")
 
         # print('output', x.shape, x[:5])
 

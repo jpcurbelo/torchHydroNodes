@@ -837,6 +837,10 @@ class Config(object):
     def odesmethod(self) -> str:
         return self._get_property_value("odesmethod", default="RK23")
 
+    @property
+    def time_step(self) -> float:
+        return self._get_property_value("time_step", default=1.0)
+
 ## Classes for data loading
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size, shuffle=False):

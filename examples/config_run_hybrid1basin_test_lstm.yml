@@ -23,8 +23,8 @@ data_dir: M0_results_569basins_1980_2010_RK23
 # NN model to use [mlp, lstm]
 nn_model: lstm
 
-# # Length of the input sequence
-# seq_length: 270
+# Length of the input sequence
+seq_length: 270
 
 nn_dynamic_inputs:
   - s_snow
@@ -54,9 +54,8 @@ hidden_size:
 #   - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.05
-epochs_pretrain: 5
-seq_length: 270   # if model is lstm
+lr_pretrain: 0.01
+epochs_pretrain: 100
 ###############################################################
 
 scale_target_vars: True
@@ -64,21 +63,21 @@ scale_target_vars: True
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-# train_start_date: "01/10/1980"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2010"
-
-train_start_date: "01/10/1995"
+train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2005"
+valid_end_date: "30/09/2010"
+
+# train_start_date: "01/10/1995"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 2
+epochs: 100
 
 # Patience for early stopping
 patience: 20
@@ -96,18 +95,18 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.0001
-  decay: 0.5
-  decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.0001
+#   decay: 0.5
+#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 experiment_name: _ZZZZ_1basin_hybrid_lstm_270d_128x1_euler
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111
@@ -129,7 +128,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

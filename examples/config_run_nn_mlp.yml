@@ -62,8 +62,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
@@ -86,17 +86,17 @@ loss: mse
 epochs: 200
 
 # Patience for early stopping
-patience: 20
+patience: 30
 
 # # If a value, clips the gradients during training to that norm.
 # clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 7304
+# batch_size: 7305
 # batch_size: 128
 # batch_size: 256
 # batch_size: 1024
-# batch_size: 256
+batch_size: 256
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -131,10 +131,10 @@ hidden_size:
 # experiment_name: 4basin_pretrainer_mlp
 # experiment_name: 4basin_pretrainer_mlp_static
 # experiment_name: 1basin_pretrainer_mlp_32x5
-experiment_name: YY1basin_pretrainer_mlp_32x5_noClip
+experiment_name: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111

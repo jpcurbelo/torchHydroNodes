@@ -21,6 +21,7 @@ from src.utils.load_process_data import (
 )
 
 MASS_BALANCE_TOLERANCE = 1e-6 #np.sqrt(np.finfo(float).eps)
+FIXED_METHODS = ['euler', 'rk4', 'midpoint']
 
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
@@ -97,27 +98,37 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Define rtol and atol
         # Higher rtol and atol values will make the ODE solver faster but less accurate
-        if self.odesmethod in ['euler', 'rk4', 'midpoint', 'bosh3']:
+        if self.odesmethod in ['euler', 'rk4', 'midpoint']:
             rtol = 1e-3
             atol = 1e-3
-        elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
+        elif self.odesmethod in ['bosh3', 'dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
             rtol = 1e-3
             atol = 1e-6
         elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
             rtol = 1e-6
             atol = 1e-9
 
+        # Set the options for the ODE solver
+        if self.odesmethod in FIXED_METHODS:
+            options = {"step_size": self.time_step, "interp": "cubic"}
+        else:
+            options = {}
+
+        # time_series = self.time_series
+
         ode_solver = torchdiffeq.odeint
         # print("About to call the ODE solver")
         if len(inputs.shape) == 2:
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0], self.s_water[0]], dim=0).unsqueeze(0)    #.to(self.device)
-            y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, rtol=rtol, atol=atol)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
+            y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, 
+                           rtol=rtol, atol=atol, options=options)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
             # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
         elif len(inputs.shape) == 3:
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)    #.to(self.device)
-            y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, rtol=rtol, atol=atol)
+            y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, 
+                           rtol=rtol, atol=atol, options=options)
 
         if len(inputs.shape) == 2:
 
@@ -126,6 +137,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             # # Relu the state variables
             # s_snow_nn = torch.maximum(s_snow_nn, torch.tensor(0.0)).to(self.device)
             # s_water_nn = torch.maximum(s_water_nn, torch.tensor(0.0)).to(self.device)
+
+            # print('s_snow_nn', s_snow_nn.shape)
+            # print('s_water_nn', s_water_nn.shape)
+            # print('self.precp_series', self.precp_series.shape)
+            # print('self.tmean_series', self.tmean_series.shape)
 
             # Stack tensors to create inputs for the neural network
             inputs_nn = torch.stack([s_snow_nn, s_water_nn, self.precp_series, self.tmean_series], dim=-1)

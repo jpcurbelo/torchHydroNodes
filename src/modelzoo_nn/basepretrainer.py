@@ -360,7 +360,8 @@ class NNpretrainer(ExpHydroCommon):
                     print(f"Learning rate updated to {new_lr}")
 
             # Print the average loss for the epoch if not verbose (pbar is disabled)
-            if not verbose and save_model_results:
+            # if not verbose and save_model_results:
+            if not verbose:
                 print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
         # Save the final model weights and plots
