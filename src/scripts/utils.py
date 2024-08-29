@@ -145,10 +145,10 @@ def metrics_from_julia_results(metrics, period, results_path, metrics_path):
         df_metrics (DataFrame): DataFrame containing the metrics for each basin.
     '''
 
-    print("results_path:", results_path, len([f.name for f in results_path.iterdir() if f.is_dir()]))
-    aux = [f.name for f in results_path.iterdir() if f.is_dir()]
-    print("aux:", aux[:10])
-    aux = input("Press Enter to continue...")
+    # print("results_path:", results_path, len([f.name for f in results_path.iterdir() if f.is_dir()]))
+    # aux = [f.name for f in results_path.iterdir() if f.is_dir()]
+    # print("aux:", aux[:10])
+    # aux = input("Press Enter to continue...")
 
     # Check if 'model_results' folder exists in the results_path
     if 'model_results' in [f.name for f in results_path.iterdir() if f.is_dir()]:

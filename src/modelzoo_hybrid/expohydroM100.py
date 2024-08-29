@@ -129,20 +129,16 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, 
                            rtol=rtol, atol=atol, options=options)
+            
+        # # Print y
+        # print('y', y.shape)
+        # print('y', y[:5, :, :])
 
         if len(inputs.shape) == 2:
 
             s_snow_nn  = y[:, 0, 0]
             s_water_nn = y[:, 0, 1]
-            # # Relu the state variables
-            # s_snow_nn = torch.maximum(s_snow_nn, torch.tensor(0.0)).to(self.device)
-            # s_water_nn = torch.maximum(s_water_nn, torch.tensor(0.0)).to(self.device)
-
-            # print('s_snow_nn', s_snow_nn.shape)
-            # print('s_water_nn', s_water_nn.shape)
-            # print('self.precp_series', self.precp_series.shape)
-            # print('self.tmean_series', self.tmean_series.shape)
-
+            
             # Stack tensors to create inputs for the neural network
             inputs_nn = torch.stack([s_snow_nn, s_water_nn, self.precp_series, self.tmean_series], dim=-1)
 
@@ -214,9 +210,9 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # # # print(f"OUT - Memory usage after forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
         # # aux = input("Press Enter to continue...after NN")
 
-        # Return the last variable (last column) from the output
-        return q_output   #[:, -1]
-
+        # Return the last variable (last column) from the output + the state variables
+        return q_output, s_snow_nn, s_water_nn
+    
     def hybrid_model_mlp(self, t, y):
 
         # print(f"IN -Memory usage after converting to tensors: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")

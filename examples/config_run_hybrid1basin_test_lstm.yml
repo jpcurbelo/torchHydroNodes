@@ -103,10 +103,11 @@ learning_rate: 0.0001
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-experiment_name: _ZZZZ_1basin_hybrid_lstm_270d_128x1_euler
+# experiment_name: _ZZZZ_1basin_hybrid_lstm_270d_128x1_euler
+experiment_name: AACEDAR_1basin_hybrid_lstm_270d_128x1_euler
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cpu
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111

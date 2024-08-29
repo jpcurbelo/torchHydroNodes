@@ -75,10 +75,18 @@ class BaseHybridModelTrainer:
             pbar = tqdm(self.model.dataloader, disable=self.model.cfg.disable_pbar, file=sys.stdout)
             pbar.set_description(f'# Epoch {epoch + 1:05d} ')
 
-            epoch_loss = 0.0
+            epoch_loss_sum = 0.0
             num_batches_seen = 0
 
+            # Create tensors to store the s_snow and s_water values to be used in the next batch
+            s_snow_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+            s_water_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+
+            first_batch = True  # Flag to check if it's the first batch
+
             for (inputs, targets, basin_ids) in pbar:
+
+                # print('inputs', inputs.shape)
 
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
@@ -87,8 +95,17 @@ class BaseHybridModelTrainer:
                 inputs = inputs.to(self.device_to_train, non_blocking=True)
                 targets = targets.to(self.device_to_train, non_blocking=True) 
 
+                if not first_batch:
+                    # Update the s_snow and s_water values for the current batch
+                    inputs[0, 0] = s_snow_prev[-1]
+                    inputs[0, 1] = s_water_prev[-1]
+
                 # Forward pass
-                q_sim = self.model(inputs, basin_ids[0])
+                q_sim,  s_snow, s_water = self.model(inputs, basin_ids[0])
+
+                # Update the s_snow and s_water values for the next batch
+                s_snow_prev = s_snow.clone().detach()
+                s_water_prev = s_water.clone().detach()
 
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
@@ -97,34 +114,47 @@ class BaseHybridModelTrainer:
                 else:
                     if self.model.cfg.scale_target_vars:
                         loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim))
-                        # # loss = self.loss(targets[:, -1], torch.exp(q_sim))
+                        # loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim), 
+                        #                  self.model.pretrainer.nnmodel.torch_target_means[basin_ids[0]])
                     else:
                         loss = self.loss(targets[:, -1], q_sim)
+                        # loss = self.loss(targets[:, -1], q_sim,
+                        #                  self.model.pretrainer.nnmodel.torch_target_means[basin_ids[0]])
 
                 ##############################################################
+                # # Backward pass if batch is not the last one
+                # if num_batches_seen < len(self.model.dataloader) - 1 or first_batch:
+
                 # Backward pass
                 loss.backward()
-
+                # Update the weights
+                self.model.optimizer.step()
                 # Gradient clipping
                 if self.model.cfg.clip_gradient_norm is not None:
                     torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
 
-                # Update the weights
-                self.model.optimizer.step()
-
+                # print(f'batch: {num_batches_seen} | loss: {loss.item():.4e}')
+               
+               
                 # Accumulate the loss
-                epoch_loss += loss.item()
+                epoch_loss_sum += loss.item()
+                # print(f'epoch_loss_sum: {epoch_loss_sum:.4e}')
                 num_batches_seen += 1
 
                 # Update progress bar with current average loss
-                avg_loss = epoch_loss / num_batches_seen
+                avg_loss = epoch_loss_sum / num_batches_seen
+                # print(f'avg_loss: {avg_loss:.4e}')
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
                 # Delete variables to free memory
                 del inputs, targets, q_sim, loss
                 torch.cuda.empty_cache()
 
+                first_batch = False  # Set the flag to False after processing the first batch
+
             pbar.close()
+
+            # print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
             # Save the model weights and plots
             if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:
@@ -242,7 +272,7 @@ class BaseHybridModelTrainer:
                     # # aux = input("Press Enter to continue...")
 
                     # No GPU memory control - this is standard
-                    outputs = self.model(inputs, basin, use_grad=False)
+                    outputs, _, _ = self.model(inputs, basin, use_grad=False)
                     # outputs = run_job_with_memory_check(self.model, ds_basin,  input_var_names, basin, inputs.shape, inputs.dtype, use_grad=False)
 
                     # Reshape outputs
@@ -271,6 +301,8 @@ class BaseHybridModelTrainer:
                     plt.legend()
 
                     nse_val = NSE_eval(y_obs, y_sim)
+
+                    # print(f'{period_name} | NSE = {nse_val:.4e}')
 
                     plt.title(f'{self.target} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
 
@@ -342,7 +374,7 @@ class BaseHybridModelTrainer:
                 inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
 
                 # Get model outputs
-                outputs = self.model(inputs, basin, use_grad=False)
+                outputs, _, _ = self.model(inputs, basin, use_grad=False)
 
                 # Reshape outputs
                 outputs = self.model.reshape_outputs(outputs)

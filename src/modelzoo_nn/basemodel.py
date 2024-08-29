@@ -18,7 +18,7 @@ class BaseNNModel(nn.Module):
         self.dtype = self.concept_model.cfg.precision['torch']
         self.scaler = self.concept_model.scaler
 
-        print('self.concept_model.cfg.nn_dynamic_inputs', self.concept_model.cfg.nn_dynamic_inputs)
+        # print('self.concept_model.cfg.nn_dynamic_inputs', self.concept_model.cfg.nn_dynamic_inputs)
         self.num_dynamic = len(self.concept_model.cfg.nn_dynamic_inputs) 
         self.num_static = len(self.concept_model.cfg.static_attributes)
         self.include_static = self.num_static > 0
@@ -33,6 +33,9 @@ class BaseNNModel(nn.Module):
         self.torch_input_stds = self.xarray_to_torch(self.scaler['ds_feature_std'], variables=self.concept_model.cfg.nn_dynamic_inputs)
         self.torch_input_means = self.xarray_to_torch(self.scaler['ds_feature_mean'], variables=self.concept_model.cfg.nn_dynamic_inputs)
         # self.torch_input_mins = self.xarray_to_torch(self.scaler['ds_feature_min'], variables=self.concept_model.cfg.nn_mech_targets)
+
+        # Target mean value
+        self.torch_target_means = self.xarray_to_torch(self.scaler['ds_feature_mean'], variables=self.concept_model.cfg.target_variables)
 
         # print("self.torch_input_means", self.torch_input_means)
         # aux = input("Press Enter to continue...")

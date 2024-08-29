@@ -234,12 +234,10 @@ class NNpretrainer(ExpHydroCommon):
         # Create a custom dataset with the input and output tensors and basin IDs
         dataset = CustomDatasetToNN(input_tensor, output_tensor, basin_ids)
 
-        pin_memory = 'cuda' in str(self.device)
-
         if self.batch_size == -1:
             self.batch_size = num_dates
         
-        batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, shuffle=False)
+        batch_sampler = BasinBatchSampler(basin_ids, self.batch_size)
 
         # Create DataLoader with custom batch sampler
         # kwargs = {'pin_memory': pin_memory, 'num_workers': self.num_workers} if 'cuda' in str(self.device) else {}
@@ -300,6 +298,17 @@ class NNpretrainer(ExpHydroCommon):
                                             static_inputs=self.nnmodel.torch_static[basin_ids[0]])
                 else:
                     predictions = self.nnmodel(inputs, basin_ids[0])
+
+                # print('inputs:', inputs.shape)
+                # print('targets:', targets.shape)
+                # print('predictions:', predictions.shape)
+                # aux = input('Press Enter to continue...')
+
+                # print('inputs:', inputs[:5,  :])
+                # print('inputs:', inputs[-5:,  :])
+                # print('targets:', targets[:3, :])
+                # print('predictions:', predictions[:3, :])
+                # aux = input('Press Enter to continue...')
                 
                 nan_mask = torch.isnan(predictions)
                 if nan_mask.any():

@@ -45,6 +45,9 @@ class LSTM(BaseNNModel):
         mean = self.torch_input_means[basin_id].unsqueeze(1)  #.to(dynamic_inputs.device)
         std = self.torch_input_stds[basin_id].unsqueeze(1)    #.to(dynamic_inputs.device)
 
+        # print('mean', mean)
+        # print('std', std)
+
         # Normalize the dynamic inputs
         dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
 

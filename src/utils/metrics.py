@@ -24,6 +24,8 @@ def NSE_eval(y_true, y_pred):
     
     y_true, y_pred = remove_nans(y_true, y_pred)
 
+    # print('mean(y_true):', np.mean(y_true))
+
     numerator = np.sum(np.square(y_true - y_pred))
     denominator = np.sum(np.square(y_true - np.mean(y_true))) + np.finfo(float).eps
 
@@ -450,12 +452,18 @@ class NSEloss(nn.Module):
     def __init__(self):
         super(NSEloss, self).__init__()
 
-    def forward(self, y_true, y_pred):
+    def forward(self, y_true, y_pred, y_mean=None):
 
         y_true, y_pred = remove_nans(y_true, y_pred)
 
+        if y_mean is None:
+            y_mean = torch.mean(y_true)
+
+        # print('y_mean:', y_mean)
+        # print('torch.mean(y_true)', torch.mean(y_true))
+
         numerator = torch.sum(torch.square(y_true - y_pred))
-        denominator = torch.sum(torch.square(y_true - torch.mean(y_true))) + np.finfo(float).eps
+        denominator = torch.sum(torch.square(y_true - y_mean)) + np.finfo(float).eps
 
         loss = numerator / denominator - 1.0
         

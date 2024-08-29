@@ -762,10 +762,6 @@ class Config(object):
         return self._get_property_value("batch_size", default=256)
 
     @property
-    def shuffle(self) -> bool:
-        return self._get_property_value("shuffle", default=False)
-
-    @property
     def num_workers(self) -> int:
         return self._get_property_value("num_workers", default=8)
     
@@ -843,18 +839,15 @@ class Config(object):
 
 ## Classes for data loading
 class BatchSampler(Sampler):
-    def __init__(self, dataset_len, batch_size, shuffle=False):
+    def __init__(self, dataset_len, batch_size):
         self.dataset_len = dataset_len
         # if batch_size == -1:
         #     batch_size = dataset_len
         self.batch_size = batch_size
-        self.shuffle = shuffle
         self.num_batches = (dataset_len + batch_size - 1) // batch_size
 
     def __iter__(self):
         indices = np.arange(self.dataset_len)
-        if self.shuffle:
-            np.random.shuffle(indices)
         batches = [indices[i * self.batch_size:(i + 1) * self.batch_size] for i in range(self.num_batches)]
         return iter(batches)
 
@@ -874,12 +867,9 @@ class CustomDatasetToNN(Dataset):
         return self.input_tensor[idx], self.output_tensor[idx], self.basin_ids[idx]
 
 class BasinBatchSampler(Sampler):
-    def __init__(self, basin_ids, batch_size, shuffle=False):
+    def __init__(self, basin_ids, batch_size):
         self.basin_ids = basin_ids
-        # if batch_size == -1:
-        #     batch_size = len(basin_ids)
         self.batch_size = batch_size
-        self.shuffle = shuffle
         
         # Create a mapping from basin_id to indices
         self.basin_to_indices = {}
@@ -896,14 +886,14 @@ class BasinBatchSampler(Sampler):
     def _create_batches(self):
         batches = []
         for _, indices in self.basin_to_indices.items():
-            if self.shuffle:
-                np.random.shuffle(indices)
-            for i in range(0, len(indices), self.batch_size):
+            # for i in range(0, len(indices), self.batch_size):
+            #     batch = indices[i:i + self.batch_size]
+            #     if len(batch) == self.batch_size:
+            #         batches.append(batch)
+            for i in range(0, len(indices) - 1, self.batch_size - 1):
                 batch = indices[i:i + self.batch_size]
-                if len(batch) == self.batch_size:
-                    batches.append(batch)
-        if self.shuffle:
-            np.random.shuffle(batches)
+                batches.append(batch)
+
         return batches
 
     def __iter__(self):
