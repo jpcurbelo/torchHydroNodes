@@ -54,7 +54,7 @@ hidden_size:
 
 loss_pretrain: mse
 lr_pretrain: 0.01
-epochs_pretrain: 200
+epochs_pretrain: 500
 ###############################################################
 
 scale_target_vars: True
@@ -76,7 +76,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 200
 
 # Patience for early stopping
 patience: 30
@@ -121,11 +121,19 @@ learning_rate: 0.0001
 
 # experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_mean-loss
 # experiment_name: _AAAA_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_400ep_500pre
-experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_200pre
+# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_200pre
 # experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_400ep_500pre
 # experiment_name: _AAAA_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_200pre_mse
 # experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_200pre_mse
 # experiment_name: _AAAA_1basin_hybrid_mlp_32x5_64b_euler1d_lr4_200ep_500pre
+
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_500pre
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_oldOverLap
+experiment_name: _BBBB_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_200ep_500pre_oldOverLap
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_500pre_notLastBatch
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr5_100ep_500pre
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr34_100ep_500pre
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr45_100ep_500pre
 
 # experiment_name: ___Testing_LossFunction
 

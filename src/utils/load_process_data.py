@@ -886,13 +886,12 @@ class BasinBatchSampler(Sampler):
     def _create_batches(self):
         batches = []
         for _, indices in self.basin_to_indices.items():
-            # for i in range(0, len(indices), self.batch_size):
-            #     batch = indices[i:i + self.batch_size]
-            #     if len(batch) == self.batch_size:
-            #         batches.append(batch)
-            for i in range(0, len(indices) - 1, self.batch_size - 1):
+            for i in range(0, len(indices), self.batch_size):  ## First (old) ovelap version
+            # for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) ovelap version
                 batch = indices[i:i + self.batch_size]
                 batches.append(batch)
+                # if len(batch) == self.batch_size:
+                #     batches.append(batch)
 
         return batches
 
