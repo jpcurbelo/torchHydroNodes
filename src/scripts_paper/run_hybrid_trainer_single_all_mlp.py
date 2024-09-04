@@ -31,7 +31,7 @@ from utils import (
     delete_unfinished_jobs,
 )
 
-nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
+nnmodel_type = 'mlp'
 
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 
@@ -39,31 +39,19 @@ config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
 # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
 
 pretrainer_runs_folder = None
-basin_file_all = '../../examples/569_basin_file.txt'
+# basin_file_all = '../../examples/569_basin_file.txt'
+basin_file_all = '../../examples/4_basin_file.txt'
 
-# # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr34_200ep'
-# # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_bosh3_lr4_100ep'
-# # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler_lr4_150ep'
-# # # run_folder = f'runs_hybrid_single_{nnmodel_type}32x5_7304b_euler'
-# run_folder = f'AAruns_hybrid_single_{nnmodel_type}32x5_256b_euler_lr4_150ep'
+run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap'
 
-# # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}365_128'
-# # # run_folder = f'runs_hybrid_single_{nnmodel_type}365d_128h_256b'
-
-# # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h'
-# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}270d_128h_7036b_lr3_200ep'
-# run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_7036b_bosh3_lr34_100ep'
-# # run_folder = f'runs_hybrid_single_{nnmodel_type}270d_128h_256b_new_temp'
-# run_folder = f'AAruns_hybrid_single_{nnmodel_type}270d_128h_256b_euler_lr4_100ep'
-
-USE_PROCESS_POOL = 0
-MAX_WORKERS = 2
+USE_PROCESS_POOL = 1
+MAX_WORKERS = 4
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
 DELETE_IF_UNFINISHED = 0
 
-ONLY_CHECK_FINISHED = 1
+ONLY_CHECK_FINISHED = 0
 
 def train_model_for_basin(nn_model_dir, project_path, basin=None):
     '''
@@ -104,7 +92,7 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
         cfg.pop('nn_model_dir', None)
 
     # Create temporary configuration file config_file_temp_basin.yml
-    config_file_temp = str(config_file).split('.')[0] + f'_temp_{basin}.yml'
+    config_file_temp = str(config_file).split('.')[0] + f'_temp_{nnmodel_type}_{basin}.yml'
     with open(config_file_temp, 'w') as f:
         yaml.dump(cfg, f)
 

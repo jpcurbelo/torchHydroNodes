@@ -78,15 +78,14 @@ class BaseHybridModelTrainer:
             epoch_loss_sum = 0.0
             num_batches_seen = 0
 
-            # Create tensors to store the s_snow and s_water values to be used in the next batch
-            s_snow_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
-            s_water_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+            if self.model.cfg.overlap_train:
+                # Create tensors to store the s_snow and s_water values to be used in the next batch
+                s_snow_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+                s_water_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
 
             first_batch = True  # Flag to check if it's the first batch
 
             for (inputs, targets, basin_ids) in pbar:
-
-                # print('inputs', inputs.shape)
 
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
@@ -95,18 +94,20 @@ class BaseHybridModelTrainer:
                 inputs = inputs.to(self.device_to_train, non_blocking=True)
                 targets = targets.to(self.device_to_train, non_blocking=True) 
 
-                if not first_batch:
+                if self.model.cfg.overlap_train and not first_batch:
                     # Update the s_snow and s_water values for the current batch
                     inputs[0, 0] = s_snow_prev[-1]
                     inputs[0, 1] = s_water_prev[-1]
 
                 # Forward pass
-                q_sim,  s_snow, s_water = self.model(inputs, basin_ids[0])
+                q_sim, s_snow, s_water = self.model(inputs, basin_ids[0])
 
                 # Update the s_snow and s_water values for the next batch
-                s_snow_prev = s_snow.clone().detach()
-                s_water_prev = s_water.clone().detach()
+                if self.model.cfg.overlap_train:
+                    s_snow_prev = s_snow.clone().detach()
+                    s_water_prev = s_water.clone().detach()
 
+                # Compute loss
                 if isinstance(self.loss, NSElossNH):
                     std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
                     std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.device_to_train)
@@ -132,18 +133,13 @@ class BaseHybridModelTrainer:
                 # Gradient clipping
                 if self.model.cfg.clip_gradient_norm is not None:
                     torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
-
-                # print(f'batch: {num_batches_seen} | loss: {loss.item():.4e}')
-               
                
                 # Accumulate the loss
                 epoch_loss_sum += loss.item()
-                # print(f'epoch_loss_sum: {epoch_loss_sum:.4e}')
                 num_batches_seen += 1
 
                 # Update progress bar with current average loss
                 avg_loss = epoch_loss_sum / num_batches_seen
-                # print(f'avg_loss: {avg_loss:.4e}')
                 pbar.set_postfix({'Loss': f'{avg_loss:.4e}'})
 
                 # Delete variables to free memory
@@ -154,8 +150,6 @@ class BaseHybridModelTrainer:
 
             pbar.close()
 
-            # print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
-
             # Save the model weights and plots
             if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:
                 
@@ -163,9 +157,7 @@ class BaseHybridModelTrainer:
                 
                 if self.model.cfg.verbose:
                     print(f"-- Saving the basin plots (epoch {epoch + 1}) | --")
-                # # Save the model weights
-                # self.save_model()
-                # self.save_plots(nnmodel_state_dict, epoch=epoch+1)
+                # Save plots 
                 self.save_plots(epoch=epoch+1)
 
             # Check for the best model and save it

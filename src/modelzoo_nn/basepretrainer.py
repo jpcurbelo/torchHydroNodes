@@ -39,7 +39,7 @@ class NNpretrainer(ExpHydroCommon):
         self.basins = self.dataset.basin.values
 
         # # Set random seeds
-        # self._set_random_seeds()
+        # self._set_seeds()
 
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
         if hasattr(self.cfg, 'log_n_basins') and (

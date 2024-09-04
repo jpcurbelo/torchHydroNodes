@@ -227,7 +227,7 @@ class Config(object):
             raise ValueError(f'Cannot create a config from input of type {type(yml_path_or_dict)}.')
 
         # Set seed for reproducibility
-        self.set_random_seeds()
+        self.set_seeds()
 
         # Create a folder to save the trained models and dump the configuration data to a ymal file
         if 'run_dir' not in self._cfg:
@@ -239,21 +239,32 @@ class Config(object):
             # Dump the configuration data to a ymal file
             self._cfg = dump_config(self._cfg)
 
-    def set_random_seeds(self):
+    def set_seeds(self):
         '''
-        Set random seeds for reproducibility
+        Set seeds for reproducibility
         '''
+
         if 'seed' not in self._cfg or self._cfg['seed'] is None:
             seed = int(np.random.uniform(low=0, high=1e6))
             self._cfg['seed'] = seed
         else:
             seed = self._cfg['seed']
 
-        # fix random seeds for various packages
+        print(f"Setting seed for reproducibility: {seed}")
+        
+        # Fix random seeds for various packages
         random.seed(seed)
         np.random.seed(seed)
-        torch.cuda.manual_seed(seed)
         torch.manual_seed(seed)
+        
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+            # Ensuring deterministic behavior for CUDA (if applicable)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+
+        # Ensure reproducibility for Python's hash function
+        os.environ['PYTHONHASHSEED'] = str(seed)
         
     def create_run_folder_tree(self):
         '''
@@ -837,6 +848,10 @@ class Config(object):
     def time_step(self) -> float:
         return self._get_property_value("time_step", default=1.0)
 
+    @property
+    def overlap_train(self) -> bool:
+        return self._get_property_value("overlap_train", default=False)
+
 ## Classes for data loading
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size):
@@ -886,8 +901,8 @@ class BasinBatchSampler(Sampler):
     def _create_batches(self):
         batches = []
         for _, indices in self.basin_to_indices.items():
-            for i in range(0, len(indices), self.batch_size):  ## First (old) ovelap version
-            # for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) ovelap version
+            # for i in range(0, len(indices), self.batch_size):  ## First (old) overlap version
+            for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) overlap version
                 batch = indices[i:i + self.batch_size]
                 batches.append(batch)
                 # if len(batch) == self.batch_size:

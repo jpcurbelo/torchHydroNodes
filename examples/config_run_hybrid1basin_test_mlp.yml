@@ -5,8 +5,11 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-odesmethod: euler
-time_step: 1.0
+odesmethod: bosh3
+# odesmethod: euler
+# time_step: 0.5
+
+overlap_train: True
 
 # Files to specify training, validation and test basins
 # basin_file: 1_basin_file.txt
@@ -53,8 +56,8 @@ hidden_size:
   - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.01
-epochs_pretrain: 500
+lr_pretrain: 0.001
+epochs_pretrain: 1000
 ###############################################################
 
 scale_target_vars: True
@@ -86,10 +89,10 @@ clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole train time-series)
 # batch_size: 1024
-batch_size: 512
+# batch_size: 512
 # batch_size: 256
 # batch_size: 128
-# batch_size: -1
+batch_size: -1
 # batch_size: 914   #1827
 # batch_size: 610
 
@@ -102,9 +105,13 @@ optimizer: adam
 # # Learning rate for the optimizer
 learning_rate: 0.0001
 # learning_rate:
-#   initial: 0.0001
+#   initial: 0.00001
 #   decay: 0.5
-#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+#   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+# learning_rate:
+#   initial: 0.0001
+#   decay: 0.1
+#   decay_step_fraction: 3  # Decay step fraction (e.g., 1/3 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -129,11 +136,37 @@ learning_rate: 0.0001
 
 # experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_500pre
 # experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_oldOverLap
-experiment_name: _BBBB_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_200ep_500pre_oldOverLap
+# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_200ep_500pre_oldOverLap
 # experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_500pre_notLastBatch
 # experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr5_100ep_500pre
 # experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr34_100ep_500pre
 # experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr45_100ep_500pre
+
+
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr2_noOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr2_newOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr3_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr45_200ep_500pre_lr3_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4455_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler05d_lr4455_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler05d_lr4_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_bosh3_lr4_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_bosh3_lr4455_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4_200ep_500pre_lr2_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4556_200ep_1000pre_lr3_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4556_200ep_1000pre_lr3_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler05d_lr4556_200ep_1000pre_lr3_oldOverLa
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4556_400ep_1000pre_lr3_oldOverLa
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr5667_400ep_1000pre_lr3_oldOverLap
+# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr5667_400ep_1000pre_lr3_oldOverLap
+
+experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4_200ep_1000pre_lr3_oldOverLap
+# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap
+# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler05d_lr4_200ep_1000pre_lr3_oldOverLap
+# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler1d_lr456_300ep_1000pre_lr3_oldOverLap
+
 
 # experiment_name: ___Testing_LossFunction
 
@@ -161,7 +194,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 10
 
 # Metrics to use for evaluation (after training)
 metrics:
