@@ -92,40 +92,43 @@ def load_results_path(results_folder: Path, periods: list):
         # Check if it contains a folder named 'model_metrics'
         model_metrics_path = results_folder / 'model_metrics'
         if model_metrics_path.exists():
-            return model_metrics_path, results_folder
-        else:
-            # Create a folder named 'model_metrics'
-            os.makedirs(model_metrics_path, exist_ok=True)
+            # return model_metrics_path, results_folder
+            # Delete the folder and merge the metrics again
+            print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
+            os.system(f'rm -rf {model_metrics_path}')
 
-            # There might be a bunch of single folders that have to be merged
-            # Get list of folders
-            folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
-            # print(f"Found {len(folders)} folders in the results folder.")
+        # Create a folder named 'model_metrics'
+        os.makedirs(model_metrics_path, exist_ok=True)
+
+        # There might be a bunch of single folders that have to be merged
+        # Get list of folders
+        folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
+        # print(f"Found {len(folders)} folders in the results folder.")
+        
+        # Iterate over each period and folder
+        for period in periods:
+            df_period = pd.DataFrame()
+            for folder in folders:
+                # Ensure that folder is a Path object
+                folder_path = results_folder / folder
+                # Construct the path for the model_metrics directory within each folder
+                metrics_folder = folder_path / 'model_metrics'
+                # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
+                for file in metrics_folder.glob(f'*metrics_{period}*'):
+                    if file.is_file():
+                        # Load the file
+                        df = pd.read_csv(file)
+                        # Add to df_period
+                        df_period = pd.concat([df_period, df], ignore_index=True)
+
+            # print(f"Saving metrics for period {period}...")
+            # print(f"Number of basins: {df_period['basin_id'].nunique()}")
+            # print(df_period.head()) 
             
-            # Iterate over each period and folder
-            for period in periods:
-                df_period = pd.DataFrame()
-                for folder in folders:
-                    # Ensure that folder is a Path object
-                    folder_path = results_folder / folder
-                    # Construct the path for the model_metrics directory within each folder
-                    metrics_folder = folder_path / 'model_metrics'
-                    # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
-                    for file in metrics_folder.glob(f'*metrics_{period}*'):
-                        if file.is_file():
-                            # Load the file
-                            df = pd.read_csv(file)
-                            # Add to df_period
-                            df_period = pd.concat([df_period, df], ignore_index=True)
+            # Save the merged dataframe
+            df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
 
-                # print(f"Saving metrics for period {period}...")
-                # print(f"Number of basins: {df_period['basin_id'].nunique()}")
-                # print(df_period.head()) 
-                
-                # Save the merged dataframe
-                df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
-
-            return model_metrics_path, results_folder
+        return model_metrics_path, results_folder
 
     else:
         raise FileNotFoundError(f"Folder not found: {results_folder}")
@@ -255,15 +258,13 @@ def plot_metric_histogram(df_period, metric, threshold_dict, graph_title, period
     annotate_statistics(ax, hist_values, statistic='mean', color='tab:red', gap=0.01, fontsize=12)
     annotate_statistics(ax, hist_values, statistic='median', color='green', gap=0.01, fontsize=12)
 
-    # Add text in the top left corner with the number of basins
     n_basins = df['basin'].nunique()
-    ax.text(0.02, 0.98, f'{n_basins} basins', transform=ax.transAxes,
-            verticalalignment='top', horizontalalignment='left', fontsize=12, color='black')
-
     if metric in threshold_dict:
-        ax.set_title(f'{graph_title} (${metric.upper()} \leq {th_value}$:  {n_below_threshold} counts) | {period} period')
+        ax.set_title(f'{graph_title} (${metric.upper()} \leq {th_value}$: {n_below_threshold}/{n_basins} basins)')
+        
+       
     else:
-        ax.set_title(f'{graph_title} | {period} period')
+        ax.set_title(f'{graph_title} | {period} period | {n_basins} basins')
     ax.set_xlabel(f'{metric.upper()}')
     ax.set_ylabel('Frequency')
     plt.show()
@@ -372,21 +373,22 @@ def _plot_histogram(ax, df, metric, threshold_dict, graph_title, period):
     annotate_statistics(ax, hist_values, statistic='mean', color='tab:red', gap=0.01, fontsize=12, add_text=add_text)
     annotate_statistics(ax, hist_values, statistic='median', color='green', gap=0.01, fontsize=12, add_text=add_text)
 
-    # Add text in the top left corner with the number of basins
-    n_basins = df['basin'].nunique()
-    ax.text(0.02, 0.98, f'{n_basins} basins', transform=ax.transAxes,
-            verticalalignment='top', horizontalalignment='left', fontsize=12, color='black')
+    # # Add text in the top left corner with the number of basins
+    # n_basins = df['basin'].nunique()
+    # ax.text(0.02, 0.98, f'{n_basins} basins', transform=ax.transAxes,
+    #         verticalalignment='top', horizontalalignment='left', fontsize=12, color='black')
 
+    n_basins = df['basin'].nunique()
     if metric in threshold_dict:
         if 'cluster' in graph_title.lower():
             ax.set_title(f'{graph_title} | {period}')
         else:
-            ax.set_title(f'{graph_title} (${metric.upper()} \leq {th_value}$:  {n_below_threshold} counts) | {period} period')
+            ax.set_title(f'{graph_title} (${metric.upper()} \leq {th_value}$: {n_below_threshold}/{n_basins} basins)')
     else:
         if 'cluster' in graph_title.lower():
             ax.set_title(f'{graph_title} | {period}')
         else:
-            ax.set_title(f'{graph_title} | {period} period')
+            ax.set_title(f'{graph_title} | {period} period | {n_basins} basins')
     ax.set_xlabel(f'{metric.upper()}')
     ax.set_ylabel('Frequency')
 

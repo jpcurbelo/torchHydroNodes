@@ -10,6 +10,8 @@ src/scripts/plots*
 src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
 src/scripts/gifs/*
+src/scripts/AAplots_hybrid_*
+src/scripts/4basins_test/
 
 # Files
 src/scripts_paper/*_temp_*.yml

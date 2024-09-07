@@ -7,7 +7,7 @@ concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
 # odesmethod: bosh3
 odesmethod: euler
-time_step: 1.0
+time_step: 0.5
 
 # Files to specify training, validation and test basins
 basin_file: This is to be updated!!! # do not delete this line
@@ -106,7 +106,7 @@ experiment_name: hybrid_mlp_single
 device: cpu
 
 # Set seed for reproducibility
-seed: 111
+seed: 1111
 
 # Set precision for the model [float32, float64]
 precision: float32

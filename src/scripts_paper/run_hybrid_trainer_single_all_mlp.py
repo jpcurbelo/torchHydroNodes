@@ -42,7 +42,8 @@ pretrainer_runs_folder = None
 # basin_file_all = '../../examples/569_basin_file.txt'
 basin_file_all = '../../examples/4_basin_file.txt'
 
-run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap'
+# run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap'
+run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler05d_lr4_200ep_1000pre_lr3_oldOverLap'
 
 USE_PROCESS_POOL = 1
 MAX_WORKERS = 4
