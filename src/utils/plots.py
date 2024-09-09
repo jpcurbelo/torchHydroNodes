@@ -66,36 +66,37 @@ def load_results_path(results_folder: Path, periods: list):
 
         # Check if it contains a folder named 'model_metrics'
         model_metrics_path = results_folder / 'model_metrics'
-        if model_metrics_path.exists():
+        if model_metrics_path.exists() and 'julia' not in str(results_folder):
             # Delete the folder and merge the metrics again
             print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
             os.system(f'rm -rf {model_metrics_path}')
 
-        # Create a folder named 'model_metrics'
-        os.makedirs(model_metrics_path, exist_ok=True)
+        if 'julia' not in str(results_folder):
+            # Create a folder named 'model_metrics'
+            os.makedirs(model_metrics_path, exist_ok=True)
 
-        # There might be a bunch of single folders that have to be merged
-        # Get list of folders
-        folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
+            # There might be a bunch of single folders that have to be merged
+            # Get list of folders
+            folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
 
-        # Iterate over each period and folder
-        for period in periods:
-            df_period = pd.DataFrame()
-            for folder in folders:
-                # Ensure that folder is a Path object
-                folder_path = results_folder / folder
-                # Construct the path for the model_metrics directory within each folder
-                metrics_folder = folder_path / 'model_metrics'
-                # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
-                for file in metrics_folder.glob(f'*metrics_{period}*'):
-                    if file.is_file():
-                        # Load the file
-                        df = pd.read_csv(file)
-                        # Add to df_period
-                        df_period = pd.concat([df_period, df], ignore_index=True)
-            
-            # Save the merged dataframe
-            df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
+            # Iterate over each period and folder
+            for period in periods:
+                df_period = pd.DataFrame()
+                for folder in folders:
+                    # Ensure that folder is a Path object
+                    folder_path = results_folder / folder
+                    # Construct the path for the model_metrics directory within each folder
+                    metrics_folder = folder_path / 'model_metrics'
+                    # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
+                    for file in metrics_folder.glob(f'*metrics_{period}*'):
+                        if file.is_file():
+                            # Load the file
+                            df = pd.read_csv(file)
+                            # Add to df_period
+                            df_period = pd.concat([df_period, df], ignore_index=True)
+                
+                # Save the merged dataframe
+                df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
 
         return model_metrics_path, results_folder
 
@@ -270,10 +271,10 @@ def _plot_histogram(ax, df, metric, threshold_dict, graph_title, period, epochs=
         ax.set_title(f'{graph_title} | {n_basins} basins | {period}')
     elif metric in threshold_dict:
         if epochs is None:
-            ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$:' +
+            ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$: ' +
                          f'{n_below_threshold}/{n_basins} basins) | {period}')
         else:
-            ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$:' +
+            ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$: ' +
                          f'{n_below_threshold}/{n_basins} basins) | {period} | {epochs} ep')
     else:
         if epochs is None:
@@ -325,6 +326,13 @@ def plot_metric_map_period(metrics_path, periods, metrics, threshold_dict,
 
         df_period = pd.read_csv(metric_file_path)
 
+        # Column containing basin to 'basin'
+        basin_column = [col for col in df_period.columns if 'basin' in col.lower()]
+        if len(basin_column) == 1:
+            df_period.rename(columns={basin_column[0]: 'basin'}, inplace=True)
+        else:
+            raise ValueError('Column containing basin ID not found in the dataframe (at least one column should contain "basin" in its name)')
+    
         # Filter hm_catchment_gdf to only include the HRU_IDs in the hm_catchment['basin'] column
         hm_catchment_gdf = hm_catchment_gdf[hm_catchment_gdf['hru_id'].isin(df_period['basin'])]
 
@@ -345,7 +353,7 @@ def _plot_metric_map(df, states, hm_catchment_gdf,
                     graph_title='Hybrid model',
                     plots_path=Path('.'),
                     threshold_dict=None):
-    
+
     # Extract data given the metric
     df = df[['basin', metric]].copy()
 
@@ -386,7 +394,7 @@ def _plot_metric_map(df, states, hm_catchment_gdf,
         # Apply threshold to the metric
         df, n_below_threshold, th_value = apply_threshold(df, metric, threshold_dict)
 
-        ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$:' +
+        ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$: ' +
                                 f'{n_below_threshold}/{len(df)} basins) | {period}', fontsize=16)
     else:
         ax.set_title(f'{graph_title} | {len(df)} basins) | {period}', fontsize=16)
@@ -486,6 +494,122 @@ def _plot_metric_map(df, states, hm_catchment_gdf,
     plt.tight_layout()
     fig.savefig(plots_path / f'{metric}_map_{period}.png', dpi=150, bbox_inches='tight')
     plt.show()
+
+def load_nse_period(folder_dir, period='valid'):
+    '''
+    Load the metrics for the given period from the folder directory.
+    '''
+
+    model_metrics_path = folder_dir / 'model_metrics'
+    metric_file = model_metrics_path / f'metrics_{period}.csv'
+
+    if os.path.exists(metric_file):
+        df = pd.read_csv(metric_file)
+    else:
+        csv_files = [f for f in os.listdir(folder_dir) if f.endswith('.csv')]
+        df = pd.read_csv(folder_dir / csv_files[0])
+
+    # Rename NSE column to lowercase 'nse' if it exists
+    df.rename(columns={'NSE': 'nse'}, inplace=True, errors='ignore')
+
+    # Rename basin column to 'basin'
+    basin_column = [col for col in df.columns if 'basin' in col.lower()]
+    if len(basin_column) == 1:
+        df.rename(columns={basin_column[0]: 'basin'}, inplace=True)
+    else:
+        raise ValueError('Column containing basin ID not found.')
+
+    # Make negative NSE values zero
+    df['nse'] = df['nse'].apply(lambda x: max(0, x))
+
+    return df[['basin', 'nse']].copy()
+
+def plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
+    """Plot the CDF of NSE values."""
+    nse_values = np.sort(df['nse'])
+    cdf = np.arange(1, len(nse_values) + 1) / len(nse_values)
+    
+    ax.plot(nse_values, cdf, color=folder['color'], alpha=0.8,
+            linewidth=2.5, marker=folder['marker'], markevery=markevery,
+            ms=ms, linestyle=folder['linestyle'], label=folder['experiment'])
+    
+    # Plot zoomed-in sections if provided
+    if zoom_ranges:
+        for ax_inset, zoom_range in zip(zoom_ranges['axes'], zoom_ranges['x']):
+            nse_zoom = nse_values[(nse_values >= zoom_range[0]) & (nse_values <= zoom_range[1])]
+            cdf_zoom = cdf[(nse_values >= zoom_range[0]) & (nse_values <= zoom_range[1])]
+            ax_inset.plot(nse_zoom, cdf_zoom, color=folder['color'],
+                          alpha=0.8, linewidth=2.5, marker=folder['marker'],
+                          markevery=2, ms=5, linestyle=folder['linestyle'])
+
+
+def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
+    # Step 1: Create and save the main plot
+    fig, ax_main = plt.subplots(figsize=(10, 8))
+
+    # Add an empty plot for the title in the legend
+    ax_main.plot([], [], ' ', label=r'$\it{Experiment:}$')
+
+    # Main plot loop
+    for folder in folder4cdf_dir_list:
+        folder_dir = Path(folder['directory']).expanduser()
+        if folder_dir.exists():
+            df = load_nse_period(folder_dir, period='valid')
+            plot_cdf(ax_main, df, folder)
+        else:
+            raise FileNotFoundError(f"Folder not found: {folder_dir}")
+    
+    ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
+    ax_main.set_xlim(0, 1)
+    ax_main.set_ylim(0, 1)
+    ax_main.set_xlabel('$NSE$', fontsize=14)
+    ax_main.set_ylabel('CDF', fontsize=14)
+    ax_main.grid(True)
+    ax_main.legend(fontsize=12)
+    plt.tight_layout()
+    plt.savefig('cdf_nse_usa.png', dpi=150, bbox_inches='tight')
+    plt.show()
+
+    if zoom_ranges_x is None or zoom_ranges_y is None:
+        return
+    
+    # Step 2: Create and save the zoomed-in subplot version
+    fig_zoomed = plt.figure(figsize=(14, 8))
+    gs = fig_zoomed.add_gridspec(3, 2, width_ratios=[2, 1])
+
+    ax_main_zoomed = fig_zoomed.add_subplot(gs[:, 0])  # Main plot
+    inset_axes = [fig_zoomed.add_subplot(gs[i, 1]) for i in range(3)]  # Zoomed-in plots
+
+    zoom_ranges = {'axes': inset_axes, 'x': zoom_ranges_x}
+    
+    for folder in folder4cdf_dir_list:
+        folder_dir = Path(folder['directory']).expanduser()
+        if folder_dir.exists():
+            df = load_nse_period(folder_dir, period='valid')
+            plot_cdf(ax_main_zoomed, df, folder, zoom_ranges)
+
+    ax_main_zoomed.set_xlim(0, 1)
+    ax_main_zoomed.set_ylim(0, 1)
+    ax_main_zoomed.set_xlabel('$NSE$', fontsize=14)
+    ax_main_zoomed.set_ylabel('CDF', fontsize=14)
+    ax_main_zoomed.grid(True)
+    ax_main_zoomed.legend(fontsize=12)
+
+    # Customize each inset plot
+    for ax_inset, zoom_range_x, zoom_range_y in zip(inset_axes, zoom_ranges_x, zoom_ranges_y):
+        ax_inset.set_xlim(zoom_range_x)
+        ax_inset.set_ylim(zoom_range_y)
+        ax_inset.set_xticks(np.round(np.linspace(zoom_range_x[0], zoom_range_x[1], num=3), 2))
+        ax_inset.set_yticks(np.round(np.linspace(zoom_range_y[0], zoom_range_y[1], num=3), 2))
+        ax_inset.grid(True, which='major', linestyle='--', linewidth=0.7)
+        ax_inset.minorticks_on()
+        ax_inset.grid(True, which='minor', linestyle=':', linewidth=0.5)
+
+    plt.tight_layout()
+    plt.savefig('cdf_nse_usa_zoomed.png', dpi=150, bbox_inches='tight')
+    plt.show()
+
+
 
 if __name__ == "__main__":
     pass

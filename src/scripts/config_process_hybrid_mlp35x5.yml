@@ -1,30 +1,25 @@
 # Folder where the data is stored
 # results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_512b_euler
-# results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_512b_bosh3
-# results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_7304b_bosh3_lr34_200ep
-# results_folder: ../scripts_paper/runs_hybrid_single_mlp32x5_7304b_euler_lr4_150ep
-# results_folder: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
-# results_folder: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr34_200ep
 
 # Folder (to be created) where the processed data will be stored
 # plots_folder: AAplots_hybrid_mlp32x5_256b_euler_lr4_150ep
-# plots_folder: AAplots_hybrid_mlp32x5_256b_euler_lr34_200ep
-# plots_folder: plots_hybrid_mlp32x5_7304b_bosh3
-# plots_folder: plots_hybrid_mlp32x5_7304b_euler
 
-results_folder: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
-plots_folder: AAplots_hybrid_mlp32x5_256b_euler_lr4_150ep
+results_folder: ../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
+plots_folder: AAAplots_hybrid_mlp35x5_7305b_bosh3_lr4_150ep_julia
+graph_title: Hybrid model (exp-hydro) - MLP/Bosh3 - Julia
+epochs: 150
 
+# results_folder: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler_lr4_150ep
+# graph_title: Hybrid model (exp-hydro + MLP) - Euler1.0d
+# epochs: 150
 
-graph_title: Hybrid model (exp-hydro + MLP) - Euler1.0d
 # graph_title: Hybrid model (exp-hydro) - MLP/Bosh3
 
 # Periods to be processed
 periods:
   - train
   - valid
-
-epochs: 150
 
 # Metrics to be plotted
 metrics:
