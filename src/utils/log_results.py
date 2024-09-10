@@ -86,6 +86,11 @@ def compute_and_save_metrics(metrics, run_dir):
         
     # Load the results for each basin and period from the run directory / model results
     results_dir = run_dir / 'model_results'
+
+    if not results_dir.exists():
+        print(f'No results found in {results_dir}')
+        return
+
     results_files = os.listdir(results_dir)
     # Get basins and periods
     basins = set([file.split('_')[0] for file in results_files])

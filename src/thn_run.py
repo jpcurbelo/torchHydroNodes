@@ -216,6 +216,9 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
             # Run the model
             model_results = model_concept.run(basin=basin)
 
+            if model_results is None:
+                continue
+
             # Save the results
             model_concept.save_results(basin_data, model_results, basin, period=period)
             

@@ -841,12 +841,28 @@ class Config(object):
         return self._as_default_list(self._get_property_value("metrics"))
 
     @property
+    def ode_solver_lib(self) -> str:
+        return self._get_property_value("ode_solver_lib", default="scipy")
+
+    @property
     def odesmethod(self) -> str:
         return self._get_property_value("odesmethod", default="RK23")
 
     @property
     def time_step(self) -> float:
         return self._get_property_value("time_step", default=1.0)
+
+    @property
+    def rtol(self) -> float:
+        return self._get_property_value("rtol", default=1e-3)
+
+    @property
+    def atol(self) -> float:
+        return self._get_property_value("atol", default=1e-3)
+
+    @property
+    def scipy_solver(self) -> str:
+        return self._get_property_value("scipy_solver", default="RK23")
 
     @property
     def overlap_train(self) -> bool:

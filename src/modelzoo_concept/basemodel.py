@@ -23,6 +23,12 @@ class BaseConceptModel:
         self.time_idx0 = time_idx0
         self.scaler = scaler
         self.odesmethod = odesmethod
+        self.ode_solver_lib = cfg.ode_solver_lib
+        self.atol = float(cfg.atol)
+        self.rtol = float(cfg.rtol)
+        self.time_step = cfg.time_step
+        if self.odesmethod == 'scipy_solver':
+            self.scipy_solver = cfg.scipy_solver
         
         # Set the data type attribute for the model
         self.data_type_np = cfg.precision['numpy']

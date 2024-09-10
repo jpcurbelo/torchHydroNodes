@@ -17,6 +17,8 @@ ORIGINAL_CRS = 'EPSG:4326'  # Assuming WGS84 geographic CRS
 # Define the new CRS you want to reproject to, for example, an Albers Equal Area projection
 TARGET_CRS = 'ESRI:102008'  # ESRI:102008 is the WKID for the Albers Equal Area projection
 
+from src.utils.metrics import metric_name_func_dict
+
 def get_cluster_files():
     '''
     Get the list of cluster files for the 569 basins with 6 clusters.
@@ -44,7 +46,7 @@ def load_config_file(config_file, create_plots_folder=True):
     
     return cfg
 
-def load_results_path(results_folder: Path, periods: list):
+def load_results_path(results_folder: Path, periods: list, metrics: list=[]):
     '''
     Load the path to the model_metrics folder within the results_folder.
     If the model_metrics folder does not exist, it will be created by merging the metrics from the different folders.
@@ -52,6 +54,7 @@ def load_results_path(results_folder: Path, periods: list):
     - Args:
         results_folder (Path): Path to the folder containing the results.
         periods (list): List of periods for which the metrics are calculated.
+        metrics (list): List of metrics to calculate.
         
     - Returns:
         model_metrics_path (Path): Path to the model_metrics folder.
@@ -71,9 +74,10 @@ def load_results_path(results_folder: Path, periods: list):
             print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
             os.system(f'rm -rf {model_metrics_path}')
 
-        if 'julia' not in str(results_folder):
-            # Create a folder named 'model_metrics'
-            os.makedirs(model_metrics_path, exist_ok=True)
+        # Create a folder named 'model_metrics'
+        os.makedirs(model_metrics_path, exist_ok=True)
+
+        if 'julia' not in str(results_folder) and 'm0' not in str(results_folder).lower():
 
             # There might be a bunch of single folders that have to be merged
             # Get list of folders
@@ -98,10 +102,75 @@ def load_results_path(results_folder: Path, periods: list):
                 # Save the merged dataframe
                 df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
 
+        else:
+            print(f"Metrics to be computed from the 'model_results' folder in {results_folder}")
+            for period in periods:
+                df_period = metrics_from_results(metrics, period, results_folder, model_metrics_path)
+                # Save the dataframe to a csv file
+                df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
+
         return model_metrics_path, results_folder
 
     else:
         raise FileNotFoundError(f"Folder not found: {results_folder}")
+
+def metrics_from_results(metrics, period, results_path, metrics_path):
+
+    '''
+    Load the results from the results_path and calculate the metrics for each basin.
+    
+    - Args:
+        metrics (list): List of metrics to calculate.
+        period (str): Period for which the metrics are calculated.
+        results_path (Path): Path to the folder containing the results.
+        metrics_path (Path): Path to the folder where the metrics will be saved.
+        
+    - Returns:
+        df_metrics (DataFrame): DataFrame containing the metrics for each basin.
+    '''
+
+    # print("results_path:", results_path, len([f.name for f in results_path.iterdir() if f.is_dir()]))
+    # aux = [f.name for f in results_path.iterdir() if f.is_dir()]
+    # print("aux:", aux[:10])
+    # aux = input("Press Enter to continue...")
+
+    # Check if 'model_results' folder exists in the results_path
+    if 'model_results' in [f.name for f in results_path.iterdir() if f.is_dir()]:
+        model_results_path = results_path / 'model_results'
+
+        # List all files in the model_results folder that contain the period
+        files = sorted([str(f) for f in model_results_path.glob(f'*{period}*') if f.is_file()])
+
+        print(f'Found {len(files)} files for period {period}')
+
+        # Create a dataframe to store the metrics (columns: basin_id, metric1, metric2, ...)
+        df_metrics = pd.DataFrame(columns=['basin_id'] + metrics)
+        # Load the results for each file
+        for file in files:
+            df = pd.read_csv(file)
+            # Filter by columns 'Date', 'q_bucket', and 'q_obs' or 'y_sim' and 'y_obs'
+            if 'y_sim' in df.columns:
+                # Rename the columns
+                df = df.rename(columns={'y_sim': 'q_bucket', 'y_obs': 'q_obs'})
+            
+            if 'Date' in df.columns:
+                df = df.rename(columns={'Date': 'date'})
+
+            df = df[['date', 'q_bucket', 'q_obs']]
+            # Extract basin name from the file name
+            basin_id = file.split('/')[-1].split('_')[0]
+            # Calculate the metrics for the basin and add
+            basin_metrics = [metric_name_func_dict[metric](df['q_obs'].values, df['q_bucket'].values) for metric in metrics]
+
+            # Add the basin_id and the metrics to the dataframe
+            df_metrics.loc[len(df_metrics)] = [basin_id] + basin_metrics
+
+        # Save the dataframe to a csv file
+        df_metrics.to_csv(metrics_path / f'metrics_{period}.csv', index=False)
+
+        return df_metrics
+
+
 
 def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, fontsize=12, 
                     add_text=True, **kwargs):
@@ -542,7 +611,6 @@ def plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
                           alpha=0.8, linewidth=2.5, marker=folder['marker'],
                           markevery=2, ms=5, linestyle=folder['linestyle'])
 
-
 def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
     # Step 1: Create and save the main plot
     fig, ax_main = plt.subplots(figsize=(10, 8))
@@ -559,7 +627,9 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
         else:
             raise FileNotFoundError(f"Folder not found: {folder_dir}")
     
-    ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
+    # Check if 'julia' is in any of the folder names
+    if any('julia' in folder['experiment'].lower() for folder in folder4cdf_dir_list):
+        ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
     ax_main.set_xlim(0, 1)
     ax_main.set_ylim(0, 1)
     ax_main.set_xlabel('$NSE$', fontsize=14)
