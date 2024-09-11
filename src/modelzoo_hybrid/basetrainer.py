@@ -62,9 +62,9 @@ class BaseHybridModelTrainer:
         print(f"-- Training the hybrid model on {self.device_to_train} --")
         print('-' * 60)
 
-        # Save the model weights - Epoch 0
-        self.save_model()
-        self.save_plots(epoch=0)
+        # # Save the model weights - Epoch 0
+        # self.save_model()
+        # self.save_plots(epoch=0)
 
         best_loss = float('inf')  # Initialize best loss to a very high value
         for epoch in range(self.model.epochs):
@@ -78,10 +78,10 @@ class BaseHybridModelTrainer:
             epoch_loss_sum = 0.0
             num_batches_seen = 0
 
-            if self.model.cfg.overlap_train:
+            if self.model.cfg.carryover_state:
                 # Create tensors to store the s_snow and s_water values to be used in the next batch
-                s_snow_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
-                s_water_prev = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+                carryover_s_snow = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+                carryover_s_water = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
 
             first_batch = True  # Flag to check if it's the first batch
 
@@ -94,18 +94,29 @@ class BaseHybridModelTrainer:
                 inputs = inputs.to(self.device_to_train, non_blocking=True)
                 targets = targets.to(self.device_to_train, non_blocking=True) 
 
-                if self.model.cfg.overlap_train and not first_batch:
+                if self.model.cfg.carryover_state and not first_batch:
                     # Update the s_snow and s_water values for the current batch
-                    inputs[0, 0] = s_snow_prev[-1]
-                    inputs[0, 1] = s_water_prev[-1]
+                    if len(inputs.shape) == 2: # For LSTM models (inputs are 2D)
+                        # Update the first timestep (index 0) of the sequence for the carryover features
+                        inputs[0, 0] = carryover_s_snow
+                        inputs[0, 1] = carryover_s_water
+                    elif len(inputs.shape) == 3:  # For LSTM models (inputs are 3D)
+                        # Ensure that carryover state is sliced to match the batch size of the inputs
+                        current_batch_size = inputs.shape[0]  # Get current batch size (might be smaller for last batch)
+                        inputs[:, 0, 0] = carryover_s_snow[:current_batch_size]  # Adjust to match current batch size
+                        inputs[:, 0, 1] = carryover_s_water[:current_batch_size]  # Adjust to match current batch size
 
                 # Forward pass
                 q_sim, s_snow, s_water = self.model(inputs, basin_ids[0])
 
                 # Update the s_snow and s_water values for the next batch
-                if self.model.cfg.overlap_train:
-                    s_snow_prev = s_snow.clone().detach()
-                    s_water_prev = s_water.clone().detach()
+                if self.model.cfg.carryover_state:
+                    if len(inputs.shape) == 2:  # For MLP models (inputs are 2D)
+                        carryover_s_snow = s_snow[-1].clone().detach()
+                        carryover_s_water = s_water[-1].clone().detach()
+                    elif len(inputs.shape) == 3:  # For LSTM models (inputs are 3D)
+                        carryover_s_snow = s_snow[:, -1].clone().detach()
+                        carryover_s_water = s_water[:, -1].clone().detach()
 
                 # Compute loss
                 if isinstance(self.loss, NSElossNH):

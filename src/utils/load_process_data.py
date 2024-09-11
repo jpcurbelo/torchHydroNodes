@@ -210,7 +210,6 @@ def run_job_with_memory_check(model, ds_basin, input_var_names, basin, input_sha
     return outputs
 
 
-
 ## Classes
 class Config(object):
     '''
@@ -865,8 +864,8 @@ class Config(object):
         return self._get_property_value("scipy_solver", default="RK23")
 
     @property
-    def overlap_train(self) -> bool:
-        return self._get_property_value("overlap_train", default=False)
+    def carryover_state(self) -> bool:
+        return self._get_property_value("carryover_state", default=False)
 
 ## Classes for data loading
 class BatchSampler(Sampler):

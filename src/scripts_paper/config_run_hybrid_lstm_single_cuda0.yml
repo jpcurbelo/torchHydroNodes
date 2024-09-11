@@ -5,23 +5,19 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-# odesmethod: bosh3
-
 odesmethod: euler
 time_step: 1.0
 
 carryover_state: False
 
 # Files to specify training, validation and test basins
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: This is to be updated!!! # do not delete this line
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 data_dir: M0_results_569basins_1980_2010_RK23
 
-# # nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_01013500_240802_092257
-# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_01013500_240802_092257
+nn_model_dir: This is to be updated!!! # do not delete this line
 
 # If not nn_model_dir, specify the model and parameters to use:
 ###############################################################
@@ -29,7 +25,7 @@ data_dir: M0_results_569basins_1980_2010_RK23
 nn_model: lstm
 
 # Length of the input sequence
-seq_length: 270
+seq_length: 270 # if model is lstm
 
 nn_dynamic_inputs:
   - s_snow
@@ -51,16 +47,9 @@ target_variables:
 hidden_size:
   - 128
 
-# hidden_size: 
-#   - 32
-#   - 32
-#   - 32
-#   - 32
-#   - 32
-
 loss_pretrain: mse
-lr_pretrain: 0.001
-epochs_pretrain: 200
+lr_pretrain: 0.01
+epochs_pretrain: 100
 ###############################################################
 
 scale_target_vars: True
@@ -73,16 +62,11 @@ train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
 
-# train_start_date: "01/10/1995"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2005"
-
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 50
+epochs: 100
 
 # Patience for early stopping
 patience: 20
@@ -90,11 +74,12 @@ patience: 20
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
-# Batch size for training (if -1, it will be only one batch for the whole train time-series)
+# Batch size for training (if -1, it will be only one batch for the whole dataset)
+# batch_size: 7036   # for lstm
 batch_size: 256
 
-# # Dropout rate for the NN model
-# dropout: 0.4
+# # Dropout rate for the model
+# dropout: 0.2
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
@@ -102,23 +87,16 @@ optimizer: adam
 # # Learning rate for the optimizer
 learning_rate: 0.0001
 # learning_rate:
-#   initial: 0.0001
+#   initial: 0.001
 #   decay: 0.5
-#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+#   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: __1basin_hybrid_lstm_270d_64x1_euler1d_50ep
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_carryoverNO
-experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_lr4_200pre_lr3__carryoverNO
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler05d_50ep_carryoverNO
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_bosh3tol36_50ep_carryoverNO
-# experiment_name: _____1basin_hybrid_lstm_carryoverYES
-# experiment_name: _____1basin_hybrid_lstm_carryoverNO
+experiment_name: hybrid_lstm_single
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
-# device: cpu
+device: cuda:0
 
 # Set seed for reproducibility
 seed: 1111
@@ -127,20 +105,17 @@ seed: 1111
 precision: float32
 
 # Number of parallel workers used in the data pipeline
-num_workers: 16
+num_workers: 8
 
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 1
-
+verbose: 0
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins: 1
-  # - 1013500
-  # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:

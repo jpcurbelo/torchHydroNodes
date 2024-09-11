@@ -24,3 +24,13 @@ folders4cdf_dir:
     color: 'tab:purple'
     marker: null
     linestyle: '-.'
+  - directory: ../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
+    experiment: 'Euler | dt=0.1d | torchdiffeq'
+    color: 'tab:brown'
+    marker: null
+    linestyle: '-.'
+  - directory: ../../data/M0_results_569basins_1980_2010_euler1d_torchdiffeq
+    experiment: 'Euler | dt=1d | torchdiffeq'
+    color: 'tab:cyan'
+    marker: null
+    linestyle: '-.'

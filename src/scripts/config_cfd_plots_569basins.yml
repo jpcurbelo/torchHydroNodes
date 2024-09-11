@@ -1,53 +1,16 @@
 folders4cdf_dir:
-  - directory: ../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
-    experiment: 'RK23 | batch size 7305 | 150 epochs $^{\dagger}$'
-    color: 'tab:red'
-    marker: o
-    linestyle: '-.'
-
-# results_folder: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
-# plots_folder: AAplots_hybrid_mlp32x5_256b_euler_lr4_150ep
-# graph_title: Hybrid model (exp-hydro + MLP) - Euler1.0d
-# epochs: 150
-  - directory: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
-    experiment: 'Euler1.0d | batch size 256 | 150 epochs'
-    color: 'tab:blue'
-    marker: null
-    linestyle: '-.'
-
-
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler1.0d | batch size 7305 | 100 epochs'
+  # - directory: ../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
+  #   experiment: 'RK23 | MLP | batch size 7305 | 150 epochs $^{\dagger}$'
+  #   color: 'tab:red'
+  #   marker: o
+  #   linestyle: '-.'
+  # - directory: ../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep
+  #   experiment: 'Euler1.0d | MLP | | batch size 256 | 150 epochs'
   #   color: 'tab:blue'
   #   marker: null
   #   linestyle: '-.'
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_150ep_1000pre_lr3
-  #   experiment: 'Euler1.0d | batch size 7305 | 150 epochs'
-  #   color: 'tab:green'
-  #   marker: null
-  #   linestyle: '-.'
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler0.5d | batch size 7305 | 100 epochs'
-  #   color: 'tab:orange'
-  #   marker: null
-  #   linestyle: '--'
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_150ep_1000pre_lr3
-  #   experiment: 'Euler0.5d | batch size 7305 | 150 epochs'
-  #   color: 'tab:purple'
-  #   marker: null
-  #   linestyle: '--'
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_euler01d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler0.1d | batch size 7305 | 100 epochs'
-  #   color: 'tab:brown'
-  #   marker: null
-  #   linestyle: '--'
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_100ep_1000pre_lr3
-  #   experiment: 'RK23 | batch size 7305 | 100 epochs'
-  #   color: 'tab:cyan'
-  #   marker: null
-  #   linestyle: '-'
-  # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_150ep_1000pre_lr3
-  #   experiment: 'RK23 | batch size 7305 | 150 epochs'
-  #   color: 'tab:olive'
-  #   marker: null
-  #   linestyle: '-'
+  - directory: ../scripts_paper/AAruns_hybrid_single_lstm270d_128h_256b_euler_lr4_100ep
+    experiment: 'Euler1.0d | LSTM | | batch size 256 | 100 epochs'
+    color: 'tab:orange'
+    marker: null
+    linestyle: '-.'

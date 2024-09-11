@@ -31,9 +31,13 @@
 # plots_folder: plots_conceptualLSODA_tol36_scipy
 # graph_title: Conceptual model (exp-hydro) - LSODA_tol36
 
-results_folder: ../../data/M0_results_569basins_1980_2010_RK45
-plots_folder: plots_conceptualRK45tol36_scipy
-graph_title: Conceptual model (exp-hydro) - RK45_tol36_scipy
+# results_folder: ../../data/M0_results_569basins_1980_2010_RK45
+# plots_folder: plots_conceptualRK45tol36_scipy
+# graph_title: Conceptual model (exp-hydro) - RK45_tol36_scipy
+
+results_folder: ../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
+plots_folder: plots_conceptualEuler01d_torchdiffeq
+graph_title: Conceptual model (exp-hydro) - Euler01d_torchdiffeq
 
 
 

@@ -55,7 +55,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Extract the state variables
         # If inputs shape is 2D, then is 'mlp' model
-        if len(inputs.shape) == 2:
+        if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
             self.s_snow = inputs[:, 0]
             self.s_water = inputs[:, 1]
             self.precp_series = inputs[:, 2]
@@ -118,7 +118,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         ode_solver = torchdiffeq.odeint
         # print("About to call the ODE solver")
-        if len(inputs.shape) == 2:
+        if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0], self.s_water[0]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, 
@@ -129,12 +129,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, 
                            rtol=rtol, atol=atol, options=options)
-            
-        # # Print y
-        # print('y', y.shape)
-        # print('y', y[:5, :, :])
 
-        if len(inputs.shape) == 2:
+        if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
 
             s_snow_nn  = y[:, 0, 0]
             s_water_nn = y[:, 0, 1]

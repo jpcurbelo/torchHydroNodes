@@ -5,15 +5,16 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-odesmethod: bosh3
-# odesmethod: euler
-# time_step: 0.5
+# odesmethod: bosh3
+odesmethod: euler
+time_step: 1.0
 
-overlap_train: True
+# If True, carries the final state (e.g., s_snow, s_water) from the previous batch as the initial condition for the next batch.
+carryover_state: False
 
 # Files to specify training, validation and test basins
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -57,7 +58,7 @@ hidden_size:
 
 loss_pretrain: mse
 lr_pretrain: 0.001
-epochs_pretrain: 1000
+epochs_pretrain: 500
 ###############################################################
 
 scale_target_vars: True
@@ -79,7 +80,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 50
 
 # Patience for early stopping
 patience: 30
@@ -90,9 +91,9 @@ clip_gradient_norm: 1.0
 # Batch size for training (if -1, it will be only one batch for the whole train time-series)
 # batch_size: 1024
 # batch_size: 512
-# batch_size: 256
+batch_size: 256
 # batch_size: 128
-batch_size: -1
+# batch_size: -1
 # batch_size: 914   #1827
 # batch_size: 610
 
@@ -162,13 +163,14 @@ learning_rate: 0.0001
 # experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr5667_400ep_1000pre_lr3_oldOverLap
 # experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr5667_400ep_1000pre_lr3_oldOverLap
 
-experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4_200ep_1000pre_lr3_oldOverLap
+# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4_200ep_1000pre_lr3_oldOverLap
 # experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap
 # experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler05d_lr4_200ep_1000pre_lr3_oldOverLap
 # experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler1d_lr456_300ep_1000pre_lr3_oldOverLap
 
 
-# experiment_name: ___Testing_LossFunction
+# experiment_name: _____1basin_hybrid_mlp_carryoverYES
+experiment_name: _____1basin_hybrid_mlp_carryoverNO
 
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]

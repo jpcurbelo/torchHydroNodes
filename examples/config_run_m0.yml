@@ -44,7 +44,7 @@ ode_solver_lib: torchdiffeq
 # scipy_solver: RK23
 
 odesmethod: euler
-time_step: 0.1
+time_step: 0.05
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -84,7 +84,7 @@ metrics:
 
 # experiment_name: _______________M0_results_4basins_test
 
-experiment_name: __M0_results_569basins_1980_2010_euler01d_torchdiffeq
+experiment_name: M0_results_569basins_1980_2010_euler005d_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_rk4_1d_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK23_tol33_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK45_tol69_torchdiffeq
