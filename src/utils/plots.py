@@ -17,8 +17,6 @@ ORIGINAL_CRS = 'EPSG:4326'  # Assuming WGS84 geographic CRS
 # Define the new CRS you want to reproject to, for example, an Albers Equal Area projection
 TARGET_CRS = 'ESRI:102008'  # ESRI:102008 is the WKID for the Albers Equal Area projection
 
-from src.utils.metrics import metric_name_func_dict
-
 def get_cluster_files():
     '''
     Get the list of cluster files for the 569 basins with 6 clusters.
@@ -46,7 +44,7 @@ def load_config_file(config_file, create_plots_folder=True):
     
     return cfg
 
-def load_results_path(results_folder: Path, periods: list, metrics: list=[]):
+def load_results_path(results_folder: Path, periods: list):
     '''
     Load the path to the model_metrics folder within the results_folder.
     If the model_metrics folder does not exist, it will be created by merging the metrics from the different folders.
@@ -54,7 +52,6 @@ def load_results_path(results_folder: Path, periods: list, metrics: list=[]):
     - Args:
         results_folder (Path): Path to the folder containing the results.
         periods (list): List of periods for which the metrics are calculated.
-        metrics (list): List of metrics to calculate.
         
     - Returns:
         model_metrics_path (Path): Path to the model_metrics folder.
@@ -74,10 +71,9 @@ def load_results_path(results_folder: Path, periods: list, metrics: list=[]):
             print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
             os.system(f'rm -rf {model_metrics_path}')
 
-        # Create a folder named 'model_metrics'
-        os.makedirs(model_metrics_path, exist_ok=True)
-
-        if 'julia' not in str(results_folder) and 'm0' not in str(results_folder).lower():
+        if 'julia' not in str(results_folder):
+            # Create a folder named 'model_metrics'
+            os.makedirs(model_metrics_path, exist_ok=True)
 
             # There might be a bunch of single folders that have to be merged
             # Get list of folders
@@ -102,75 +98,10 @@ def load_results_path(results_folder: Path, periods: list, metrics: list=[]):
                 # Save the merged dataframe
                 df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
 
-        else:
-            print(f"Metrics to be computed from the 'model_results' folder in {results_folder}")
-            for period in periods:
-                df_period = metrics_from_results(metrics, period, results_folder, model_metrics_path)
-                # Save the dataframe to a csv file
-                df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
-
         return model_metrics_path, results_folder
 
     else:
         raise FileNotFoundError(f"Folder not found: {results_folder}")
-
-def metrics_from_results(metrics, period, results_path, metrics_path):
-
-    '''
-    Load the results from the results_path and calculate the metrics for each basin.
-    
-    - Args:
-        metrics (list): List of metrics to calculate.
-        period (str): Period for which the metrics are calculated.
-        results_path (Path): Path to the folder containing the results.
-        metrics_path (Path): Path to the folder where the metrics will be saved.
-        
-    - Returns:
-        df_metrics (DataFrame): DataFrame containing the metrics for each basin.
-    '''
-
-    # print("results_path:", results_path, len([f.name for f in results_path.iterdir() if f.is_dir()]))
-    # aux = [f.name for f in results_path.iterdir() if f.is_dir()]
-    # print("aux:", aux[:10])
-    # aux = input("Press Enter to continue...")
-
-    # Check if 'model_results' folder exists in the results_path
-    if 'model_results' in [f.name for f in results_path.iterdir() if f.is_dir()]:
-        model_results_path = results_path / 'model_results'
-
-        # List all files in the model_results folder that contain the period
-        files = sorted([str(f) for f in model_results_path.glob(f'*{period}*') if f.is_file()])
-
-        print(f'Found {len(files)} files for period {period}')
-
-        # Create a dataframe to store the metrics (columns: basin_id, metric1, metric2, ...)
-        df_metrics = pd.DataFrame(columns=['basin_id'] + metrics)
-        # Load the results for each file
-        for file in files:
-            df = pd.read_csv(file)
-            # Filter by columns 'Date', 'q_bucket', and 'q_obs' or 'y_sim' and 'y_obs'
-            if 'y_sim' in df.columns:
-                # Rename the columns
-                df = df.rename(columns={'y_sim': 'q_bucket', 'y_obs': 'q_obs'})
-            
-            if 'Date' in df.columns:
-                df = df.rename(columns={'Date': 'date'})
-
-            df = df[['date', 'q_bucket', 'q_obs']]
-            # Extract basin name from the file name
-            basin_id = file.split('/')[-1].split('_')[0]
-            # Calculate the metrics for the basin and add
-            basin_metrics = [metric_name_func_dict[metric](df['q_obs'].values, df['q_bucket'].values) for metric in metrics]
-
-            # Add the basin_id and the metrics to the dataframe
-            df_metrics.loc[len(df_metrics)] = [basin_id] + basin_metrics
-
-        # Save the dataframe to a csv file
-        df_metrics.to_csv(metrics_path / f'metrics_{period}.csv', index=False)
-
-        return df_metrics
-
-
 
 def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, fontsize=12, 
                     add_text=True, **kwargs):
@@ -593,7 +524,7 @@ def load_nse_period(folder_dir, period='valid'):
 
     return df[['basin', 'nse']].copy()
 
-def plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
+def _plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
     """Plot the CDF of NSE values."""
     nse_values = np.sort(df['nse'])
     cdf = np.arange(1, len(nse_values) + 1) / len(nse_values)
@@ -623,13 +554,11 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
         folder_dir = Path(folder['directory']).expanduser()
         if folder_dir.exists():
             df = load_nse_period(folder_dir, period='valid')
-            plot_cdf(ax_main, df, folder)
+            _plot_cdf(ax_main, df, folder)
         else:
             raise FileNotFoundError(f"Folder not found: {folder_dir}")
     
-    # Check if 'julia' is in any of the folder names
-    if any('julia' in folder['experiment'].lower() for folder in folder4cdf_dir_list):
-        ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
+    ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
     ax_main.set_xlim(0, 1)
     ax_main.set_ylim(0, 1)
     ax_main.set_xlabel('$NSE$', fontsize=14)
@@ -656,7 +585,7 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
         folder_dir = Path(folder['directory']).expanduser()
         if folder_dir.exists():
             df = load_nse_period(folder_dir, period='valid')
-            plot_cdf(ax_main_zoomed, df, folder, zoom_ranges)
+            _plot_cdf(ax_main_zoomed, df, folder, zoom_ranges)
 
     ax_main_zoomed.set_xlim(0, 1)
     ax_main_zoomed.set_ylim(0, 1)
@@ -679,6 +608,73 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
     plt.savefig('cdf_nse_usa_zoomed.png', dpi=150, bbox_inches='tight')
     plt.show()
 
+def plot_comparative_histograms(folder4hist_dir_list, periods):
+    '''
+    Plot comparative histograms with reduced alpha from back to front and add median lines.
+    
+    :param folder4hist_dir_list: List of dictionaries with folder directories and plot settings (color, experiment).
+    :param periods: List of periods (e.g., ['train', 'valid']) to process and plot.
+    '''
+
+    for period in periods:
+        plt.figure(figsize=(10, 6))  # Create a single figure to overlay all histograms
+        max_alpha = 0.8
+        step_alpha = max_alpha / len(folder4hist_dir_list)
+        
+        for idx, folder in enumerate(folder4hist_dir_list):
+            results_folder = Path(folder['directory']).expanduser()
+            experiment = folder['experiment']
+            
+            metric_file_path = results_folder / 'model_metrics' / f'metrics_{period}.csv'
+            
+            # Check if the metric file exists
+            try:
+                df_period = pd.read_csv(metric_file_path)
+            except FileNotFoundError:
+                print(f"File not found: {metric_file_path}")
+                continue
+            
+            # Filter by the metric of interest
+            basin_column = [col for col in df_period.columns if 'basin' in col.lower()]
+            if len(basin_column) == 1:
+                df_period.rename(columns={basin_column[0]: 'basin'}, inplace=True)
+            
+            df = df_period[['basin', 'nse']].copy()
+            
+            # Apply threshold to the metric NSE < 0 to be equal to 0
+            df, _, _ = apply_threshold(df, 'nse', {'nse': [0, 'greater']})
+            
+            # Plot histogram
+            hist_values = df['nse'].values
+            n_bins = 20
+            bins = np.linspace(hist_values.min(), hist_values.max(), n_bins + 1)
+            
+            alpha_value = max_alpha - idx * step_alpha
+            plt.hist(hist_values, bins=bins, color=folder['color'], alpha=alpha_value, label=f"{experiment} | {period}")
+            
+            # Calculate and plot the median
+            median_value = np.median(hist_values)
+            plt.axvline(median_value, color=folder['color'], linestyle='--', linewidth=2)
+
+            # Calculate and plot the mean
+            mean_value = np.mean(hist_values)
+            plt.axvline(mean_value, color=folder['color'], linestyle=':', linewidth=2)
+        
+        # ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
+        plt.plot([], [], '--', label='Median', color='black')
+        plt.plot([], [], ':', label='Mean', color='black')
+
+        plt.xlabel('$NSE$')
+        plt.ylabel('Frequency')
+        plt.title(f'Comparison of NSE across models for $\\mathbf{{{period}}}$ period')
+        plt.legend(loc='upper left')
+        plt.grid(True)
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # Save the plot
+        plt.savefig(f'nse_histograms_{period}.png', dpi=150, bbox_inches='tight')
 
 
 if __name__ == "__main__":
