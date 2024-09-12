@@ -108,7 +108,7 @@ learning_rate: 0.0001
 # learning_rate:
 #   initial: 0.00001
 #   decay: 0.5
-#   decay_step_fraction: 4  # Decay step fraction (e.g., 1/4 of the total epochs
+#   decay_step_fraction: 4  # Decay step fraction (e.g., N-> 1/N of the total epochs
 # learning_rate:
 #   initial: 0.0001
 #   decay: 0.1

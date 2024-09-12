@@ -8,3 +8,4 @@ matplotlib==3.9.1
 torchdiffeq==0.2.4
 geopandas==1.0.1
 cmcrameri==1.9
+scikit-learn==1.5.2

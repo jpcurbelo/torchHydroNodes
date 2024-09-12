@@ -299,15 +299,8 @@ class NNpretrainer(ExpHydroCommon):
                 else:
                     predictions = self.nnmodel(inputs, basin_ids[0])
 
-                # print('inputs:', inputs.shape)
-                # print('targets:', targets.shape)
                 # print('predictions:', predictions.shape)
-                # aux = input('Press Enter to continue...')
-
-                # print('inputs:', inputs[:5,  :])
-                # print('inputs:', inputs[-5:,  :])
-                # print('targets:', targets[:3, :])
-                # print('predictions:', predictions[:3, :])
+                # print(predictions[:4, :])
                 # aux = input('Press Enter to continue...')
                 
                 nan_mask = torch.isnan(predictions)
@@ -317,9 +310,10 @@ class NNpretrainer(ExpHydroCommon):
                     targets = targets[~nan_mask]
                     if nan_count > max_nan_batches:
                         print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
-                        return
+                        return False
 
                 loss = self.loss(targets, predictions)
+                print(nan_count, loss)
 
                 # Backward pass
                 loss.backward()
@@ -387,6 +381,8 @@ class NNpretrainer(ExpHydroCommon):
 
         # Reset optimizer and scheduler to the initial learning rate for the next training
         self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler()
+
+        return True
 
     def save_model(self):
         '''Save the model weights'''

@@ -916,8 +916,8 @@ class BasinBatchSampler(Sampler):
     def _create_batches(self):
         batches = []
         for _, indices in self.basin_to_indices.items():
-            # for i in range(0, len(indices), self.batch_size):  ## First (old) overlap version
-            for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) overlap version
+            for i in range(0, len(indices), self.batch_size):  ## First (old) overlap version
+            # for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) overlap version
                 batch = indices[i:i + self.batch_size]
                 batches.append(batch)
                 # if len(batch) == self.batch_size:

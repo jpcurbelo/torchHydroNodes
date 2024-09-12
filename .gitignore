@@ -1,6 +1,6 @@
 ####### Gitignore file for python projects - Added by author
 # Folders
-venv-hydronodes/*
+venv-*/*
 examples/runs*/
 data/*
 src/scripts_paper/runs_pretrainer*
@@ -17,6 +17,7 @@ src/scripts/plots*
 # Files
 src/scripts_paper/*_temp_*.yml
 src/scripts_paper/1_basin_*
+requirements_*.txt
 
 
 ###### Gitignore file for python projects - Default

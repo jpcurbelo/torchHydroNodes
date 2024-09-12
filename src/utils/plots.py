@@ -44,6 +44,43 @@ def load_config_file(config_file, create_plots_folder=True):
     
     return cfg
 
+def merge_model_metrics(results_folder: Path, model_metrics_path: Path, periods: list):
+    '''
+    Merge the model metrics for the specified periods from the different folders in the results folder.
+    Save the merged metrics for each period as a CSV file in the model_metrics folder.
+
+    - Args:
+        results_folder (Path): Path to the folder containing the results.
+        model_metrics_path (Path): Path to the model_metrics folder.
+        periods (list): List of periods for which the metrics are calculated.
+    '''
+
+    # Create the 'model_metrics' directory if it doesn't exist
+    os.makedirs(model_metrics_path, exist_ok=True)
+
+    # Get the list of subdirectories inside the results folder
+    folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
+
+    # Iterate over each specified period
+    for period in periods:
+        df_period = pd.DataFrame()  # Initialize an empty DataFrame for the period
+
+        # Iterate over each folder found in results_folder
+        for folder in folders:
+            folder_path = results_folder / folder  # Construct full folder path
+            metrics_folder = folder_path / 'model_metrics'  # Subdirectory containing metrics
+
+            # Find files matching the pattern *metrics_{period}* in the 'model_metrics' folder
+            for file in metrics_folder.glob(f'*metrics_{period}*'):
+                if file.is_file():
+                    # Read CSV and append its content to df_period
+                    df = pd.read_csv(file)
+                    df_period = pd.concat([df_period, df], ignore_index=True)
+
+        # Save the merged DataFrame for the current period as a CSV file
+        output_file = model_metrics_path / f'metrics_{period}.csv'
+        df_period.to_csv(output_file, index=False)
+
 def load_results_path(results_folder: Path, periods: list):
     '''
     Load the path to the model_metrics folder within the results_folder.
@@ -72,31 +109,35 @@ def load_results_path(results_folder: Path, periods: list):
             os.system(f'rm -rf {model_metrics_path}')
 
         if 'julia' not in str(results_folder):
-            # Create a folder named 'model_metrics'
-            os.makedirs(model_metrics_path, exist_ok=True)
 
-            # There might be a bunch of single folders that have to be merged
-            # Get list of folders
-            folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
+            # Merge the model metrics for the specified periods
+            merge_model_metrics(results_folder, model_metrics_path, periods)
 
-            # Iterate over each period and folder
-            for period in periods:
-                df_period = pd.DataFrame()
-                for folder in folders:
-                    # Ensure that folder is a Path object
-                    folder_path = results_folder / folder
-                    # Construct the path for the model_metrics directory within each folder
-                    metrics_folder = folder_path / 'model_metrics'
-                    # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
-                    for file in metrics_folder.glob(f'*metrics_{period}*'):
-                        if file.is_file():
-                            # Load the file
-                            df = pd.read_csv(file)
-                            # Add to df_period
-                            df_period = pd.concat([df_period, df], ignore_index=True)
+            # # Create a folder named 'model_metrics'
+            # os.makedirs(model_metrics_path, exist_ok=True)
+
+            # # There might be a bunch of single folders that have to be merged
+            # # Get list of folders
+            # folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
+
+            # # Iterate over each period and folder
+            # for period in periods:
+            #     df_period = pd.DataFrame()
+            #     for folder in folders:
+            #         # Ensure that folder is a Path object
+            #         folder_path = results_folder / folder
+            #         # Construct the path for the model_metrics directory within each folder
+            #         metrics_folder = folder_path / 'model_metrics'
+            #         # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
+            #         for file in metrics_folder.glob(f'*metrics_{period}*'):
+            #             if file.is_file():
+            #                 # Load the file
+            #                 df = pd.read_csv(file)
+            #                 # Add to df_period
+            #                 df_period = pd.concat([df_period, df], ignore_index=True)
                 
-                # Save the merged dataframe
-                df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
+            #     # Save the merged dataframe
+            #     df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
 
         return model_metrics_path, results_folder
 
@@ -618,18 +659,30 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
 
     for period in periods:
         plt.figure(figsize=(10, 6))  # Create a single figure to overlay all histograms
-        max_alpha = 0.8
+        max_alpha = 0.7
         step_alpha = max_alpha / len(folder4hist_dir_list)
         
         for idx, folder in enumerate(folder4hist_dir_list):
             results_folder = Path(folder['directory']).expanduser()
             experiment = folder['experiment']
             
-            metric_file_path = results_folder / 'model_metrics' / f'metrics_{period}.csv'
-            
-            # Check if the metric file exists
+            model_metrics_path = results_folder / 'model_metrics'
+            metric_file_path = model_metrics_path / f'metrics_{period}.csv'
+
+            if model_metrics_path.exists() and 'julia' not in str(results_folder):
+                # Delete the folder and merge the metrics again
+                print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
+                os.system(f'rm -rf {model_metrics_path}')
+
+            if 'julia' not in str(results_folder):
+                # Merge the model metrics for the specified periods
+                merge_model_metrics(results_folder, model_metrics_path, periods)
+
+            print(f"Reading the metric file: {metric_file_path}")
+
+            # Try reading the metric file after merging
             try:
-                df_period = pd.read_csv(metric_file_path)
+                df_period = pd.read_csv(str(metric_file_path))
             except FileNotFoundError:
                 print(f"File not found: {metric_file_path}")
                 continue
@@ -648,17 +701,25 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
             hist_values = df['nse'].values
             n_bins = 20
             bins = np.linspace(hist_values.min(), hist_values.max(), n_bins + 1)
+
+            tot_basins = len(df['nse'])
             
+            # alpha_value = 1.0 - (max_alpha - idx * step_alpha)
             alpha_value = max_alpha - idx * step_alpha
-            plt.hist(hist_values, bins=bins, color=folder['color'], alpha=alpha_value, label=f"{experiment} | {period}")
+            # alpha_value = 0.7
+            plt.hist(hist_values, bins=bins, color=folder['color'], alpha=alpha_value, label=f"{experiment} | {tot_basins} basins | {period}")
             
+            # Remove 'tab' from the color string if it exists
+            # line_color = folder['color'].replace('tab:', '')
+            line_color = folder['color']
+
             # Calculate and plot the median
             median_value = np.median(hist_values)
-            plt.axvline(median_value, color=folder['color'], linestyle='--', linewidth=2)
+            plt.axvline(median_value, color=line_color, linestyle='--', linewidth=2)
 
             # Calculate and plot the mean
             mean_value = np.mean(hist_values)
-            plt.axvline(mean_value, color=folder['color'], linestyle=':', linewidth=2)
+            plt.axvline(mean_value, color=line_color, linestyle=':', linewidth=2)
         
         # ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
         plt.plot([], [], '--', label='Median', color='black')

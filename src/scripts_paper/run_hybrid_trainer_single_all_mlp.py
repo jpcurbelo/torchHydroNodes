@@ -136,16 +136,19 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
 
     # Pretrain the model if no pre-trained model is loaded
     if cfg_run.nn_model_dir is False:
-        pretrainer.train(loss=cfg_run.loss_pretrain, lr=cfg_run.lr_pretrain, epochs=cfg_run.epochs_pretrain)
+        pretrain_ok = pretrainer.train(loss=cfg_run.loss_pretrain, lr=cfg_run.lr_pretrain, epochs=cfg_run.epochs_pretrain)
 
-    # Build the hybrid model
-    model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
+    if pretrain_ok:
+        # Build the hybrid model
+        model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
 
-    # Build the trainer 
-    trainer = get_trainer(model_hybrid)
+        # Build the trainer 
+        trainer = get_trainer(model_hybrid)
 
-    # Train the model
-    trainer.train()
+        # Train the model
+        trainer.train()
+    else:
+        print(f'Pretraining failed for basin {basin}')  
 
     # Delete the basin_file and config_file_temp after training
     if os.path.isfile(basin_file):

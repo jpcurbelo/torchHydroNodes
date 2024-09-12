@@ -13,8 +13,8 @@ time_step: 1.0
 carryover_state: False
 
 # Files to specify training, validation and test basins
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
@@ -82,7 +82,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 50
+epochs: 150
 
 # Patience for early stopping
 patience: 20
@@ -100,25 +100,29 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-learning_rate: 0.0001
-# learning_rate:
-#   initial: 0.0001
-#   decay: 0.5
-#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+# learning_rate: 0.0001
+learning_rate:
+  initial: 0.0001
+  decay: 0.1
+  decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: __1basin_hybrid_lstm_270d_64x1_euler1d_50ep
 # experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_carryoverNO
-experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_lr4_200pre_lr3__carryoverNO
+# experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_lr4_200pre_lr3__carryoverNO
 # experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler05d_50ep_carryoverNO
 # experiment_name: ________1basin_hybrid_lstm_270d_128x1_bosh3tol36_50ep_carryoverNO
 # experiment_name: _____1basin_hybrid_lstm_carryoverYES
 # experiment_name: _____1basin_hybrid_lstm_carryoverNO
 
+
+# experiment_name: 1basin_hybrid_lstm_270d_128x1_euler1d_150ep_lr45_200pre_lr3_carryoverNO_gpu
+experiment_name: 1basin_hybrid_lstm_270d_128x1_euler1d_150ep_lr45_200pre_lr3_carryoverNO_cpu
+
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
-# device: cpu
+# device: cuda:1
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111
@@ -140,7 +144,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 25
 
 # Metrics to use for evaluation (after training)
 metrics:
