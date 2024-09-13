@@ -1,35 +1,35 @@
 folders4cdf_dir:
-  - directory: ../../data/M0_results_569basins_1980_2010_RK23
+  - directory: ../../../data/M0_results_569basins_1980_2010_RK23
     experiment: 'RK23 | rtol=1e-3, atol=1e-3 | scipy'
     color: 'tab:red'
     marker: o
     linestyle: '--'
-  - directory: ../../data/M0_results_569basins_1980_2010_RK23_tol46_scipy
+  - directory: ../../../data/M0_results_569basins_1980_2010_RK23_tol46_scipy
     experiment: 'RK23 | rtol=1e-4, atol=1e-6 | scipy'
     color: 'tab:blue'
     marker: null
     linestyle: '-.'
-  - directory: ../../data/M0_results_569basins_1980_2010_rk4_1d_torchdiffeq
+  - directory: ../../../data/M0_results_569basins_1980_2010_rk4_1d_torchdiffeq
     experiment: 'RK4 | dt=1d | torchdiffeq'
     color: 'tab:green'
     marker: null
     linestyle: '-.'
-  - directory: ../../data/M0_results_569basins_1980_2010_LSODA_tol36_240815_071831
+  - directory: ../../../data/M0_results_569basins_1980_2010_LSODA_tol36_240815_071831
     experiment: 'LSODA | rtol=1e-3, atol=1e-6 | scipy'
     color: 'tab:orange'
     marker: null
     linestyle: '-.'
-  - directory: ../../data/M0_results_569basins_1980_2010_RK45
+  - directory: ../../../data/M0_results_569basins_1980_2010_RK45
     experiment: 'RK45 | rtol=1e-3, atol=1e-6 | scipy'
     color: 'tab:purple'
     marker: null
     linestyle: '-.'
-  - directory: ../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
+  - directory: ../../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
     experiment: 'Euler | dt=0.1d | torchdiffeq'
     color: 'tab:brown'
     marker: null
     linestyle: '-.'
-  - directory: ../../data/M0_results_569basins_1980_2010_euler1d_torchdiffeq
+  - directory: ../../../data/M0_results_569basins_1980_2010_euler1d_torchdiffeq
     experiment: 'Euler | dt=1d | torchdiffeq'
     color: 'tab:cyan'
     marker: null

@@ -6,9 +6,13 @@ import pandas as pd
 import sys
 import matplotlib.pyplot as plt
 
-# Make sure code directory is in path,
-# Add the parent directory of your project to the Python path
-project_dir = str(Path(__file__).resolve().parent.parent.parent)
+# # # Make sure code directory is in path,
+# # # Add the parent directory of your project to the Python path
+# # project_dir = str(Path(__file__).resolve().parent.parent.parent)
+# # sys.path.append(project_dir)
+
+# Get the current working directory (works for Jupyter or interactive environments)
+project_dir = str(Path.cwd().parent.parent.parent)  # Adjust parent levels as needed
 sys.path.append(project_dir)
 
 from src.utils.metrics import metric_name_func_dict

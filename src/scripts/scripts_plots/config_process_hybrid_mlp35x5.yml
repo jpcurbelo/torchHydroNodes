@@ -9,7 +9,7 @@
 # graph_title: Hybrid model (exp-hydro) - MLP/Bosh3 - Julia
 # epochs: 150
 
-results_folder: ../scripts_paper/AAruns_hybrid_single_lstm270d_128h_256b_euler_lr4_100ep
+results_folder: ../../scripts_paper/AAruns_hybrid_single_lstm270d_128h_256b_euler_lr4_100ep
 plots_folder: AAplots_hybrid_lstm270d_128h_256b_euler_lr4_100ep
 graph_title: Hybrid model (exp-hydro + LSTM) - Euler1.0d
 

@@ -9,10 +9,10 @@ src/scripts_paper/ZZZruns_*
 src/scripts_paper/M100_results*
 src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
-src/scripts/gifs/*
-src/scripts/AA*
-src/scripts/4basins_test/
-src/scripts/plots*
+src/scripts/scripts_plots/gifs/*
+src/scripts/scripts_plots/AA*
+src/scripts/scripts_plots/4basins_test/
+src/scripts/scripts_plots/plots*
 
 # Files
 src/scripts_paper/*_temp_*.yml

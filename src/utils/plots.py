@@ -271,6 +271,10 @@ def apply_threshold(df, metric, threshold_dict):
         # Clean nan values - drop rows with nan values
         df = df.dropna(subset=[metric])
 
+    # If metric is NSE, replace values equal to 1.0 with 0.0
+    if metric == 'nse':
+        df.loc[:, metric] = df[metric].replace(1.0, 0.0)
+
     return df, n_below_threshold, th_value
 
 def _plot_histogram(ax, df, metric, threshold_dict, graph_title, period, epochs=None):
@@ -566,14 +570,18 @@ def load_nse_period(folder_dir, period='valid'):
     return df[['basin', 'nse']].copy()
 
 def _plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
-    """Plot the CDF of NSE values."""
+    """Plot the CDF of NSE values with a horizontal line at y=0.5."""
     nse_values = np.sort(df['nse'])
     cdf = np.arange(1, len(nse_values) + 1) / len(nse_values)
     
+    # Plot the CDF line
     ax.plot(nse_values, cdf, color=folder['color'], alpha=0.8,
             linewidth=2.5, marker=folder['marker'], markevery=markevery,
             ms=ms, linestyle=folder['linestyle'], label=folder['experiment'])
     
+    # Plot a solid horizontal line at y=0.5 (median line), without showing in legend
+    ax.axhline(y=0.5, color='gray', linestyle='-', linewidth=0.2, label='_nolegend_')
+
     # Plot zoomed-in sections if provided
     if zoom_ranges:
         for ax_inset, zoom_range in zip(zoom_ranges['axes'], zoom_ranges['x']):
@@ -628,6 +636,7 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
             df = load_nse_period(folder_dir, period='valid')
             _plot_cdf(ax_main_zoomed, df, folder, zoom_ranges)
 
+    ax_main_zoomed.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
     ax_main_zoomed.set_xlim(0, 1)
     ax_main_zoomed.set_ylim(0, 1)
     ax_main_zoomed.set_xlabel('$NSE$', fontsize=14)
@@ -671,20 +680,23 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
 
             if model_metrics_path.exists() and 'julia' not in str(results_folder):
                 # Delete the folder and merge the metrics again
-                print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
                 os.system(f'rm -rf {model_metrics_path}')
 
             if 'julia' not in str(results_folder):
                 # Merge the model metrics for the specified periods
                 merge_model_metrics(results_folder, model_metrics_path, periods)
 
-            print(f"Reading the metric file: {metric_file_path}")
-
-            # Try reading the metric file after merging
             try:
+                # Try reading the file first
                 df_period = pd.read_csv(str(metric_file_path))
-            except FileNotFoundError:
-                print(f"File not found: {metric_file_path}")
+                
+                # Check if the DataFrame is empty (even if the file exists and has some lines)
+                if df_period.empty:
+                    print(f"File is empty or contains no data: {metric_file_path}")
+                    continue
+            except pd.errors.EmptyDataError:
+                # Handle the case where the file is completely empty or malformed
+                print(f"File contains no data (EmptyDataError): {metric_file_path}")
                 continue
             
             # Filter by the metric of interest
@@ -694,8 +706,9 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
             
             df = df_period[['basin', 'nse']].copy()
             
-            # Apply threshold to the metric NSE < 0 to be equal to 0
-            df, _, _ = apply_threshold(df, 'nse', {'nse': [0, 'greater']})
+            # Apply threshold to the metric NSE < 0 or NSE = -1.0 to be equal to 0
+            # df, _, _ = apply_threshold(df, 'nse', {'nse': [0, 'greater']})
+            df['nse'] = df['nse'].apply(lambda x: max(0, x))
             
             # Plot histogram
             hist_values = df['nse'].values
@@ -704,8 +717,8 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
 
             tot_basins = len(df['nse'])
             
-            # alpha_value = 1.0 - (max_alpha - idx * step_alpha)
-            alpha_value = max_alpha - idx * step_alpha
+            alpha_value = 1.0 - (max_alpha - idx * step_alpha)
+            # alpha_value = max_alpha - idx * step_alpha
             # alpha_value = 0.7
             plt.hist(hist_values, bins=bins, color=folder['color'], alpha=alpha_value, label=f"{experiment} | {tot_basins} basins | {period}")
             
