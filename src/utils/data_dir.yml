@@ -1,4 +1,5 @@
-data_dir_camelsus: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+# data_dir_camelsus: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+data_dir_camelsus: /gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
 # data_dir_camelsus: ../../DATA/CAMELS_US
 
 map_shape_file: basin_set_full_res/usa-states-census-2014.shp

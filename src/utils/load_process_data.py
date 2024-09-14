@@ -125,7 +125,7 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer',
         # print('cfg.nn_model_dir', cfg.nn_model_dir)
 
         if not cfg.nn_model_dir:
-            print('cfg.nn_model_dir is not defined - parameters should be defined in the config file')
+            print('cfg.nn_model_dir is not defined - parameters MUST be defined in the config file')
         else:
 
             # Load vars from the nn_model
@@ -227,10 +227,8 @@ class Config(object):
 
         # Set seed for reproducibility
         self.set_seeds()
-
         # Create a folder to save the trained models and dump the configuration data to a ymal file
         if 'run_dir' not in self._cfg:
-        
             # Create a folder to save the trained models
             if isinstance(yml_path_or_dict, Path):
                 self.create_run_folder_tree()

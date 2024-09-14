@@ -313,7 +313,7 @@ class NNpretrainer(ExpHydroCommon):
                         return False
 
                 loss = self.loss(targets, predictions)
-                print(nan_count, loss)
+                # print(nan_count, loss)
 
                 # Backward pass
                 loss.backward()
@@ -497,7 +497,7 @@ class NNpretrainer(ExpHydroCommon):
                 # Clear CUDA cache to free memory
                 torch.cuda.empty_cache()
             
-        pbar_basins.close()
+            pbar_basins.close()
 
     def evaluate(self):
 

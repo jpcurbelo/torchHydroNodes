@@ -17,12 +17,16 @@ ORIGINAL_CRS = 'EPSG:4326'  # Assuming WGS84 geographic CRS
 # Define the new CRS you want to reproject to, for example, an Albers Equal Area projection
 TARGET_CRS = 'ESRI:102008'  # ESRI:102008 is the WKID for the Albers Equal Area projection
 
-def get_cluster_files():
+def get_cluster_files(cluster_folder='569_basins_6clusters'):
     '''
     Get the list of cluster files for the 569 basins with 6 clusters.
     '''
 
-    cluster_files = sorted(list(Path(f'../../examples/cluster_files/569_basins_6clusters').glob('*.txt')))
+    cluster_files = sorted(list(Path(f'../../../examples/cluster_files/{cluster_folder}').glob('*.txt')))
+    # print(f"Home directory", os.listdir(home_directory))
+    # print(f"/torchHydroNodes", os.listdir(f'{home_directory}/torchHydroNodes'))
+    # print(f"/examples", os.listdir(f'{home_directory}/torchHydroNodes/examples'))
+    # cluster_files = sorted(list(Path(f'{home_directory}/torchHydroNodes/examples/cluster_files/569_basins_6clusters').glob('*.txt')))
     return cluster_files
 
 def load_config_file(config_file, create_plots_folder=True):
@@ -707,8 +711,8 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
             df = df_period[['basin', 'nse']].copy()
             
             # Apply threshold to the metric NSE < 0 or NSE = -1.0 to be equal to 0
-            # df, _, _ = apply_threshold(df, 'nse', {'nse': [0, 'greater']})
-            df['nse'] = df['nse'].apply(lambda x: max(0, x))
+            df, _, _ = apply_threshold(df, 'nse', {'nse': [0, 'greater']})
+            # df['nse'] = df['nse'].apply(lambda x: max(0, x))
             
             # Plot histogram
             hist_values = df['nse'].values

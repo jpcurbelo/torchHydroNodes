@@ -13,6 +13,7 @@ src/scripts/scripts_plots/gifs/*
 src/scripts/scripts_plots/AA*
 src/scripts/scripts_plots/4basins_test/
 src/scripts/scripts_plots/plots*
+src/scripts/scripts_fine-tuning/runs_*
 
 # Files
 src/scripts_paper/*_temp_*.yml
