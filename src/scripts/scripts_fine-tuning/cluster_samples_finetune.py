@@ -36,13 +36,15 @@ from src.modelzoo_hybrid import (
     get_trainer,
 )
 
-finetune_folder = create_finetune_folder()
+nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+
+finetune_folder = create_finetune_folder(base_name=f'runs_finetune_{nnmodel_type}')
 
 SAMPLE_FRACTION = 0.01
 # config_file_base = Path('config_file_base_mlp.yml')
 # hyperparameter_file = 'hyperparameters.yml'
-config_file_base = Path('config_file_base_mlp_testing.yml')
-hyperparameter_file = 'hyperparameters_testing.yml'
+config_file_base = Path(f'config_file_base_{nnmodel_type}_testing.yml')
+hyperparameter_file = f'hyperparameters_{nnmodel_type}_testing.yml'
 
 USE_PROCESS_POOL = 0
 MAX_WORKERS = 4
@@ -113,7 +115,11 @@ def train_model_for_basin(run_folder, cfg_file, basin, run_version):
     pretrainer = get_nn_pretrainer(model_nn, dataset)
 
     # Pretrain the model
-    pretrain_ok = pretrainer.train(loss=cfg_run.loss_pretrain, lr=cfg_run.lr_pretrain, epochs=cfg_run.epochs_pretrain)
+    pretrain_ok = pretrainer.train(
+        loss=cfg_run.loss_pretrain, 
+        lr=cfg_run.lr_pretrain, 
+        epochs=cfg_run.epochs_pretrain,
+        any_log=False)
 
     if pretrain_ok:
         # Build the hybrid model
@@ -134,7 +140,9 @@ def main():
 
     # Get the cluster files
     cluster_files = get_cluster_files()
-    print(cluster_files)
+
+    if len(cluster_files) == 0:
+        raise FileNotFoundError('No cluster files found! Please, double-check the path.')
 
     # Random selection
     selected_basins_dict, _, sample_file, basin_file = random_basins_subset(cluster_files, SAMPLE_FRACTION)
@@ -145,7 +153,7 @@ def main():
 
     # Load hyperparameters
     hyperparameters = load_hyperparameters(hyperparameter_file)
-    print(hyperparameters)
+    # print(hyperparameters)
 
     # Generate hyperparameter combinations`
     params_combinations = hyperparameter_combinations(hyperparameters)
@@ -160,7 +168,7 @@ def main():
 
     # Iterate over the hyperparameter combinations
     for i, combination in enumerate(params_combinations):
-        print(f"Combination {i + 1}: {combination}")
+        # print(f"Combination {i + 1}: {combination}")
 
         run_folder = finetune_folder / f"run_combination{i + 1}"
         run_folder.mkdir(parents=True, exist_ok=True)
@@ -173,6 +181,8 @@ def main():
         # Update the base configuration with the combination
         cfg_run = cfg_base.copy()
         cfg_run.update(combination)
+        # # Set log_every_n_epochs to be half of the number of epochs
+        # cfg_run['log_every_n_epochs'] = cfg_run['epochs'] // 2
 
         # Save the combination to a YAML file
         cfg_file = run_folder / f'config_comb{i + 1}.yml'
@@ -185,7 +195,6 @@ def main():
         if USE_PROCESS_POOL:
 
             max_workers = MAX_WORKERS
-    
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 futures = [executor.submit(train_model_for_basin, run_folder, cfg_file, basin, run_version) for basin in basins]
                 for future in concurrent.futures.as_completed(futures):
@@ -194,7 +203,9 @@ def main():
                     except Exception as e:
                         print(f'Error in training model: {e}')
         else:
-            for basin in basins:
+            print(f"Training model for combination {i + 1}")
+            for basin in basins[:2]:
+                print(f"Training model for basin {basin}")
                 train_model_for_basin(run_folder, cfg_file, basin, run_version)
 
         

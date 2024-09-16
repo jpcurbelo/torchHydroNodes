@@ -249,7 +249,7 @@ def main():
 
     
     # basins = basins[:100]
-    basins = basins[100:200]
+    basins = basins[300:400]
     # basins = basins[:128]
     print(f"Total basins to be trained: {len(basins)}")
 

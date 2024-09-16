@@ -104,3 +104,10 @@ metrics:
   - Peak-Timing
   - Peak-MAPE
   - Pearson-r
+
+# If a value and greater than 0, logs n random basins as figures after pretraining the NN model
+# If list of basins, logs the specified basins: format is either '01013500' or 1013500
+log_n_basins: 1
+
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: This is to be updated!!!

@@ -462,10 +462,21 @@ class NSEloss(nn.Module):
         # print('y_mean:', y_mean)
         # print('torch.mean(y_true)', torch.mean(y_true))
 
+        # print('y_true:', y_true)
+        # print('y_pred:', y_pred)
+
         numerator = torch.sum(torch.square(y_true - y_pred))
         denominator = torch.sum(torch.square(y_true - y_mean)) + np.finfo(float).eps
 
         loss = numerator / denominator - 1.0
+
+        # if loss == -1.0:
+        #     print('y_true:', y_true.shape)
+        #     print('y_pred:', y_pred.shape)
+        #     print('y_mean:', y_mean)
+        #     print('numerator:', numerator)
+        #     print('denominator:', denominator)
+        #     aux = input('Press enter to continue')
         
         return loss
 

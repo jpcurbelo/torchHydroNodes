@@ -5,6 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import time
+import csv
+import tracemalloc  # For CPU memory tracking (optional)
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -53,7 +56,7 @@ class BaseHybridModelTrainer:
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
 
-    def train(self, is_resume=False):
+    def train(self, is_resume=False, max_nan_batches=5):
 
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
@@ -67,10 +70,17 @@ class BaseHybridModelTrainer:
         # self.save_plots(epoch=0)
 
         best_loss = float('inf')  # Initialize best loss to a very high value
+        nan_count = 0
+        stop_training = False  # Flag to signal when to stop both loops
+
+        # Check if training is on GPU
+        is_gpu = 'cuda' in self.device_to_train.type
+
         for epoch in range(self.model.epochs):
 
-            # Clear CUDA cache at the beginning of each epoch
-            torch.cuda.empty_cache()
+            # Clear CUDA cache at the beginning of each epoch if running on GPU
+            if is_gpu:
+                torch.cuda.empty_cache()
 
             pbar = tqdm(self.model.dataloader, disable=self.model.cfg.disable_pbar, file=sys.stdout)
             pbar.set_description(f'# Epoch {epoch + 1:05d} ')
@@ -108,6 +118,16 @@ class BaseHybridModelTrainer:
 
                 # Forward pass
                 q_sim, s_snow, s_water = self.model(inputs, basin_ids[0])
+
+                nan_mask = torch.isnan(q_sim)
+                if nan_mask.any():
+                    nan_count += 1
+                    q_sim = q_sim[~nan_mask]
+                    targets = targets[~nan_mask]
+                    if nan_count > max_nan_batches:
+                        print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
+                        stop_training = True  # Set flag to stop both loops
+                        break  # Break the inner loop
 
                 # Update the s_snow and s_water values for the next batch
                 if self.model.cfg.carryover_state:
@@ -155,11 +175,15 @@ class BaseHybridModelTrainer:
 
                 # Delete variables to free memory
                 del inputs, targets, q_sim, loss
-                torch.cuda.empty_cache()
+                # torch.cuda.empty_cache()
 
                 first_batch = False  # Set the flag to False after processing the first batch
 
             pbar.close()
+
+            # Break the outer loop if stopping is signaled
+            if stop_training:
+                break
 
             # Save the model weights and plots
             if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:
@@ -198,104 +222,218 @@ class BaseHybridModelTrainer:
             if not self.model.cfg.verbose:
                 print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
-        # Save the final model weights and plots
-        if self.model.cfg.verbose:
-            print("-- Training completed | Evaluating the model --")
-        self.evaluate() # Here the model weights are updated to the best saved model
-        self.save_plots(epoch=epoch + 1)
+        # Evaluate and save the final plots
+        if not stop_training:
+            # Save the final model weights and plots
+            if self.model.cfg.verbose:
+                print("-- Training completed | Evaluating the model --")
+            self.evaluate()
+            if is_gpu:
+                torch.cuda.empty_cache()
+            self.save_plots(epoch=epoch + 1)
 
-    def train_finetune(self, is_resume=False):
-
-        # Initialize early stopping
-        early_stopping = EarlyStopping(patience=self.model.cfg.patience)
+    ################################################# 
+    def train_finetune(self, is_resume=False, max_nan_batches=5):
 
         # For performance tracking
         total_train_time = 0.0
         epoch_times = []
         
-        # Accuracy/loss tracking
-        best_loss = float('inf')
+        # Open CSV file for writing epoch stats (time, loss, memory)
+        with open(self.model.cfg.run_dir / 'epoch_stats.csv', 'w', newline='') as csvfile:
+            fieldnames = ['epoch', 'epoch_time_seg', 'avg_loss', 'gpu_peak_memory_mb', 'cpu_peak_memory_mb']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-        for epoch in range(self.model.epochs):
+            # Write the header
+            writer.writeheader()
 
-            # # Start time for epoch
-            # start_time = time.time()
+            nan_count = 0
+            stop_training = False  # Flag to signal when to stop both loops
+            
+            # Check if training is on GPU or CPU
+            is_gpu = 'cuda' in self.device_to_train.type
+            is_cpu = 'cpu' in self.device_to_train.type
 
-            # Reset epoch statistics
-            epoch_loss_sum = 0.0
-            num_batches_seen = 0
+            # Start tracemalloc only if running on CPU
+            if is_cpu:
+                tracemalloc.start()
 
-            for (inputs, targets, basin_ids) in self.model.dataloader:
+            for epoch in range(self.model.epochs):
 
-                # Zero the parameter gradients
-                self.model.optimizer.zero_grad()
+                # Reset peak memory stats at the beginning of each epoch
+                if is_gpu and torch.cuda.is_available():
+                    torch.cuda.reset_peak_memory_stats()
 
-                # Transfer to device
-                inputs = inputs.to(self.device_to_train, non_blocking=True)
-                targets = targets.to(self.device_to_train, non_blocking=True) 
+                if is_cpu:
+                    tracemalloc.clear_traces()
 
-                # Forward pass
-                q_sim, _, _ = self.model(inputs, basin_ids[0])
+                # Start time for epoch
+                start_time = time.time()
 
-                # Compute loss
-                if isinstance(self.loss, NSElossNH):
-                    std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
-                    std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.device_to_train)
-                    loss = self.loss(targets[:, -1], q_sim, std_val)   
-                else:
-                    if self.model.cfg.scale_target_vars:
-                        loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim))
+                # Reset epoch statistics
+                epoch_loss_sum = 0.0
+                num_batches_seen = 0
+
+                for (inputs, targets, basin_ids) in self.model.dataloader:
+
+                    # Zero the parameter gradients
+                    self.model.optimizer.zero_grad()
+
+                    # Transfer to device
+                    inputs = inputs.to(self.device_to_train, non_blocking=True)
+                    targets = targets.to(self.device_to_train, non_blocking=True) 
+
+                    # Forward pass
+                    q_sim, _, _ = self.model(inputs, basin_ids[0])
+
+                    # Check for NaN values
+                    nan_mask = torch.isnan(q_sim)
+                    if nan_mask.any():
+                        nan_count += 1
+                        q_sim = q_sim[~nan_mask]
+                        targets = targets[~nan_mask]
+                        if nan_count > max_nan_batches:
+                            print(f"Exceeded {max_nan_batches} allowed NaN batches. Stopping training.")
+                            stop_training = True  # Set flag to stop both loops
+                            break  # Break the inner loop
+
+                    # Compute loss
+                    if isinstance(self.loss, NSElossNH):
+                        std_val = self.model.scaler['ds_feature_std'][self.target].sel(basin=basin_ids[0]).values
+                        std_val = torch.tensor(std_val, dtype=self.model.data_type_torch).to(self.device_to_train)
+                        loss = self.loss(targets[:, -1], q_sim, std_val)   
                     else:
-                        loss = self.loss(targets[:, -1], q_sim)
+                        if self.model.cfg.scale_target_vars:
+                            loss = self.loss(torch.exp(targets[:, -1]), torch.exp(q_sim))
+                        else:
+                            loss = self.loss(targets[:, -1], q_sim)
 
-                # Backward pass
-                loss.backward()
+                    # Backward pass
+                    loss.backward()
 
-                # Gradient clipping if specified
-                if self.model.cfg.clip_gradient_norm is not None:
-                    torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
+                    # Gradient clipping if specified
+                    if self.model.cfg.clip_gradient_norm is not None:
+                        torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
 
-                # Update the weights
-                self.model.optimizer.step()
+                    # Update the weights
+                    self.model.optimizer.step()
 
-                # Accumulate the loss
-                epoch_loss_sum += loss.item()
-                num_batches_seen += 1
+                    # Accumulate the loss
+                    epoch_loss_sum += loss.item()
+                    num_batches_seen += 1
 
-            # Compute the average loss for the epoch
-            avg_loss = epoch_loss_sum / num_batches_seen
+                    # Delete variables to free memory
+                    del inputs, targets, q_sim, loss
 
-            # # Performance: End time for epoch and track time
-            # epoch_time = time.time() - start_time
-            # epoch_times.append(epoch_time)
-            # total_train_time += epoch_time
+                # Break the outer loop if stopping is signaled
+                if stop_training:
+                    break
 
-            # Accuracy Profiling: Save the best model
-            if avg_loss < best_loss:
-                best_loss = avg_loss
+                # Compute the average loss for the epoch
+                avg_loss = epoch_loss_sum / num_batches_seen
+
+                # Performance: End time for epoch and track time
+                epoch_time = time.time() - start_time
+                epoch_times.append(epoch_time)
+                total_train_time += epoch_time
+
+                # Track memory usage only for the device in use
+                gpu_peak_memory_mb = 'N/A'
+                cpu_peak_memory_mb = 'N/A'
+
+                # Get peak GPU memory (in MB) if running on GPU
+                if is_gpu:
+                    gpu_peak_memory_mb = torch.cuda.max_memory_allocated() / (1024 * 1024)
+
+                # Get peak CPU memory (in MB) if running on CPU
+                if is_cpu:
+                    _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
+                    cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
+
+                # Write time, loss, and memory stats to CSV with formatted values
+                writer.writerow({
+                    'epoch': epoch + 1, 
+                    'epoch_time_seg': f"{epoch_time:.2f}",  # Time rounded to 2 decimal places
+                    'avg_loss': f"{avg_loss:.4e}",  # Loss in scientific notation with 4 significant digits
+                    'gpu_peak_memory_mb': f"{gpu_peak_memory_mb:.2f}" if gpu_peak_memory_mb != 'N/A' else 'N/A',
+                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if cpu_peak_memory_mb != 'N/A' else 'N/A'
+                })
+
+                # Learning rate scheduler step
+                if self.model.scheduler is not None and epoch < self.model.epochs - 1:
+                    self.model.scheduler.step()
+
+                # Save the model weights and plots
+                if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) \
+                    and epoch < self.model.epochs - 1:
+                    # Save plots 
+                    self.save_plots(epoch=epoch+1)
+
+                # Clear CUDA cache after the epoch if running on GPU
+                if is_gpu:
+                    torch.cuda.empty_cache()
+
+            if not stop_training:
+            
+                # Save the final model weights and plots
                 self.save_model()
 
-            # Early stopping
-            early_stopping(avg_loss)
-            if early_stopping.early_stop:
-                print(f"Early stopping at epoch {epoch + 1} with best loss {best_loss:.4e}")
-                break
+                # Time tracking for evaluation
+                eval_start_time = time.time()
+                self.evaluate()
+                eval_time = time.time() - eval_start_time
+                
+                # Track memory during evaluation
+                gpu_peak_memory_mb = 'N/A'
+                cpu_peak_memory_mb = 'N/A'
 
-            # Learning rate scheduler step
-            if self.model.scheduler is not None and epoch < self.model.epochs - 1:
-                self.model.scheduler.step()
+                if is_gpu:
+                    gpu_peak_memory_mb = torch.cuda.max_memory_allocated() / (1024 * 1024)
 
-            # # Performance reporting for current epoch
-            # print(f"Epoch {epoch + 1} completed in {epoch_time:.2f} seconds | Loss: {avg_loss:.4e}")
+                if is_cpu:
+                    _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
+                    cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
 
-        # # Final performance report
-        # print(f"Total training time: {total_train_time:.2f} seconds")
-        # print(f"Average epoch time: {sum(epoch_times) / len(epoch_times):.2f} seconds")
-        # print(f"Best Loss achieved: {best_loss:.4e}")
+                # Write the evaluation times and memory stats to the CSV
+                writer.writerow({
+                    'epoch': 'evaluation',
+                    'epoch_time_seg': f"{eval_time:.2f}",
+                    'avg_loss': 'N/A',
+                    'gpu_peak_memory_mb': f"{gpu_peak_memory_mb:.2f}" if gpu_peak_memory_mb != 'N/A' else 'N/A',
+                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if cpu_peak_memory_mb != 'N/A' else 'N/A'
+                })
 
-        # Optionally evaluate the model after training completes
-        self.evaluate()
+                # Clear CUDA cache after evaluation if running on GPU
+                if is_gpu:
+                    torch.cuda.empty_cache()
 
+                # Time tracking for final plotting
+                plot_start_time = time.time()
+                self.save_plots(epoch=epoch + 1)
+                plot_time = time.time() - plot_start_time
+
+                # Track memory during final plotting
+                if is_gpu:
+                    gpu_peak_memory_mb = torch.cuda.max_memory_allocated() / (1024 * 1024)
+
+                if is_cpu:
+                    _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
+                    cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
+
+                # Write the final plotting times and memory stats to the CSV
+                writer.writerow({
+                    'epoch': 'final_plot',
+                    'epoch_time_seg': f"{plot_time:.2f}",
+                    'avg_loss': 'N/A',
+                    'gpu_peak_memory_mb': f"{gpu_peak_memory_mb:.2f}" if gpu_peak_memory_mb != 'N/A' else 'N/A',
+                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if cpu_peak_memory_mb != 'N/A' else 'N/A'
+                })
+
+            # Stop tracemalloc if running on CPU
+            if is_cpu:
+                tracemalloc.stop()
+
+    #################################################
 
     def save_model(self):
         '''Save the model weights and plots'''

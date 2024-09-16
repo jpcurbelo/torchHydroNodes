@@ -18,7 +18,7 @@ learning_rate:
     decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs)
 
 epochs:
-  - 8
+  - 5
 
 hidden_size:
   - [32, 32, 32]

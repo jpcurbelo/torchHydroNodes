@@ -607,6 +607,8 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
         folder_dir = Path(folder['directory']).expanduser()
         if folder_dir.exists():
             df = load_nse_period(folder_dir, period='valid')
+            # Apply threshold to the metric NSE < 0 or NSE = -1.0 to be equal to 0
+            df, _, _ = apply_threshold(df, 'nse', {'nse': [0, 'greater']})
             _plot_cdf(ax_main, df, folder)
         else:
             raise FileNotFoundError(f"Folder not found: {folder_dir}")

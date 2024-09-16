@@ -228,7 +228,7 @@ def create_finetune_folder(base_name='runs_finetune'):
     """
 
     now = datetime.now()
-    dt_string = now.strftime("%y%m%d %H%M%S")
+    dt_string = now.strftime("%y%m%d_%H%M%S")
 
     # counter = 1
     # while True:

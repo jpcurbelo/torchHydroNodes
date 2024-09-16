@@ -119,7 +119,6 @@ class NNpretrainer(ExpHydroCommon):
         # print(f'batch_size_pretrain: {self.batch_size}')
         # print(f'epochs_pretrain: {self.epochs}')
 
-
     def setup_optimizer_and_scheduler(self):
         # Determine optimizer class based on configuration
         if hasattr(self.cfg, 'optimizer'):
@@ -246,7 +245,7 @@ class NNpretrainer(ExpHydroCommon):
 
         return dataloader
     
-    def train(self, max_nan_batches=10, loss=None, lr=None, epochs=None):
+    def train(self, max_nan_batches=10, loss=None, lr=None, epochs=None, any_log=True):
 
         # Determine the training behavior based on whether loss, lr, or epochs have been provided
         if loss is not None:
@@ -267,10 +266,10 @@ class NNpretrainer(ExpHydroCommon):
 
         early_stopping = EarlyStopping(patience=self.cfg.patience)
 
-        # if self.cfg.verbose:
-        print('-' * 60)
-        print(f"-- Pretraining the neural network model -- ({self.device})")
-        print('-' * 60)
+        if self.cfg.verbose:
+            print('-' * 60)
+            print(f"-- Pretraining the neural network model -- ({self.device})")
+            print('-' * 60)
 
         nan_count = 0
         for epoch in range(self.epochs):
@@ -340,7 +339,7 @@ class NNpretrainer(ExpHydroCommon):
             pbar.close()
 
             if save_model_results and (epoch == 0 or ((epoch + 1) % self.log_every_n_epochs == 0)):
-                if verbose:
+                if verbose and any_log:
                     print(f"-- Saving the model weights and plots (epoch {epoch + 1}) --")
                 # Save the model weights
                 self.save_model()
@@ -364,18 +363,18 @@ class NNpretrainer(ExpHydroCommon):
 
             # Print the average loss for the epoch if not verbose (pbar is disabled)
             # if not verbose and save_model_results:
-            if not verbose:
+            if not verbose and any_log:
                 print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
         # Save the final model weights and plots
-        if verbose:
+        if verbose and any_log:
             print("-- Saving final plots --")
         self.save_plots()
-        if verbose:
+        if verbose and any_log:
             print("-- Saving final model weights --")
         self.save_model()
         if save_model_results:
-            if verbose:
+            if verbose and any_log:
                 print("-- Evaluating the model --")
             self.evaluate()
 
