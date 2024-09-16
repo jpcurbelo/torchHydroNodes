@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 import time
 import csv
-import tracemalloc  # For CPU memory tracking (optional)
+import tracemalloc  # For CPU memory tracking
+import gc
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -18,11 +19,10 @@ from src.utils.metrics import (
 
 from src.utils.load_process_data import (
     EarlyStopping,
-    calculate_tensor_memory,
-    get_free_gpu_memory,
-    run_job_with_memory_check
+    # calculate_tensor_memory,
+    # get_free_gpu_memory,
+    # run_job_with_memory_check
 )
-
 
 class BaseHybridModelTrainer:
 
@@ -186,10 +186,7 @@ class BaseHybridModelTrainer:
                 break
 
             # Save the model weights and plots
-            if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:
-                
-                # aux = input("Press Enter to continue...")
-                
+            if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:               
                 if self.model.cfg.verbose:
                     print(f"-- Saving the basin plots (epoch {epoch + 1}) | --")
                 # Save plots 
@@ -238,10 +235,10 @@ class BaseHybridModelTrainer:
         # For performance tracking
         total_train_time = 0.0
         epoch_times = []
-        
+
         # Open CSV file for writing epoch stats (time, loss, memory)
         with open(self.model.cfg.run_dir / 'epoch_stats.csv', 'w', newline='') as csvfile:
-            fieldnames = ['epoch', 'epoch_time_seg', 'avg_loss', 'gpu_peak_memory_mb', 'cpu_peak_memory_mb']
+            fieldnames = ['epoch', 'epoch_time_seg', 'avg_loss', 'cpu_peak_memory_mb']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             # Write the header
@@ -250,8 +247,7 @@ class BaseHybridModelTrainer:
             nan_count = 0
             stop_training = False  # Flag to signal when to stop both loops
             
-            # Check if training is on GPU or CPU
-            is_gpu = 'cuda' in self.device_to_train.type
+            # Check if training is on CPU
             is_cpu = 'cpu' in self.device_to_train.type
 
             # Start tracemalloc only if running on CPU
@@ -260,10 +256,7 @@ class BaseHybridModelTrainer:
 
             for epoch in range(self.model.epochs):
 
-                # Reset peak memory stats at the beginning of each epoch
-                if is_gpu and torch.cuda.is_available():
-                    torch.cuda.reset_peak_memory_stats()
-
+                # Reset CPU peak memory stats at the beginning of each epoch if running on CPU
                 if is_cpu:
                     tracemalloc.clear_traces()
 
@@ -322,8 +315,10 @@ class BaseHybridModelTrainer:
                     epoch_loss_sum += loss.item()
                     num_batches_seen += 1
 
-                    # Delete variables to free memory
+                    # Free memory after each batch
                     del inputs, targets, q_sim, loss
+                    torch.cuda.empty_cache()  # If using GPU
+                    gc.collect()
 
                 # Break the outer loop if stopping is signaled
                 if stop_training:
@@ -337,15 +332,8 @@ class BaseHybridModelTrainer:
                 epoch_times.append(epoch_time)
                 total_train_time += epoch_time
 
-                # Track memory usage only for the device in use
-                gpu_peak_memory_mb = 'N/A'
+                # Track CPU memory if running on CPU
                 cpu_peak_memory_mb = 'N/A'
-
-                # Get peak GPU memory (in MB) if running on GPU
-                if is_gpu:
-                    gpu_peak_memory_mb = torch.cuda.max_memory_allocated() / (1024 * 1024)
-
-                # Get peak CPU memory (in MB) if running on CPU
                 if is_cpu:
                     _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
                     cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
@@ -355,26 +343,28 @@ class BaseHybridModelTrainer:
                     'epoch': epoch + 1, 
                     'epoch_time_seg': f"{epoch_time:.2f}",  # Time rounded to 2 decimal places
                     'avg_loss': f"{avg_loss:.4e}",  # Loss in scientific notation with 4 significant digits
-                    'gpu_peak_memory_mb': f"{gpu_peak_memory_mb:.2f}" if gpu_peak_memory_mb != 'N/A' else 'N/A',
-                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if cpu_peak_memory_mb != 'N/A' else 'N/A'
+                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
                 })
 
-                # Learning rate scheduler step
-                if self.model.scheduler is not None and epoch < self.model.epochs - 1:
+                # Learning rate scheduler
+                if (self.model.scheduler is not None) and epoch < self.model.epochs - 1:
+                    current_lr = self.model.optimizer.param_groups[0]['lr']
                     self.model.scheduler.step()
+
+                    # Check if learning rate has changed
+                    new_lr = self.model.optimizer.param_groups[0]['lr']
+                    if self.model.cfg.verbose and new_lr != current_lr:
+                        print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
 
                 # Save the model weights and plots
                 if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) \
                     and epoch < self.model.epochs - 1:
-                    # Save plots 
                     self.save_plots(epoch=epoch+1)
 
                 # Clear CUDA cache after the epoch if running on GPU
-                if is_gpu:
-                    torch.cuda.empty_cache()
+                torch.cuda.empty_cache()
 
             if not stop_training:
-            
                 # Save the final model weights and plots
                 self.save_model()
 
@@ -382,14 +372,9 @@ class BaseHybridModelTrainer:
                 eval_start_time = time.time()
                 self.evaluate()
                 eval_time = time.time() - eval_start_time
-                
-                # Track memory during evaluation
-                gpu_peak_memory_mb = 'N/A'
+
+                # Track CPU memory during evaluation
                 cpu_peak_memory_mb = 'N/A'
-
-                if is_gpu:
-                    gpu_peak_memory_mb = torch.cuda.max_memory_allocated() / (1024 * 1024)
-
                 if is_cpu:
                     _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
                     cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
@@ -399,23 +384,16 @@ class BaseHybridModelTrainer:
                     'epoch': 'evaluation',
                     'epoch_time_seg': f"{eval_time:.2f}",
                     'avg_loss': 'N/A',
-                    'gpu_peak_memory_mb': f"{gpu_peak_memory_mb:.2f}" if gpu_peak_memory_mb != 'N/A' else 'N/A',
-                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if cpu_peak_memory_mb != 'N/A' else 'N/A'
+                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
                 })
-
-                # Clear CUDA cache after evaluation if running on GPU
-                if is_gpu:
-                    torch.cuda.empty_cache()
 
                 # Time tracking for final plotting
                 plot_start_time = time.time()
                 self.save_plots(epoch=epoch + 1)
                 plot_time = time.time() - plot_start_time
 
-                # Track memory during final plotting
-                if is_gpu:
-                    gpu_peak_memory_mb = torch.cuda.max_memory_allocated() / (1024 * 1024)
-
+                # Track CPU memory during final plotting
+                cpu_peak_memory_mb = 'N/A'
                 if is_cpu:
                     _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
                     cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
@@ -425,14 +403,12 @@ class BaseHybridModelTrainer:
                     'epoch': 'final_plot',
                     'epoch_time_seg': f"{plot_time:.2f}",
                     'avg_loss': 'N/A',
-                    'gpu_peak_memory_mb': f"{gpu_peak_memory_mb:.2f}" if gpu_peak_memory_mb != 'N/A' else 'N/A',
-                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if cpu_peak_memory_mb != 'N/A' else 'N/A'
+                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
                 })
 
             # Stop tracemalloc if running on CPU
             if is_cpu:
                 tracemalloc.stop()
-
     #################################################
 
     def save_model(self):
@@ -459,9 +435,6 @@ class BaseHybridModelTrainer:
             pbar_basins = tqdm(self.model.pretrainer.basins_to_log, disable=self.model.cfg.disable_pbar, file=sys.stdout)
             for basin in pbar_basins:
 
-                # Clear CUDA cache at the beginning of each basin
-                torch.cuda.empty_cache()
-
                 pbar_basins.set_description(f'* Plotting basin {basin}')
 
                 if basin not in self.basins:
@@ -474,24 +447,13 @@ class BaseHybridModelTrainer:
 
                 for dsp in self.ds_periods:
 
-                    torch.cuda.empty_cache()
-
                     period_name = dsp.split('_')[-1]
 
                     ds_period = getattr(self.model.pretrainer.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
                     time_series = ds_basin['date'].values
-                    # If the period is not ds_train, then shift the time series by the length of ds_train
-                    if dsp == 'ds_train':        
-                        time_idx = np.linspace(0, len(time_series) - 1, len(time_series), 
-                                               dtype=self.model.data_type_np)
-                    else:
-                        time_series_test = getattr(self.model.pretrainer.fulldataset, dsp)['date'].values
-                        train_length = len(self.model.pretrainer.fulldataset.ds_train['date'].values)
-                        test_length = len(time_series_test)
-                        time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), 
-                                               dtype=self.model.data_type_np)
+                    time_idx = self.get_time_idx(dsp, time_series) # Get the time index
 
                     input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
 
@@ -500,10 +462,6 @@ class BaseHybridModelTrainer:
 
                     # Get model outputs
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
-                    
-                    # # print('inputs', inputs.shape)
-                    # # print('inputs', inputs.unsqueeze(0).shape)
-                    # # aux = input("Press Enter to continue...")
 
                     # No GPU memory control - this is standard
                     outputs, _, _ = self.model(inputs, basin, use_grad=False)
@@ -536,15 +494,24 @@ class BaseHybridModelTrainer:
 
                     nse_val = NSE_eval(y_obs, y_sim)
 
-                    # print(f'{period_name} | NSE = {nse_val:.4e}')
-
                     plt.title(f'{self.target} - {basin} - {period_name} | $NSE = {nse_val:.3f}$')
 
                     plt.tight_layout()
                     plt.savefig(basin_dir / f'{self.target}_{basin}_{period_name}_epoch{epoch}.png', dpi=75)
                     plt.close('all')
 
+                    # Free up memory by deleting large variables after each period
+                    del inputs, outputs, y_sim, y_obs, ds_basin
+
+                # Clear cache after processing all periods for a basin
+                torch.cuda.empty_cache()  # Free up unused GPU memory
+                gc.collect()  # Free up unused CPU memory
+
             pbar_basins.close()
+
+        # Final cleanup after all basins are processed
+        torch.cuda.empty_cache()  # Free up unused GPU memory
+        gc.collect()  # Free up unused CPU memory
 
     def evaluate(self):
         '''
@@ -589,15 +556,12 @@ class BaseHybridModelTrainer:
 
                 ds_basin = ds_period.sel(basin=basin)
 
+                # Clear GPU/CPU cache before processing the next basin
+                torch.cuda.empty_cache()  # Clear GPU memory
+                gc.collect()  # Clear CPU memory
+
                 time_series = ds_basin['date'].values
-                # If the period is not ds_train, then shift the time series by the length of ds_train
-                if dsp == 'ds_train':        
-                    time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
-                else:
-                    time_series_test = getattr(self.model.pretrainer.fulldataset, dsp)['date'].values
-                    train_length = len(self.model.pretrainer.fulldataset.ds_train['date'].values)
-                    test_length = len(time_series_test)
-                    time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), dtype=self.model.data_type_np)
+                time_idx = self.get_time_idx(dsp, time_series) # Get the time index
 
                 input_var_names = self.model.pretrainer.input_var_names + ['time_idx']
 
@@ -616,7 +580,6 @@ class BaseHybridModelTrainer:
                 # Scale back outputs
                 if self.model.cfg.scale_target_vars:
                     outputs = self.model.scale_back_simulated(outputs, ds_basin, is_trainer=True)
-
                     # If period is ds_train, also scale back the observed variables
                     if dsp == 'ds_train':
                         ds_basin = self.model.scale_back_observed(ds_basin, is_trainer=True)
@@ -631,23 +594,7 @@ class BaseHybridModelTrainer:
                 dates = ds_basin['date'].values
 
                 # Save results to a CSV file
-                # Create a DataFrame with the required columns
-                results_df = pd.DataFrame({
-                    'date': dates,
-                    'y_obs': y_obs,
-                    'y_sim': y_sim
-                })
-
-                # Save results to a CSV file
-                period_name = dsp.split('_')[-1]
-                results_file = f'{basin}_results_{period_name}.csv'
-                results_file_path = Path(self.model.cfg.results_dir) / results_file
-
-                # Ensure the results directory exists
-                results_file_path.parent.mkdir(parents=True, exist_ok=True)
-
-                # Save the DataFrame to a CSV file
-                results_df.to_csv(results_file_path, index=False)
+                self.save_basin_results(basin, dsp, dates, y_obs, y_sim)
 
                 # Compute all evaluation metrics
                 metrics = compute_all_metrics(y_obs, y_sim, dates, self.model.cfg.metrics)
@@ -657,19 +604,49 @@ class BaseHybridModelTrainer:
                 result.update(metrics)
                 results.append(result)
 
-            # Convert the results to a DataFrame
-            df_results = pd.DataFrame(results)
+                # Delete large variables to free memory
+                del inputs, outputs, y_sim, ds_basin
+                torch.cuda.empty_cache()  # Free GPU memory
+                gc.collect()  # Free CPU memory
 
-            # Sort the DF by basin name
-            df_results = df_results.sort_values('basin').reset_index(drop=True)
+            # Save metrics to CSV
+            self.save_metrics_to_csv(dsp, results, metrics_dir)
 
-            # Save the results to a CSV file
-            period_name = dsp.split('_')[-1]
-            metrics_file = f'evaluation_metrics_{period_name}.csv'
-            metrics_file_path = metrics_dir / metrics_file
+        # Final cleanup
+        torch.cuda.empty_cache()  # Free GPU memory
+        gc.collect()  # Free CPU memory
 
-            # Save the results to a CSV file
-            df_results.to_csv(metrics_file_path, index=False)
+    def get_time_idx(self, dsp, time_series):
+        '''Helper function to get time index.'''
 
+        # If the period is not ds_train, then shift the time series by the length of ds_train
+        if dsp == 'ds_train':        
+            time_idx = np.linspace(0, len(time_series) - 1, len(time_series), dtype=self.model.data_type_np)
+        else:
+            train_length = len(self.model.pretrainer.fulldataset.ds_train['date'].values)
+            test_length = len(time_series)
+            time_idx = np.linspace(train_length, train_length + test_length - 1, len(time_series), dtype=self.model.data_type_np)
+        
+        return time_idx
 
+    def save_basin_results(self, basin, dsp, dates, y_obs, y_sim):
+        '''Helper function to save basin results.'''
+        results_df = pd.DataFrame({
+            'date': dates,
+            'y_obs': y_obs,
+            'y_sim': y_sim
+        })
+        period_name = dsp.split('_')[-1]
+        results_file = f'{basin}_results_{period_name}.csv'
+        results_file_path = Path(self.model.cfg.results_dir) / results_file
+        results_file_path.parent.mkdir(parents=True, exist_ok=True)
+        results_df.to_csv(results_file_path, index=False)
+
+    def save_metrics_to_csv(self, dsp, results, metrics_dir):
+        '''Helper function to save evaluation metrics to CSV.'''
+        df_results = pd.DataFrame(results).sort_values('basin').reset_index(drop=True)
+        period_name = dsp.split('_')[-1]
+        metrics_file = f'evaluation_metrics_{period_name}.csv'
+        metrics_file_path = metrics_dir / metrics_file
+        df_results.to_csv(metrics_file_path, index=False)
 # # ####################################################################################################

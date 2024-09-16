@@ -46,10 +46,15 @@ scale_target_vars: True
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1995"
+# train_start_date: "01/10/1995"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2005"
+
+train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2005"
+valid_end_date: "30/09/2010"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
@@ -78,8 +83,8 @@ learning_rate: This is to be updated!!!
 experiment_name: hybrid_mlp_sample
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-# device: cpu
-device: cuda:1
+device: cpu
+# device: cuda:1
 
 # Set seed for reproducibility
 seed: 1111

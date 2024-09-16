@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 import math
 import itertools
 from datetime import datetime
+import torch
 
 project_dir = str(Path.cwd().parent.parent.parent)  # Adjust parent levels as needed
 sys.path.append(project_dir)
@@ -277,6 +278,20 @@ def hyperparameter_combinations(hyperparameters):
             all_combinations.append(combined_params)
     
     return all_combinations
+
+def b2mb(x): return int(x / 2**20)
+
+class TorchTracemalloc:
+    def __enter__(self):
+        self.begin = torch.cuda.memory_allocated()  # Memory at the start
+        torch.cuda.reset_peak_memory_stats()  # Reset the peak memory tracker
+        return self
+
+    def __exit__(self, *exc):
+        self.end = torch.cuda.memory_allocated()  # Memory at the end
+        self.peak = torch.cuda.max_memory_allocated()  # Peak memory during the block
+        self.used = b2mb(self.end - self.begin)  # Used memory during the block
+        self.peaked = b2mb(self.peak - self.begin)  # Peak memory change
 
 
 if __name__ == '__main__':
