@@ -78,7 +78,7 @@ class MLP(BaseNNModel):
 
         if use_grad:
             # Pass through the input layer
-            x = F.tanh(self.input_layer(inputs))
+            x = torch.tanh(self.input_layer(inputs))
             # Hidden Layers
             for hidden, dropout in zip(self.hidden, self.dropouts):
             # for hidden in self.hidden:
@@ -90,7 +90,7 @@ class MLP(BaseNNModel):
         else:
             with torch.no_grad():
                 # Pass through the input layer
-                x = F.tanh(self.input_layer(inputs))
+                x = torch.tanh(self.input_layer(inputs))
                 # Hidden Layers
                 for hidden, dropout in zip(self.hidden, self.dropouts):
                 # for hidden in self.hidden:

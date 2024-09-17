@@ -69,7 +69,7 @@ basin_file_all = '../../examples/569_basin_file.txt'
 config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_cuda1.yml')
 run_folder = f'AAruns_hybrid_single_{nnmodel_type}270d_128h_256b_euler_lr4_100ep'
 RUN_VERSION = 'lstm_cuda1'
-MAX_WORKERS = 2
+MAX_WORKERS = 3
 
 # # config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_cpu.yml')
 # # run_folder = f'AAruns_hybrid_single_{nnmodel_type}270d_128h_256b_euler05d_lr4_100ep'
@@ -249,7 +249,7 @@ def main():
 
     
     # basins = basins[:100]
-    basins = basins[300:400]
+    basins = basins[100:]
     # basins = basins[:128]
     print(f"Total basins to be trained: {len(basins)}")
 

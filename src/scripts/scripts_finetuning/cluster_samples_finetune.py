@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml 
 import concurrent.futures
 import os
+import logging
 
 from utils import (
     random_basins_subset,
@@ -38,15 +39,22 @@ from src.modelzoo_hybrid import (
 
 nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 
-finetune_folder = create_finetune_folder(base_name=f'runs_finetune_{nnmodel_type}')
-
 SAMPLE_FRACTION = 0.01
-# config_file_base = Path('config_file_base_mlp.yml')
-# hyperparameter_file = 'hyperparameters.yml'
 config_file_base = Path(f'config_file_base_{nnmodel_type}_testing.yml')
 hyperparameter_file = f'hyperparameters_{nnmodel_type}_testing.yml'
+BASE_VERSION = ''
+base_name = f'test_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
 
-USE_PROCESS_POOL = 0
+# SAMPLE_FRACTION = 0.1
+# config_file_base = Path(f'config_file_base_{nnmodel_type}.yml')
+# hyperparameter_file = f'hyperparameters_{nnmodel_type}.yml'
+# BASE_VERSION = 'v1'
+# base_name = f'runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
+
+
+finetune_folder = create_finetune_folder(base_name=base_name)
+
+USE_PROCESS_POOL = 1
 MAX_WORKERS = 4
 
 def train_model_for_basin(run_folder, cfg_file, basin, run_version):
@@ -189,22 +197,27 @@ def main():
         with open(cfg_file, 'w') as f:
             yaml.dump(cfg_run, f)
 
-        run_version = f'comb{i + 1}'
+        run_version = f'{BASE_VERSION}comb{i + 1}'
 
         # Train the model for each basin
         if USE_PROCESS_POOL:
 
+            # Setup logging
+            logging.basicConfig(level=logging.INFO)
+
             max_workers = MAX_WORKERS
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(train_model_for_basin, run_folder, cfg_file, basin, run_version) for basin in basins]
-                for future in concurrent.futures.as_completed(futures):
+                future_to_basin = {executor.submit(train_model_for_basin, run_folder, cfg_file, basin, run_version): basin for basin in basins}
+
+                for future in concurrent.futures.as_completed(future_to_basin):
+                    basin = future_to_basin[future]
                     try:
-                        future.result()  # Will raise exception if training failed
+                        future.result()  # Raises exception if the task failed
                     except Exception as e:
-                        print(f'Error in training model: {e}')
+                        logging.error(f'Error in training model for basin {basin}: {e}', exc_info=True)
         else:
             print(f"Training model for combination {i + 1}")
-            for basin in basins[:2]:
+            for basin in basins[:]:
                 print(f"Training model for basin {basin}")
                 train_model_for_basin(run_folder, cfg_file, basin, run_version)
 

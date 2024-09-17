@@ -46,15 +46,15 @@ scale_target_vars: True
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-# train_start_date: "01/10/1995"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2005"
-
-train_start_date: "01/10/1980"
+train_start_date: "01/10/1995"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
+valid_end_date: "30/09/2005"
+
+# train_start_date: "01/10/1980"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2010"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse

@@ -14,6 +14,7 @@ src/scripts/scripts_plots/AA*
 src/scripts/scripts_plots/4basins_test/
 src/scripts/scripts_plots/plots*
 src/scripts/scripts_finetuning/runs_*
+src/scripts/scripts_finetuning/test_runs_*
 
 # Files
 src/scripts_paper/*_temp_*.yml

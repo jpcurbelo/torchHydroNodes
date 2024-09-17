@@ -9,6 +9,7 @@ import time
 import csv
 import tracemalloc  # For CPU memory tracking
 import gc
+import h5py
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -364,9 +365,17 @@ class BaseHybridModelTrainer:
                 # Clear CUDA cache after the epoch if running on GPU
                 torch.cuda.empty_cache()
 
+            # Stop tracemalloc if running on CPU
+            if is_cpu:
+                tracemalloc.stop()
+
             if not stop_training:
                 # Save the final model weights and plots
                 self.save_model()
+
+                # Start tracemalloc only if running on CPU
+                if is_cpu:
+                    tracemalloc.start()
 
                 # Time tracking for evaluation
                 eval_start_time = time.time()
@@ -387,6 +396,14 @@ class BaseHybridModelTrainer:
                     'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
                 })
 
+                # Stop tracemalloc if running on CPU
+                if is_cpu:
+                    tracemalloc.stop()
+
+                # Start tracemalloc only if running on CPU
+                if is_cpu:
+                    tracemalloc.start()
+                    
                 # Time tracking for final plotting
                 plot_start_time = time.time()
                 self.save_plots(epoch=epoch + 1)
@@ -406,9 +423,10 @@ class BaseHybridModelTrainer:
                     'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
                 })
 
-            # Stop tracemalloc if running on CPU
-            if is_cpu:
-                tracemalloc.stop()
+                # Stop tracemalloc if running on CPU
+                if is_cpu:
+                    tracemalloc.stop()
+
     #################################################
 
     def save_model(self):
@@ -513,23 +531,24 @@ class BaseHybridModelTrainer:
         torch.cuda.empty_cache()  # Free up unused GPU memory
         gc.collect()  # Free up unused CPU memory
 
-    def evaluate(self):
+    def evaluate(self, load_best_model=False):
         '''
         Evaluate the model on the test dataset
         '''
 
-        # Define the path to the best model saved during training
-        best_model_path = self.model.cfg.run_dir / 'model_weights' / f'trainer_{self.hybrid_model}_{self.nnmodel_name}_{self.number_of_basins}basins.pth'
+        if load_best_model:
+            # Define the path to the best model saved during training
+            best_model_path = self.model.cfg.run_dir / 'model_weights' / f'trainer_{self.hybrid_model}_{self.nnmodel_name}_{self.number_of_basins}basins.pth'
 
-        # Check if the best model exists
-        if best_model_path.exists():
-            # Load best model saved during training
-            self.model.pretrainer.nnmodel.load_state_dict(torch.load(best_model_path))
-            if self.model.cfg.verbose:
-                print(f"Loaded best model from {best_model_path}")
-        else:
-            print(f"Best model file not found at {best_model_path}. Evaluation will not be performed.")
-            return
+            # Check if the best model exists
+            if best_model_path.exists():
+                # Load best model saved during training
+                self.model.pretrainer.nnmodel.load_state_dict(torch.load(best_model_path))
+                if self.model.cfg.verbose:
+                    print(f"Loaded best model from {best_model_path}")
+            else:
+                print(f"Best model file not found at {best_model_path}. Evaluation will not be performed.")
+                return
 
         metrics_dir = self.model.cfg.run_dir / 'model_metrics'
         if not metrics_dir.exists():
@@ -595,6 +614,7 @@ class BaseHybridModelTrainer:
 
                 # Save results to a CSV file
                 self.save_basin_results(basin, dsp, dates, y_obs, y_sim)
+                # self.save_basin_results_hdf5(basin, dsp, dates, y_obs, y_sim)
 
                 # Compute all evaluation metrics
                 metrics = compute_all_metrics(y_obs, y_sim, dates, self.model.cfg.metrics)
@@ -637,10 +657,29 @@ class BaseHybridModelTrainer:
             'y_sim': y_sim
         })
         period_name = dsp.split('_')[-1]
+
         results_file = f'{basin}_results_{period_name}.csv'
+
         results_file_path = Path(self.model.cfg.results_dir) / results_file
         results_file_path.parent.mkdir(parents=True, exist_ok=True)
+
         results_df.to_csv(results_file_path, index=False)
+
+    def save_basin_results_hdf5(self, basin, dsp, dates, y_obs, y_sim):
+        '''Helper function to save basin results in HDF5 format.'''
+        results_df = pd.DataFrame({
+            'date': dates,
+            'y_obs': y_obs,
+            'y_sim': y_sim
+        })
+        period_name = dsp.split('_')[-1]
+        
+        results_file = f'{basin}_results_{period_name}.h5'
+        results_file_path = Path(self.model.cfg.results_dir) / results_file
+        results_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save the DataFrame as HDF5 with compression
+        results_df.to_hdf(results_file_path, key='df', mode='w', complevel=9, complib='zlib')
 
     def save_metrics_to_csv(self, dsp, results, metrics_dir):
         '''Helper function to save evaluation metrics to CSV.'''
@@ -649,4 +688,6 @@ class BaseHybridModelTrainer:
         metrics_file = f'evaluation_metrics_{period_name}.csv'
         metrics_file_path = metrics_dir / metrics_file
         df_results.to_csv(metrics_file_path, index=False)
+
+
 # # ####################################################################################################
