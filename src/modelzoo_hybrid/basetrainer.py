@@ -9,7 +9,6 @@ import time
 import csv
 import tracemalloc  # For CPU memory tracking
 import gc
-import h5py
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -427,6 +426,11 @@ class BaseHybridModelTrainer:
                 if is_cpu:
                     tracemalloc.stop()
 
+                return True
+            
+            else:
+                return False
+
     #################################################
 
     def save_model(self):
@@ -531,7 +535,7 @@ class BaseHybridModelTrainer:
         torch.cuda.empty_cache()  # Free up unused GPU memory
         gc.collect()  # Free up unused CPU memory
 
-    def evaluate(self, load_best_model=False):
+    def evaluate(self, load_best_model=True):
         '''
         Evaluate the model on the test dataset
         '''
@@ -657,12 +661,9 @@ class BaseHybridModelTrainer:
             'y_sim': y_sim
         })
         period_name = dsp.split('_')[-1]
-
         results_file = f'{basin}_results_{period_name}.csv'
-
         results_file_path = Path(self.model.cfg.results_dir) / results_file
         results_file_path.parent.mkdir(parents=True, exist_ok=True)
-
         results_df.to_csv(results_file_path, index=False)
 
     def save_basin_results_hdf5(self, basin, dsp, dates, y_obs, y_sim):
@@ -681,6 +682,36 @@ class BaseHybridModelTrainer:
         # Save the DataFrame as HDF5 with compression
         results_df.to_hdf(results_file_path, key='df', mode='w', complevel=9, complib='zlib')
 
+    def save_basin_results_parquet(self, basin, dsp, dates, y_obs, y_sim, chunk_size=100):
+        '''Helper function to save basin results in Parquet format with memory optimizations.'''
+        
+        # Prepare the file path
+        period_name = dsp.split('_')[-1]
+        results_file = f'{basin}_results_{period_name}.parquet'
+        results_file_path = Path(self.model.cfg.results_dir) / results_file
+        results_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write data in chunks to save memory
+        for i in range(0, len(dates), chunk_size):
+            # Chunk the data to process a smaller amount at a time
+            date_chunk = dates[i:i+chunk_size]
+            y_obs_chunk = y_obs[i:i+chunk_size]
+            y_sim_chunk = y_sim[i:i+chunk_size]
+            
+            # Create a temporary DataFrame for the chunk
+            chunk_df = pd.DataFrame({
+                'date': date_chunk,
+                'y_obs': y_obs_chunk,
+                'y_sim': y_sim_chunk
+            })
+            
+            # Append the chunk to the Parquet file
+            chunk_df.to_parquet(results_file_path, compression='snappy', engine='pyarrow', index=False, append=True)
+
+        # After saving, free up memory
+        del dates, y_obs, y_sim
+        gc.collect()  # Ensure that unused memory is released
+
     def save_metrics_to_csv(self, dsp, results, metrics_dir):
         '''Helper function to save evaluation metrics to CSV.'''
         df_results = pd.DataFrame(results).sort_values('basin').reset_index(drop=True)
@@ -688,6 +719,4 @@ class BaseHybridModelTrainer:
         metrics_file = f'evaluation_metrics_{period_name}.csv'
         metrics_file_path = metrics_dir / metrics_file
         df_results.to_csv(metrics_file_path, index=False)
-
-
 # # ####################################################################################################

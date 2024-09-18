@@ -39,23 +39,52 @@ from src.modelzoo_hybrid import (
 
 nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 
-SAMPLE_FRACTION = 0.01
-config_file_base = Path(f'config_file_base_{nnmodel_type}_testing.yml')
-hyperparameter_file = f'hyperparameters_{nnmodel_type}_testing.yml'
-BASE_VERSION = ''
-base_name = f'test_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
+# base_name = f'runs_finetune_{nnmodel_type}'
+# base_name = f'test_runs_finetune_{nnmodel_type}'
 
-# SAMPLE_FRACTION = 0.1
-# config_file_base = Path(f'config_file_base_{nnmodel_type}.yml')
-# hyperparameter_file = f'hyperparameters_{nnmodel_type}.yml'
-# BASE_VERSION = 'v1'
-# base_name = f'runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
+SAMPLE_FRACTION = 0.1
+CFG_FILE_BASE = Path('config_file_base_mlp.yml')
+
+# HP_FILE = 'hyperparameters_euler1d.yml'
+# BASE_VERSION = 'euler1d_'
+
+# HP_FILE = 'hyperparameters_euler05d.yml'
+# BASE_VERSION = 'euler05d_'
+
+HP_FILE = 'hyperparameters_rk4_1d.yml'
+BASE_VERSION = 'rk4_1d_'
+
+base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
 
 
-finetune_folder = create_finetune_folder(base_name=base_name)
+# SAMPLE_FRACTION = 0.01
+# CFG_FILE_BASE = Path(f'config_file_base_{nnmodel_type}_testing.yml')
+# HP_FILE = f'hyperparameters_{nnmodel_type}_testing.yml'
+# base_name = f'test_runs_finetune_{nnmodel_type}'
+# BASE_VERSION = ''
+
+FINETUNE_FOLDER = create_finetune_folder(base_name=base_name)
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 4
+MAX_WORKERS = 32
+
+# Setup dynamic logging for each run
+def setup_logging(log_file):
+
+    # Get the logger by name
+    logger = logging.getLogger(str(log_file))
+    logger.setLevel(logging.INFO)
+    
+    # Create a file handler for the log file
+    file_handler = logging.FileHandler(str(log_file))
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    file_handler.setFormatter(formatter)
+    
+    # Ensure that we don't add multiple handlers to the same logger
+    if not logger.hasHandlers():
+        logger.addHandler(file_handler)
+    
+    return logger
 
 def train_model_for_basin(run_folder, cfg_file, basin, run_version):
     '''
@@ -128,23 +157,35 @@ def train_model_for_basin(run_folder, cfg_file, basin, run_version):
         lr=cfg_run.lr_pretrain, 
         epochs=cfg_run.epochs_pretrain,
         any_log=False)
+    
+    if not pretrain_ok:
+        print(f'Pretraining failed for basin {basin}')
+        return False
 
-    if pretrain_ok:
-        # Build the hybrid model
+    # Build the hybrid model
+    try:
         model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
+    except Exception as e:
+        print(f'Error building hybrid model for basin {basin}: {e}')
+        return False
 
-        # Build the trainer 
-        trainer = get_trainer(model_hybrid)
+    # Build the trainer 
+    trainer = get_trainer(model_hybrid)
 
-        # Train the model
-        trainer.train_finetune()
-    else:
-        print(f'Pretraining failed for basin {basin}') 
+    # Train the model
+    try:
+        train_ok = trainer.train_finetune()
+        if not train_ok:
+            print(f'Training failed for basin {basin}')
+            return False
+    except Exception as e:
+        print(f'Error training model for basin {basin}: {e}')
+        return False
 
+    return True  # Training succeeded
 
-
-
-def main():
+def main(sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE, 
+         hyperparameter_file=HP_FILE, base_version=BASE_VERSION, finetune_folder=FINETUNE_FOLDER):
 
     # Get the cluster files
     cluster_files = get_cluster_files()
@@ -153,7 +194,7 @@ def main():
         raise FileNotFoundError('No cluster files found! Please, double-check the path.')
 
     # Random selection
-    selected_basins_dict, _, sample_file, basin_file = random_basins_subset(cluster_files, SAMPLE_FRACTION)
+    selected_basins_dict, _, sample_file, basin_file = random_basins_subset(cluster_files, sample_fraction)
 
     # Read the basin_file_all
     with open(basin_file, 'r') as f:
@@ -197,37 +238,46 @@ def main():
         with open(cfg_file, 'w') as f:
             yaml.dump(cfg_run, f)
 
-        run_version = f'{BASE_VERSION}comb{i + 1}'
+        run_version = f'{base_version}comb{i + 1}'
 
-        # Train the model for each basin
+        # Set log file name dynamically per combination
+        log_file = run_folder / f'log_combination_{i + 1}.log'
+        logger = setup_logging(log_file)
+
+        # Check if using parallel execution
         if USE_PROCESS_POOL:
-
-            # Setup logging
-            logging.basicConfig(level=logging.INFO)
-
+            logger.info(f'Starting parallel training for combination {i + 1}: {combination}')
             max_workers = MAX_WORKERS
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                future_to_basin = {executor.submit(train_model_for_basin, run_folder, cfg_file, basin, run_version): basin for basin in basins}
+                future_to_basin = {executor.submit(train_model_for_basin, run_folder, cfg_file, basin, run_version): 
+                                   basin for basin in basins[:]}
 
                 for future in concurrent.futures.as_completed(future_to_basin):
                     basin = future_to_basin[future]
                     try:
-                        future.result()  # Raises exception if the task failed
+                        result = future.result()  # Get the result of the task
+                        if result:
+                            logger.info(f'Combination {i + 1}: training succeeded for basin {basin}')
+                        else:
+                            logger.error(f'Combination {i + 1}: training failed for basin {basin}')
                     except Exception as e:
-                        logging.error(f'Error in training model for basin {basin}: {e}', exc_info=True)
+                        logger.error(f'Combination {i + 1}: Error in training model for basin {basin}: {e}', exc_info=True)
+
+        # Serial execution
         else:
-            print(f"Training model for combination {i + 1}")
+            logger.info(f'Starting serial training for combination {i + 1}: {combination}')
             for basin in basins[:]:
-                print(f"Training model for basin {basin}")
-                train_model_for_basin(run_folder, cfg_file, basin, run_version)
+                try:
+                    logger.info(f'Starting training for basin {basin}')
+                    result = train_model_for_basin(run_folder, cfg_file, basin, run_version)
+                    if result:
+                        logger.info(f'Combination {i + 1}: Training succeeded for basin {basin}')
+                    else:
+                        logger.error(f'Combination {i + 1}: Training failed for basin {basin}')
+                except Exception as e:
+                    logger.error(f'Combination {i + 1}: Error in training model for basin {basin}: {e}', exc_info=True)
 
         
-
-
-
-
-
-
 if __name__ == "__main__":
 
     main()

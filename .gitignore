@@ -9,12 +9,14 @@ src/scripts_paper/ZZZruns_*
 src/scripts_paper/M100_results*
 src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
+src/scripts_paper/569basins_single*
 src/scripts/scripts_plots/gifs/*
 src/scripts/scripts_plots/AA*
 src/scripts/scripts_plots/4basins_test/
 src/scripts/scripts_plots/plots*
 src/scripts/scripts_finetuning/runs_*
 src/scripts/scripts_finetuning/test_runs_*
+
 
 # Files
 src/scripts_paper/*_temp_*.yml
