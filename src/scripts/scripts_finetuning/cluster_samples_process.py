@@ -14,6 +14,7 @@ sys.path.append(project_dir)
 
 from src.utils.plots import (
     plot_histograms_period,
+    apply_threshold,
 )
 
 # Configuration file path
@@ -176,7 +177,7 @@ def load_metrics_period(basin_folder, period):
 
     return metrics_data
 
-def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid'], threshold_info=None):
+def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid'], threshold_dict=None):
     """
     Scatter plot with mean time and memory on the axes and NSE (or other metrics) as the size of the circle.
     """
@@ -215,7 +216,9 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
 
                 # Calculate mean values for each metric (e.g., 'nse', 'kge')
                 for metric in run_metrics:
+
                     if metric in df.columns:
+                        df, _, th_value = apply_threshold(df, metric, threshold_dict)
                         metric_median = df[metric].median()
                         metric_values[metric].append(metric_median)
                     else:
@@ -231,11 +234,7 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
 
             # Define the colormap and normalization based on the metric values
             cmap = cm.oslo  # You can choose any colormap from cmcrameri
-            if threshold_info is not None:
-                th_value = threshold_info.get(metric, 0)  # Define a default threshold if not found
-                normalize = mcolors.Normalize(vmin=th_value, vmax=max(filtered_metric_data))
-            else:
-                normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
+            normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
 
             # Normalize sizes between min_size and max_size
             min_size = 50  # Minimum circle size
@@ -287,7 +286,8 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
                 top_5_labels.append(f"{combo_labels[idx]}: {metric_data[idx]:.3f}")
 
             # Display the legend using the circles and labels
-            plt.legend(legend_circles, top_5_labels, loc='upper left', fontsize=10)
+            # plt.legend(legend_circles, top_5_labels, loc='upper left', fontsize=10)
+            plt.legend(legend_circles, top_5_labels, fontsize=10)
 
             print(f"Top 5 {metric} values / {period}: {top_5_labels}")
 
@@ -311,34 +311,34 @@ def main(combo_file=COMBO_FILE):
     run_metrics = combinations['metrics']
     threshold_dict = combinations['threshold_dict']
     
-    # # Iterate through run folders
-    # for run_folder in run_folders:
-    #     print(f"*{run_folder}")
-    #     run_folder_path = Path(run_folder)
-    #     combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+    # Iterate through run folders
+    for run_folder in run_folders:
+        print(f"*{run_folder}")
+        run_folder_path = Path(run_folder)
+        combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
         
-    #     # Process each run folder
-    #     for icombo, combo_folder in enumerate(combination_folders):
-    #         print(f"- {combo_folder}")
-    #         completed_basins, total_basins, basin_stats = process_combination_folder(combo_folder)
-    #         print(f"- {len(completed_basins)}/{total_basins} basins completed.")
-    #         save_basin_stats(combo_folder, basin_stats, periods)
+        # Process each run folder
+        for icombo, combo_folder in enumerate(combination_folders):
+            print(f"- {combo_folder}")
+            completed_basins, total_basins, basin_stats = process_combination_folder(combo_folder)
+            print(f"- {len(completed_basins)}/{total_basins} basins completed.")
+            save_basin_stats(combo_folder, basin_stats, periods)
 
-    #         # Plot histograms for the completed basins
-    #         epochs = load_config_value(combo_folder, 'epochs')
-    #         plot_histograms_period(
-    #             combo_folder / 'combo_results',
-    #             periods,
-    #             run_metrics,
-    #             threshold_dict,
-    #             f'Combo {icombo+1}',
-    #             epochs,
-    #             combo_folder / 'combo_results',
-    #             metric_base_fname='combo_stats'
-    #         )
+            # Plot histograms for the completed basins
+            epochs = load_config_value(combo_folder, 'epochs')
+            plot_histograms_period(
+                combo_folder / 'combo_results',
+                periods,
+                run_metrics,
+                threshold_dict,
+                f'Combo {icombo+1}',
+                epochs,
+                combo_folder / 'combo_results',
+                metric_base_fname='combo_stats'
+            )
 
     # Generate plots
-    plot_performance_scatter(run_folders, run_metrics, periods)
+    plot_performance_scatter(run_folders, run_metrics, periods, threshold_dict)
 
 if __name__ == "__main__":
     main()

@@ -150,7 +150,8 @@ def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, f
     Annotate the mean or median value on the histogram plot.
     '''
     
-    data_aux = data[data > 0]
+    # data_aux = data[data > 0]
+    data_aux = data.copy()
     
     if statistic == 'mean':
         value = np.mean(data_aux)
