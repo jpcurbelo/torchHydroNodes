@@ -242,7 +242,7 @@ def main(sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE,
         # cfg_run['log_every_n_epochs'] = cfg_run['epochs'] // 2
 
         # Save the combination to a YAML file
-        cfg_file = run_folder / f'config_comb{i + 1}.yml'
+        cfg_file = run_folder / f'config_combo{i + 1}.yml'
         with open(cfg_file, 'w') as f:
             yaml.dump(cfg_run, f)
 

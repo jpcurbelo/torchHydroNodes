@@ -186,17 +186,19 @@ def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, f
     #     ax.text(0.98, 0, label, va='top', ha='right', color=color, fontsize=8)
 
 def plot_histograms_period(metrics_path, periods, metrics, threshold_dict, 
-                          graph_title, epochs, plots_folder, cluster_files):
+                          graph_title, epochs, plots_folder, cluster_files=None,
+                          metric_base_fname='metrics'):
 
     for period in periods:
 
-        metric_file_path = metrics_path / f'metrics_{period}.csv'
+        metric_file_path = metrics_path / f'{metric_base_fname}_{period}.csv'
 
-        # Check if the file exists and is not empty
-        if metric_file_path.exists() and metric_file_path.stat().st_size <= 1:
-            metric_file_path.unlink()  # Deletes the file
-            print(f"Deleted empty file: {metric_file_path}")
-            break
+        if metric_base_fname == 'metrics':
+            # Check if the file exists and is not empty
+            if metric_file_path.exists() and metric_file_path.stat().st_size <= 1:
+                metric_file_path.unlink()  # Deletes the file
+                print(f"Deleted empty file: {metric_file_path}")
+                break
 
         df_period = pd.read_csv(metric_file_path)
 
