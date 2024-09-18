@@ -1,0 +1,28 @@
+odesmethod:
+  euler:
+    time_step: 
+      - 1.0
+      - 0.5
+  # bosh3: 
+  #   time_step: null  # Explicitly mention that no time step is required
+
+batch_size:
+  - 256
+  # - -1
+
+learning_rate:
+  - 0.0001
+  # - 
+  #   initial: 0.0001
+  #   decay: 0.1
+  #   decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs)
+
+epochs:
+  - 5
+
+hidden_size:
+  - [32, 32, 32]
+
+dropout:
+  - 0.0
+  - 0.2

@@ -264,8 +264,14 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
 
-    # Train the model
-    pretrainer.train()
+    # Pretrain the model
+    start_time = time.time()
+    pretrain_ok = pretrainer.train(loss=cfg.loss_pretrain, lr=cfg.lr_pretrain, epochs=cfg.epochs_pretrain)
+    if pretrain_ok:
+        print(f'-- Pretraining took {time.time() - start_time:.2f}s')
+    else:
+        print(f'-- Pretraining failed')
+        return
 
 def train_hybrid_model(config_file: Path, gpu: int = None):
         
@@ -317,8 +323,12 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     if cfg.nn_model_dir is False:
         start_time = time.time()
         # Pretrain the model
-        pretrainer.train(loss=cfg.loss_pretrain, lr=cfg.lr_pretrain, epochs=cfg.epochs_pretrain)
-        print(f'-- Pretraining took {time.time() - start_time:.2f}s')
+        pretrain_ok = pretrainer.train(loss=cfg.loss_pretrain, lr=cfg.lr_pretrain, epochs=cfg.epochs_pretrain)
+        if pretrain_ok:
+            print(f'-- Pretraining took {time.time() - start_time:.2f}s')
+        else:
+            print(f'-- Pretraining failed')
+            return
 
     # Build the hybrid model
     model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)

@@ -1,0 +1,154 @@
+# # Folder where the data is stored
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_100ep_1000pre_lr3
+
+# # Folder (to be created) where the processed data will be stored
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_bosh3_lr4_100ep
+
+# graph_title: Hybrid model (exp-hydro) - MLP/Bosh3
+
+
+
+# results_folder: ../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
+# plots_folder: AAAplots_hybrid_mlp35x5_7305b_bosh3_lr4_150ep_julia
+# graph_title: Hybrid model | MLP/RK23 | Julia | 7305 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_euler1d_lr4_150ep
+# graph_title: Hybrid model | MLP/Euler1.0d | 7305 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler1d_lr4_150ep
+# graph_title: Hybrid model | MLP/Euler1.0d | 256 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_rk4_1d_lr4_150ep
+# graph_title: Hybrid model | MLP/RK4-1d | 7305 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_rk4_1d_lr4_150ep
+# graph_title: Hybrid model | MLP/RK4-1.0d | 256 batch
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_euler05d_lr4_150ep
+# graph_title: Hybrid model | MLP/Euler0.5d | 7305 batch
+# epochs: 150
+
+results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
+plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep
+graph_title: Hybrid model | MLP/Euler0.5d | 256 batch
+epochs: 150
+
+
+# # results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_150ep_1000pre_lr3
+# # plots_folder: AAplots_hybrid_mlp32x5_7305b_bosh3_lr4_150ep
+# # graph_title: Hybrid model | MLP/Bosh3 | 7305 batch
+# # epochs: 150
+
+
+#############################################################################
+
+
+
+
+
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_rk4_1d_lr4_150ep
+# graph_title: Hybrid model (exp-hydro) - MLP/RK4-1.0d - 256 batch
+
+
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverYES
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler1d_lr4_150ep_carryoverYES
+# graph_title: Hybrid model (exp-hydro) - MLP/Euler1.0d - 256 batch - carryover
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler1d_lr4_150ep_carryoverNO
+# graph_title: Hybrid model (exp-hydro) - MLP/Euler1.0d - 256 batch - no carryover
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_bosh3tol33_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_bosh3tol33_lr4_150ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Bosh3tol33 - 256 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_rk4_05d_lr4_150ep
+# graph_title: Hybrid model (exp-hydro) - MLP/RK4-0.5d - 256 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_100ep_1000pre_lr
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_100ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Euler0.5d - 256 batch
+# epochs: 100
+
+
+
+
+
+# # results_folder: ../../scripts_paper/569basins_single_mlp32x5_512b_euler1d_lr4_150ep_1000pre_lr3
+# # plots_folder: AAplots_hybrid_mlp32x5_512b_euler1d_lr4_150ep
+# # graph_title: Hybrid model (exp-hydro) - MLP/Euler1.0d
+# # epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_100ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_euler1d_lr4_100ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Euler1.0d
+# epochs: 100
+
+
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_100ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_euler05d_lr4_100ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Euler0.5d
+# epochs: 100
+
+
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler01d_lr4_100ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_euler01d_lr4_100ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Euler0.1d
+# epochs: 100
+
+
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_100ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_bosh3_lr4_100ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Bosh3
+# epochs: 100
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_7305b_bosh3_lr4_150ep
+# graph_title: Hybrid model (exp-hydro) - MLP/Bosh3
+# epochs: 150
+
+# Periods to be processed
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less

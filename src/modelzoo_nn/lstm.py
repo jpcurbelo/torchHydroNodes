@@ -42,14 +42,18 @@ class LSTM(BaseNNModel):
         # means = means.unsqueeze(1)
         # stds = stds.unsqueeze(1)
 
-        mean = self.torch_input_means[basin_id].unsqueeze(1)  #.to(dynamic_inputs.device)
-        std = self.torch_input_stds[basin_id].unsqueeze(1)    #.to(dynamic_inputs.device)
+        device = dynamic_inputs.device
+        mean = self.torch_input_means[basin_id].unsqueeze(1).to(device)  #.to(dynamic_inputs.device)
+        std = self.torch_input_stds[basin_id].unsqueeze(1).to(device)    #.to(dynamic_inputs.device)
 
         # print('mean', mean)
         # print('std', std)
 
         # Normalize the dynamic inputs
-        dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
+        # dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
+        dynamic_inputs = (dynamic_inputs - mean) / (std + torch.finfo(torch.float32).eps)
+        # print(np.finfo(float).eps, torch.finfo(torch.float32).eps)
+        # aux = input('Press Enter to continue...')
 
         # print('dynamic_inputs', dynamic_inputs.shape)
         # print('mean', mean)

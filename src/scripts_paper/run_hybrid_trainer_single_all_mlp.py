@@ -33,19 +33,91 @@ from utils import (
 
 nnmodel_type = 'mlp'
 
-config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single2.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single3.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single4.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single5_bosh3tol46.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single6_euler01.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single3_rk4_1d.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_rk4_1d256b.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_rk4_05d256b.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d512b.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d256b.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d256b100ep.yml')
+config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d512b100ep.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d128b.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b_carryoverYES.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b_carryoverNO.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b50eplr4.yml')   
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b50eplr34.yml')   
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b50eplr44.yml')  
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b100ep_lr4.yml')  
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b100ep_lr45.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_bosh3tol33_256b.yml')
+# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_bosh3tol33_256b_lr45.yml')
 
 # # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
 # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
 
 pretrainer_runs_folder = None
-# basin_file_all = '../../examples/569_basin_file.txt'
-basin_file_all = '../../examples/4_basin_file.txt'
+basin_file_all = '../../examples/569_basin_file.txt'
+# basin_file_all = '../../examples/4_basin_file.txt'
 
-run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap'
+# run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_200ep_1000pre_lr3'
+# run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler05d_lr4_100ep_1000pre_lr3_oldOverLap'
+# run_folder = f'4basins_single_{nnmodel_type}32x5_256b_euler05d_lr4_100ep_1000pre_lr3_oldOverLap'
+# run_folder = f'4basins_single_{nnmodel_type}32x5_512b_euler05d_lr4_100ep_1000pre_lr3_oldOverLap'
+# run_folder = f'4basins_single_{nnmodel_type}32x5_512b_bosh3_lr4_100ep_1000pre_lr3_oldOverLap'
+
+## 569 basins
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverYES'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_euler05d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_euler01d_lr4_100ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_rk4_05d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_512b_euler1d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_128b_euler05d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler05d_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler05d_lr4_100ep_1000pre_lr'
+run_folder = f'569basins_single_{nnmodel_type}32x5_512b_euler05d_lr4_100ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_50ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr34_50ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr44_50ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_100ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr45_100ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_bosh3tol33_lr4_150ep_1000pre_lr3'
+# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_bosh3tol33_lr45_150ep_1000pre_lr3'
+
+# RUN_VERSION = 'bosh3tol46'
+# RUN_VERSION = 'bosh3v2'
+# RUN_VERSION = 'euler1d512b'
+# RUN_VERSION = 'euler1d256bYes'
+# RUN_VERSION = 'euler1d256bNo'
+# RUN_VERSION = 'euler01d'
+# RUN_VERSION = 'euler05d256'
+# RUN_VERSION = 'euler05d256b100epB1'
+RUN_VERSION = 'euler05d512b100epB2'
+# RUN_VERSION = 'rk4_1d'
+# RUN_VERSION = 'rk4_1d256b'
+# RUN_VERSION = 'rk4_05d256b_b1'
+# RUN_VERSION = 'rk4_05d'
+# RUN_VERSION = 'euler1d256b50eplr4'
+# RUN_VERSION = 'euler1d256b50eplr34'
+# RUN_VERSION = 'euler1d256b50eplr44'
+# RUN_VERSION = 'euler1d256b100eplr4'
+# RUN_VERSION = 'euler1d256b100eplr45'
+# RUN_VERSION = 'bosh3tol33_256b'
+# RUN_VERSION = 'bosh3tol33_256b_lr45'
+# RUN_VERSION = 'euler05d128b'
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 4
+MAX_WORKERS = 32
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
@@ -78,7 +150,7 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
         basin = get_basin_id(nn_model_dir)
 
     # Create 1_basin_{basin}.txt file
-    basin_file = f'1_basin_{basin}_{nnmodel_type}.txt'
+    basin_file = f'1_basin_{basin}_{nnmodel_type}_{RUN_VERSION}.txt'
     with open(basin_file, 'w') as f:
         f.write(basin)
 
@@ -92,7 +164,7 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
         cfg.pop('nn_model_dir', None)
 
     # Create temporary configuration file config_file_temp_basin.yml
-    config_file_temp = str(config_file).split('.')[0] + f'_temp_{nnmodel_type}_{basin}.yml'
+    config_file_temp = str(config_file).split('.')[0] + f'_temp_{nnmodel_type}_{basin}_{RUN_VERSION}.yml'
     with open(config_file_temp, 'w') as f:
         yaml.dump(cfg, f)
 
@@ -101,6 +173,13 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
                                         run_folder=run_folder,
                                         # nn_model_path=Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
                                         nn_model_path=script_path)
+    
+
+    # Delete the basin_file and config_file_temp after training
+    if os.path.isfile(basin_file):
+        os.remove(basin_file)
+    if os.path.isfile(config_file_temp):
+        os.remove(config_file_temp)
 
     # Get the basin interpolators
     interpolators = get_basin_interpolators(dataset, cfg_run, project_path)
@@ -135,22 +214,19 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
 
     # Pretrain the model if no pre-trained model is loaded
     if cfg_run.nn_model_dir is False:
-        pretrainer.train(loss=cfg_run.loss_pretrain, lr=cfg_run.lr_pretrain, epochs=cfg_run.epochs_pretrain)
+        pretrain_ok = pretrainer.train(loss=cfg_run.loss_pretrain, lr=cfg_run.lr_pretrain, epochs=cfg_run.epochs_pretrain)
 
-    # Build the hybrid model
-    model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
+    if pretrain_ok:
+        # Build the hybrid model
+        model_hybrid = get_hybrid_model(cfg_run, pretrainer, dataset)
 
-    # Build the trainer 
-    trainer = get_trainer(model_hybrid)
+        # Build the trainer 
+        trainer = get_trainer(model_hybrid)
 
-    # Train the model
-    trainer.train()
-
-    # Delete the basin_file and config_file_temp after training
-    if os.path.isfile(basin_file):
-        os.remove(basin_file)
-    if os.path.isfile(config_file_temp):
-        os.remove(config_file_temp)
+        # Train the model
+        trainer.train()
+    else:
+        print(f'Pretraining failed for basin {basin}')  
 
 def main():
 
@@ -208,6 +284,19 @@ def main():
     else:
         # 8 places leading zeros
         basins = sorted([str(int(basin)).zfill(8) for basin in basins])
+
+    
+    # basins = basins[:284]
+    basins = basins[284:]
+    # # Reverse the list in place
+    # basins.reverse()
+    # # Now slice the reversed list
+    # basins = basins[:128]
+
+    # basins = basins[:68]
+    # basins = basins[68:136]
+    # basins = basins[136:204]
+    # basins = basins[204:]
 
     print(f"Total basins to be trained: {len(basins)}")
 

@@ -138,8 +138,8 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                             method=self.odesmethod,
                             # method='LSODA',
                             #  method='DOP853',
-                            rtol=1e-3, atol=1e-3,
-                            # rtol=1e-3, atol=1e-6,
+                            # rtol=1e-3, atol=1e-3,
+                            rtol=1e-3, atol=1e-6,
                         )
         
         # Extract snow and water series -> two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022

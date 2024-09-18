@@ -1,19 +1,26 @@
 ####### Gitignore file for python projects - Added by author
 # Folders
-venv-hydronodes/*
+venv-*
 examples/runs/*
 data/*
 src/scripts_paper/runs_pretrainer*
 src/scripts_paper/runs_hybrid*
 src/scripts_paper/ZZZruns_*
-src/scripts/plots*
 src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
-src/scripts/gifs/*
+src/scripts_paper/569basins_single_*
+src/scripts_paper/M100_results_569basins*
+src/scripts/scripts_plots/plots*
+src/scripts/scripts_plots/gifs/*
+src/scripts/scripts_finetuning/runs_*
+src/scripts/scripts_finetuning/test_runs_*
+src/scripts/scripts_finetuning/AA_*
 
 # Files
 src/scripts_paper/*_temp_*.yml
 src/scripts_paper/1_basin_*
+*.err
+*.out
 
 
 ###### Gitignore file for python projects - Default

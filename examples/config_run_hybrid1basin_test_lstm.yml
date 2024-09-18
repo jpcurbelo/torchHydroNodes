@@ -5,7 +5,12 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+# odesmethod: bosh3
+
 odesmethod: euler
+time_step: 1.0
+
+carryover_state: False
 
 # Files to specify training, validation and test basins
 basin_file: 1_basin_file.txt
@@ -54,8 +59,8 @@ hidden_size:
 #   - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.01
-epochs_pretrain: 100
+lr_pretrain: 0.001
+epochs_pretrain: 200
 ###############################################################
 
 scale_target_vars: True
@@ -77,7 +82,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 100
+epochs: 150
 
 # Patience for early stopping
 patience: 20
@@ -95,22 +100,22 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-learning_rate: 0.0001
-# learning_rate:
-#   initial: 0.0001
-#   decay: 0.5
-#   decay_step_fraction: 2  # Decay step fraction (e.g., 1/4 of the total epochs
+# learning_rate: 0.0001
+learning_rate:
+  initial: 0.0001
+  decay: 0.1
+  decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: _ZZZZ_1basin_hybrid_lstm_270d_128x1_euler
-experiment_name: AACEDAR_1basin_hybrid_lstm_270d_128x1_euler
+experiment_name: 1basin_hybrid_lstm_270d_128x1_euler1d_150ep_lr45_200pre_lr3_carryoverNO_cpu
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+# device: cuda:1
+device: cpu
 
 # Set seed for reproducibility
-seed: 1111
+seed: 111
 
 # Set precision for the model [float32, float64]
 precision: float32
@@ -129,7 +134,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 25
 
 # Metrics to use for evaluation (after training)
 metrics:

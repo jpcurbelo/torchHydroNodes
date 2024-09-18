@@ -1,0 +1,19 @@
+odesmethod:
+  bosh3: 
+    time_step: null  # Explicitly mention that no time step is required
+
+batch_size:
+  - 256
+  - -1
+
+learning_rate:
+  - 0.0001
+
+epochs:
+  - 150
+
+hidden_size:
+  - [32, 32, 32, 32, 32]
+
+dropout:
+  - 0.0

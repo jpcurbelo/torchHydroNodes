@@ -1,0 +1,5 @@
+run_dirs:
+  - AA_bash_runs_finetune_mlp_euler1d_240917_205323
+  - AA_bash_runs_finetune_mlp_euler05d_240917_205505
+  - AA_bash_runs_finetune_mlp_rk4_240918_020503
+  - AA_bash_runs_finetune_mlp_rk23tol33_240918_074306

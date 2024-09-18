@@ -1,0 +1,12 @@
+PyYAML==6.0.1+computecanada
+torch==1.13.1+computecanada
+tqdm==4.66.4+computecanada
+xarray==2024.5.0+computecanada
+scipy==1.11.2+computecanada
+numpy>=1.25.2,<2.0
+matplotlib==3.7.2+computecanada
+torchdiffeq==0.2.4
+geopandas
+cmcrameri==1.9
+scikit-learn==1.5.2
+pyarrow==17.0.0

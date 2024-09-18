@@ -1,23 +1,17 @@
 
 import xarray
-import pandas as pd
-from pathlib import Path
-import numpy as np
 from scipy.integrate import solve_ivp as sp_solve_ivp
 import torch
-from tqdm import tqdm
-import sys
 import torch.nn as nn
 ## https://github.com/rtqichen/torchdiffeq/tree/master
 import torchdiffeq
-import time
 
 from src.modelzoo_hybrid.basemodel import BaseHybridModel
 from src.modelzoo_nn.basepretrainer import NNpretrainer
 from src.utils.load_process_data import (
     Config,
     ExpHydroCommon,
-    ExpHydroODEs,
+    # ExpHydroODEs,
 )
 
 MASS_BALANCE_TOLERANCE = 1e-6 #np.sqrt(np.finfo(float).eps)
@@ -55,7 +49,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Extract the state variables
         # If inputs shape is 2D, then is 'mlp' model
-        if len(inputs.shape) == 2:
+        if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
             self.s_snow = inputs[:, 0]
             self.s_water = inputs[:, 1]
             self.precp_series = inputs[:, 2]
@@ -101,7 +95,10 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         if self.odesmethod in ['euler', 'rk4', 'midpoint']:
             rtol = 1e-3
             atol = 1e-3
-        elif self.odesmethod in ['bosh3', 'dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
+        elif self.odesmethod in ['bosh3']:
+            rtol = 1e-3
+            atol = 1e-3
+        elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
             rtol = 1e-3
             atol = 1e-6
         elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
@@ -118,7 +115,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         ode_solver = torchdiffeq.odeint
         # print("About to call the ODE solver")
-        if len(inputs.shape) == 2:
+        if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0], self.s_water[0]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, 
@@ -129,12 +126,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, 
                            rtol=rtol, atol=atol, options=options)
-            
-        # # Print y
-        # print('y', y.shape)
-        # print('y', y[:5, :, :])
 
-        if len(inputs.shape) == 2:
+        if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
 
             s_snow_nn  = y[:, 0, 0]
             s_water_nn = y[:, 0, 1]
