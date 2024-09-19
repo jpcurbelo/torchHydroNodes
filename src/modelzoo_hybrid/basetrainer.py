@@ -368,37 +368,37 @@ class BaseHybridModelTrainer:
             if is_cpu:
                 tracemalloc.stop()
 
+            # Save the final model weights and plots
+            self.save_model()
+
+            # Start tracemalloc only if running on CPU
+            if is_cpu:
+                tracemalloc.start()
+
+            # Time tracking for evaluation
+            eval_start_time = time.time()
+            self.evaluate()
+            eval_time = time.time() - eval_start_time
+
+            # Track CPU memory during evaluation
+            cpu_peak_memory_mb = 'N/A'
+            if is_cpu:
+                _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
+                cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
+
+            # Write the evaluation times and memory stats to the CSV
+            writer.writerow({
+                'epoch': 'evaluation',
+                'epoch_time_seg': f"{eval_time:.2f}",
+                'avg_loss': 'N/A',
+                'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
+            })
+
+            # Stop tracemalloc if running on CPU
+            if is_cpu:
+                tracemalloc.stop()
+
             if not stop_training:
-                # Save the final model weights and plots
-                self.save_model()
-
-                # Start tracemalloc only if running on CPU
-                if is_cpu:
-                    tracemalloc.start()
-
-                # Time tracking for evaluation
-                eval_start_time = time.time()
-                self.evaluate()
-                eval_time = time.time() - eval_start_time
-
-                # Track CPU memory during evaluation
-                cpu_peak_memory_mb = 'N/A'
-                if is_cpu:
-                    _, cpu_peak_memory_kb = tracemalloc.get_traced_memory()
-                    cpu_peak_memory_mb = cpu_peak_memory_kb / 1024  # Convert KB to MB
-
-                # Write the evaluation times and memory stats to the CSV
-                writer.writerow({
-                    'epoch': 'evaluation',
-                    'epoch_time_seg': f"{eval_time:.2f}",
-                    'avg_loss': 'N/A',
-                    'cpu_peak_memory_mb': f"{cpu_peak_memory_mb:.2f}" if is_cpu else 'N/A'
-                })
-
-                # Stop tracemalloc if running on CPU
-                if is_cpu:
-                    tracemalloc.stop()
-
                 # Start tracemalloc only if running on CPU
                 if is_cpu:
                     tracemalloc.start()

@@ -250,6 +250,9 @@ def plot_metric_histogram(df_period, metric, threshold_dict, graph_title,
         fig.savefig(plots_folder / f'{metric}_histograms_{period}_clusters.png', dpi=150, bbox_inches='tight')
         plt.show()
 
+    # Close the figures
+    plt.close('all')
+
 def apply_threshold(df, metric, threshold_dict):
     '''
     Apply the threshold to the given metric.

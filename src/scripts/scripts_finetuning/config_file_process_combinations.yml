@@ -1,8 +1,12 @@
+main_folder: AAA_cluster_sample_jobs_59basins
+
 run_folders:
-  - AA_bash_runs_finetune_mlp_euler1d_240917_205323
-  - AA_bash_runs_finetune_mlp_euler05d_240917_205505
-  - AA_bash_runs_finetune_mlp_rk4_240918_020503
-  - AA_bash_runs_finetune_mlp_rk23tol33_240918_074306
+  ## Folder name: label
+  AA_bash_runs_finetune_mlp_euler1d_240917_205323: "Euler 1d"
+  AA_bash_runs_finetune_mlp_euler02d_240918_141927: "Euler 0.2d"
+  AA_bash_runs_finetune_mlp_euler05d_240917_205505: "Euler 0.5d"
+  AA_bash_runs_finetune_mlp_rk4_1d_240918_020503: "RK4 1d"
+  AA_bash_runs_finetune_mlp_rk23tol33_240918_074306: "RK23 tol33"
 
 periods:
   - train
@@ -13,6 +17,10 @@ metrics:
   - nse
   # - fhv
   # - kge
+
+# Top models criteria: median, mean, mean_median_score
+top_models_criteria: median
+
 
 # Thresholds for the metrics
 threshold_dict:
