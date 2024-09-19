@@ -1,0 +1,34 @@
+main_folder: .
+
+run_folders:
+  ## Folder name: label
+  # AA_bash_runs_finetune_mlp_euler02d_240919_102340: "Euler 0.2d"
+  A_bash_runs_finetune_fract02_mlp_euler1d_240919_102943: "Euler 1d"
+
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Top models criteria: median, mean, mean_median_score
+top_models_criteria: median
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less

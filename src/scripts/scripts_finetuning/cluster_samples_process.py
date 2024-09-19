@@ -18,7 +18,8 @@ from src.utils.plots import (
 )
 
 # Configuration file path
-COMBO_FILE = Path('config_file_process_combinations.yml')
+COMBO_FILE = Path('config_file_process_combos_fract01.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract02.yml')
 
 
 def load_combinations(file_path):
@@ -323,34 +324,34 @@ def main(combo_file=COMBO_FILE):
     run_metrics = combinations['metrics']
     threshold_dict = combinations['threshold_dict']
     
-    # # Iterate through run folders
-    # for folder, label in run_folders_labels.items():
-    #     print(f"Folder: {folder}\nLabel: {label}\nPath: {run_folders_paths[folder]}\n")
+    # Iterate through run folders
+    for folder, label in run_folders_labels.items():
 
-    #     run_folder_path = Path(run_folders_paths[folder])
-    #     combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+        run_folder_path = Path(run_folders_paths[folder])
+        combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+       
+        # Process each run folder
+        for icombo, combo_folder in enumerate(combination_folders):
 
-    #     print(f"Number of combinations: {len(combination_folders)}")
-        
-    #     # Process each run folder
-    #     for icombo, combo_folder in enumerate(combination_folders):
-    #         print(f"- {combo_folder}")
-    #         completed_basins, total_basins, basin_stats = process_combination_folder(combo_folder)
-    #         print(f"- {len(completed_basins)}/{total_basins} basins completed.")
-    #         save_basin_stats(combo_folder, basin_stats, periods)
+            completed_basins, total_basins, basin_stats = process_combination_folder(combo_folder)
 
-    #         # Plot histograms for the completed basins
-    #         epochs = load_config_value(combo_folder, 'epochs')
-    #         plot_histograms_period(
-    #             combo_folder / 'combo_results',
-    #             periods,
-    #             run_metrics,
-    #             threshold_dict,
-    #             f'Combo {icombo+1}',
-    #             epochs,
-    #             combo_folder / 'combo_results',
-    #             metric_base_fname='combo_stats'
-    #         )
+            if len(completed_basins) < total_basins:
+                    print(f"- {combo_folder} | {len(completed_basins)}/{total_basins} basins completed.")
+
+            save_basin_stats(combo_folder, basin_stats, periods)
+
+            # Plot histograms for the completed basins
+            epochs = load_config_value(combo_folder, 'epochs')
+            plot_histograms_period(
+                combo_folder / 'combo_results',
+                periods,
+                run_metrics,
+                threshold_dict,
+                f'Combo {icombo+1}',
+                epochs,
+                combo_folder / 'combo_results',
+                metric_base_fname='combo_stats'
+            )
 
     # Generate plots
     plot_performance_scatter(main_folder, run_folders_labels, run_metrics, periods, threshold_dict)

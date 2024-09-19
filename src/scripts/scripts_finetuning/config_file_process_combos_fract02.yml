@@ -1,4 +1,4 @@
-main_folder: AAA_cluster_sample_jobs_59basins
+main_folder: cluster_sample_jobs_59basins
 
 run_folders:
   ## Folder name: label
@@ -20,7 +20,6 @@ metrics:
 
 # Top models criteria: median, mean, mean_median_score
 top_models_criteria: median
-
 
 # Thresholds for the metrics
 threshold_dict:

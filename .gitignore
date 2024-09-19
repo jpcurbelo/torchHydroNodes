@@ -14,7 +14,8 @@ src/scripts/scripts_plots/plots*
 src/scripts/scripts_plots/gifs/*
 src/scripts/scripts_finetuning/runs_*
 src/scripts/scripts_finetuning/test_runs_*
-src/scripts/scripts_finetuning/AA*
+src/scripts/scripts_finetuning/A*
+src/scripts/scripts_finetuning/cluster_sample_jobs**
 
 # Files
 src/scripts_paper/*_temp_*.yml

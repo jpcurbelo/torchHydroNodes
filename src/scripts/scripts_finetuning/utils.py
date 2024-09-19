@@ -54,6 +54,30 @@ cluster_colors = {
 # Light gray color for non-selected basins
 non_selected_color = '#d3d3d3'
 
+def validate_basin_file(basin_file):
+    """
+    Validate the provided basin file.
+    
+    Args:
+        basin_file (str): Path to the basin file.
+    
+    Returns:
+        bool: True if the basin file is valid, False otherwise.
+    """
+    if basin_file is None:
+        return False
+
+    try:
+        path = Path(basin_file)
+        if not path.exists():
+            raise FileNotFoundError(f'Basin file "{basin_file}" not found!')
+        if path.stat().st_size == 0:
+            raise ValueError(f'Basin file "{basin_file}" is empty!')
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Validation error: {e}")
+        return False
+    return True
+
 def random_basins_subset(cluster_files, fraction):
     """
     Randomly selects a fraction of basins from each cluster file and saves the selected basins in a CSV format.
