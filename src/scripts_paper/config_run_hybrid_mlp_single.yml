@@ -5,11 +5,13 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-odesmethod: bosh3
-rtol: 1e-3
-atol: 1e-3
-# odesmethod: euler
-time_step: 0.5
+# odesmethod: bosh3
+# rtol: 1e-3
+# atol: 1e-3
+odesmethod: euler
+time_step: 1.0
+
+carryover_state: False
 
 # Files to specify training, validation and test basins
 basin_file: This is to be updated!!! # do not delete this line
@@ -74,7 +76,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 150
 
 # Patience for early stopping
 patience: 30
@@ -83,9 +85,9 @@ patience: 30
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 256
+batch_size: 256
 # batch_size: 7304
-batch_size: -1
+# batch_size: -1
 
 # # Dropout rate for the model
 # dropout: 0.2
@@ -123,7 +125,7 @@ verbose: 0
 log_n_basins: 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:
