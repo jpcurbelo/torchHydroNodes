@@ -31,93 +31,25 @@ from utils import (
     delete_unfinished_jobs,
 )
 
-nnmodel_type = 'mlp'
+NNMODEL_TYPE = 'mlp'
 
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single2.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single3.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single4.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single5_bosh3tol46.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single6_euler01.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single3_rk4_1d.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_rk4_1d256b.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_rk4_05d256b.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d512b.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d256b.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d256b100ep.yml')
-config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d512b100ep.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler05d128b.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b_carryoverYES.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b_carryoverNO.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b50eplr4.yml')   
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b50eplr34.yml')   
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b50eplr44.yml')  
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b100ep_lr4.yml')  
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_euler1d256b100ep_lr45.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_bosh3tol33_256b.yml')
-# config_file = Path(f'config_run_hybrid_{nnmodel_type}_single_bosh3tol33_256b_lr45.yml')
+CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single.yml')
+# config_file = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_bosh3tol46_256b_50ep.yml')
 
-# # pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5'
-# pretrainer_runs_folder = f'runs_pretrainer_single_{nnmodel_type}32x5_7304b_lr2_200ep'
+# # #pretrainer_runs_folder = f'runs_pretrainer_single_{NNMODEL_TYPE}32x5'
 
-pretrainer_runs_folder = None
-basin_file_all = '../../examples/569_basin_file.txt'
-# basin_file_all = '../../examples/4_basin_file.txt'
+PRETRAINER_RUN_FOLDER = None
+BASIN_FILE_ALL = '../../examples/569_basin_file.txt'
+# BASIN_FILE_ALL = '../../examples/4_basin_file.txt'
 
-# run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_200ep_1000pre_lr3'
-# run_folder = f'4basins_single_{nnmodel_type}32x5_7305b_euler05d_lr4_100ep_1000pre_lr3_oldOverLap'
-# run_folder = f'4basins_single_{nnmodel_type}32x5_256b_euler05d_lr4_100ep_1000pre_lr3_oldOverLap'
-# run_folder = f'4basins_single_{nnmodel_type}32x5_512b_euler05d_lr4_100ep_1000pre_lr3_oldOverLap'
-# run_folder = f'4basins_single_{nnmodel_type}32x5_512b_bosh3_lr4_100ep_1000pre_lr3_oldOverLap'
+RUN_FOLDER = f'4basins_single_{NNMODEL_TYPE}32x5_256b_euler1d_lr4_50ep_1000pre_lr3'
+# RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_bosh3tol46_lr4_50ep_1000pre_lr3'
 
-## 569 basins
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverYES'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_euler1d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_euler05d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_euler01d_lr4_100ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_7305b_rk4_05d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_512b_euler1d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_128b_euler05d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler05d_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler05d_lr4_100ep_1000pre_lr'
-run_folder = f'569basins_single_{nnmodel_type}32x5_512b_euler05d_lr4_100ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_50ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr34_50ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr44_50ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr4_100ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_euler1d_lr45_100ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_bosh3tol33_lr4_150ep_1000pre_lr3'
-# run_folder = f'569basins_single_{nnmodel_type}32x5_256b_bosh3tol33_lr45_150ep_1000pre_lr3'
-
+RUN_VERSION = 'euler1d'
 # RUN_VERSION = 'bosh3tol46'
-# RUN_VERSION = 'bosh3v2'
-# RUN_VERSION = 'euler1d512b'
-# RUN_VERSION = 'euler1d256bYes'
-# RUN_VERSION = 'euler1d256bNo'
-# RUN_VERSION = 'euler01d'
-# RUN_VERSION = 'euler05d256'
-# RUN_VERSION = 'euler05d256b100epB1'
-RUN_VERSION = 'euler05d512b100epB2'
-# RUN_VERSION = 'rk4_1d'
-# RUN_VERSION = 'rk4_1d256b'
-# RUN_VERSION = 'rk4_05d256b_b1'
-# RUN_VERSION = 'rk4_05d'
-# RUN_VERSION = 'euler1d256b50eplr4'
-# RUN_VERSION = 'euler1d256b50eplr34'
-# RUN_VERSION = 'euler1d256b50eplr44'
-# RUN_VERSION = 'euler1d256b100eplr4'
-# RUN_VERSION = 'euler1d256b100eplr45'
-# RUN_VERSION = 'bosh3tol33_256b'
-# RUN_VERSION = 'bosh3tol33_256b_lr45'
-# RUN_VERSION = 'euler05d128b'
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 32
+MAX_WORKERS = 4
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1
@@ -125,7 +57,7 @@ DELETE_IF_UNFINISHED = 0
 
 ONLY_CHECK_FINISHED = 0
 
-def train_model_for_basin(nn_model_dir, project_path, basin=None):
+def train_model_for_basin(config_file, nn_model_dir, pretrainer_runs_folder, project_path, run_folder, nnmodel_type, basin=None):
     '''
     Train the hybrid model for a single basin
 
@@ -228,7 +160,8 @@ def train_model_for_basin(nn_model_dir, project_path, basin=None):
     else:
         print(f'Pretraining failed for basin {basin}')  
 
-def main():
+def main(config_file=CONFIG_FILE, pretrainer_runs_folder=PRETRAINER_RUN_FOLDER,
+          basin_file_all=BASIN_FILE_ALL, run_folder=RUN_FOLDER, nnmodel_type=NNMODEL_TYPE):
 
     if pretrainer_runs_folder is not None:
         # Load available nn_model_dir in pretrainer_runs_folder
@@ -287,7 +220,7 @@ def main():
 
     
     # basins = basins[:284]
-    basins = basins[284:]
+    # basins = basins[284:]
     # # Reverse the list in place
     # basins.reverse()
     # # Now slice the reversed list
@@ -313,7 +246,10 @@ def main():
 
         if pretrainer_runs_folder is not None:
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(train_model_for_basin, nn_model_dir, project_path) for nn_model_dir in nn_model_dirs]
+                futures = [executor.submit(train_model_for_basin, config_file, nn_model_dir, 
+                                            pretrainer_runs_folder, project_path, 
+                                            run_folder, nnmodel_type) 
+                                            for nn_model_dir in nn_model_dirs]
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         future.result()  # Will raise exception if training failed
@@ -321,7 +257,9 @@ def main():
                         print(f'Error in training model: {e}')
         else:
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(train_model_for_basin, None, project_path, basin) for basin in basins]
+                futures = [executor.submit(train_model_for_basin, config_file, None, None, 
+                                           project_path, run_folder, nnmodel_type, basin) 
+                                           for basin in basins]
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         future.result()  # Will raise exception if training failed
@@ -340,12 +278,13 @@ def main():
 
                 if basin in basins:
                     print(nn_model_dir)
-                    train_model_for_basin(nn_model_dir, project_path)
+                    train_model_for_basin(config_file, nn_model_dir, pretrainer_runs_folder, project_path, 
+                                          run_folder, nnmodel_type)
         else:
             for basin in basins:
                 print(basin)
-                train_model_for_basin(None, project_path, basin)
-
+                train_model_for_basin(config_file, None, None, project_path, 
+                                      run_folder, nnmodel_type, basin)
 
 
 if __name__ == "__main__":

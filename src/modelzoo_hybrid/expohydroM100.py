@@ -90,20 +90,17 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # # Profile the ODE solver
         # time_start = time.time()
 
-        # Define rtol and atol
-        # Higher rtol and atol values will make the ODE solver faster but less accurate
-        if self.odesmethod in ['euler', 'rk4', 'midpoint']:
-            rtol = 1e-3
-            atol = 1e-3
-        elif self.odesmethod in ['bosh3']:
-            rtol = 1e-3
-            atol = 1e-3
-        elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
-            rtol = 1e-3
-            atol = 1e-6
-        elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
-            rtol = 1e-6
-            atol = 1e-9
+        # # Define rtol and atol
+        # # Higher rtol and atol values will make the ODE solver faster but less accurate
+        # if self.odesmethod in ['euler', 'rk4', 'midpoint']:
+        #     rtol = 1e-3
+        #     atol = 1e-3
+        # elif self.odesmethod in ['bosh3', 'dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
+        #     rtol = 1e-3
+        #     atol = 1e-6
+        # elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
+        #     rtol = 1e-6
+        #     atol = 1e-9
 
         # Set the options for the ODE solver
         if self.odesmethod in FIXED_METHODS:
@@ -111,21 +108,19 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         else:
             options = {}
 
-        # time_series = self.time_series
-
         ode_solver = torchdiffeq.odeint
         # print("About to call the ODE solver")
         if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0], self.s_water[0]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_mlp, y0=y0, t=self.time_series, method=self.odesmethod, 
-                           rtol=rtol, atol=atol, options=options)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
+                           rtol=self.rtol, atol=self.atol, options=options)   # 'rk4' 'midpoint'   'euler' 'dopri5' #rtol=1e-6, atol=1e-6
             # y = ode_solver(self.hybrid_model, y0=y0, t=time_series, method='rk4', rtol=1e-3, atol=1e-6)
         elif len(inputs.shape) == 3:
             # Set the initial conditions
             y0 = torch.stack([self.s_snow[0, -1], self.s_water[0, -1]], dim=0).unsqueeze(0)    #.to(self.device)
             y = ode_solver(self.hybrid_model_lstm, y0=y0, t=self.time_series[self.window_size-1:], method=self.odesmethod, 
-                           rtol=rtol, atol=atol, options=options)
+                           rtol=self.rtol, atol=self.atol, options=options)
 
         if len(inputs.shape) == 2:  # For MLP models (inputs are 2D):
 

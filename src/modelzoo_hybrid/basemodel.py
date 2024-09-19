@@ -25,11 +25,13 @@ class BaseHybridModel(ExpHydroCommon, nn.Module):
         self.scaler = scaler
 
         # Method to solve ODEs
-        if hasattr(cfg, 'odesmethod'):
-            self.odesmethod = cfg.odesmethod
-            self.time_step = cfg.time_step
-        else:
-            self.odesmethod = 'RK23'
+        self.odesmethod = cfg.odesmethod
+        # Overwrite the method to solve ODEs if it is RK23 (set as default for conceptual model)
+        if self.odesmethod == 'RK23':
+            self.odesmethod = 'euler'
+        self.time_step = cfg.time_step
+        self.atol = float(cfg.atol)
+        self.rtol = float(cfg.rtol)
 
         # Create the dataloader
         self.dataloader = self.pretrainer.create_dataloaders(is_trainer=True)
