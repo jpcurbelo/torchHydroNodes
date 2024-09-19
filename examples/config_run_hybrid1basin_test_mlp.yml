@@ -5,9 +5,11 @@
 hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-# odesmethod: bosh3
-odesmethod: euler
-time_step: 1.0
+odesmethod: bosh3
+rtol: 1e-3
+atol: 1e-3
+# odesmethod: euler
+# time_step: 1.0
 
 # If True, carries the final state (e.g., s_snow, s_water) from the previous batch as the initial condition for the next batch.
 carryover_state: False
@@ -58,7 +60,7 @@ hidden_size:
 
 loss_pretrain: mse
 lr_pretrain: 0.001
-epochs_pretrain: 500
+epochs_pretrain: 200
 ###############################################################
 
 scale_target_vars: True
@@ -66,21 +68,21 @@ scale_target_vars: True
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1980"
-train_end_date: "30/09/2000"
-valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
-
-# train_start_date: "01/10/1995"
+# train_start_date: "01/10/1980"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2005"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1995"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 50
+epochs: 100
 
 # Patience for early stopping
 patience: 30
@@ -105,73 +107,14 @@ optimizer: adam
 
 # # Learning rate for the optimizer
 learning_rate: 0.0001
-# learning_rate:
-#   initial: 0.00001
-#   decay: 0.5
-#   decay_step_fraction: 4  # Decay step fraction (e.g., N-> 1/N of the total epochs
-# learning_rate:
-#   initial: 0.0001
-#   decay: 0.1
-#   decay_step_fraction: 3  # Decay step fraction (e.g., 1/3 of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: _ZZZZ_1basin_hybrid_mlp_32x5_euler_lr34_200ep
-# experiment_name: _ZZZZ_1basin_hybrid_mlp_32x5_bosh3_lr34_200ep
-# experiment_name: ZZZZZ_1basin_hybrid_mlp_32x5_euler5d_lr4_100ep
-# experiment_name: ZZZZZ_1basin_hybrid_mlp_32x5_bosh3_lr4_400ep
-# experiment_name: _AAAAA_1basin_hybrid_mlp_32x5_euler1d_lr4_100ep_7305b_load_pretrain
-
-# experiment_name: _AAAAA_1basin_hybrid_mlp_32x5_euler1d_lr4x_400ep_256b_load_pretrain
-# experiment_name: _AAAAA_1basin_hybrid_mlp_32x5_euler1d_lr4x_400ep_256b
-# experiment_name: _AAAAA_1basin_hybrid_mlp_32x5_euler1d_lr4x_400ep_7305b
-# experiment_name: _AAAAA_1basin_hybrid_mlp_32x5_euler1d_lr4x_400ep_7305b_load_pretrain
-
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_mean-loss
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_400ep_500pre
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_200pre
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_400ep_500pre
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_200pre_mse
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_100ep_200pre_mse
-# experiment_name: _AAAA_1basin_hybrid_mlp_32x5_64b_euler1d_lr4_200ep_500pre
-
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_500pre
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_oldOverLap
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_512b_euler1d_lr4_200ep_500pre_oldOverLap
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_100ep_500pre_notLastBatch
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr5_100ep_500pre
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr34_100ep_500pre
-# experiment_name: _BBBB_1basin_hybrid_mlp_32x5_256b_euler1d_lr45_100ep_500pre
-
-
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr2_noOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr2_newOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4_200ep_500pre_lr3_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr45_200ep_500pre_lr3_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler1d_lr4455_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler05d_lr4455_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_euler05d_lr4_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_bosh3_lr4_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_256b_bosh3_lr4455_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4_200ep_500pre_lr2_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4556_200ep_1000pre_lr3_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4556_200ep_1000pre_lr3_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler05d_lr4556_200ep_1000pre_lr3_oldOverLa
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4556_400ep_1000pre_lr3_oldOverLa
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_bosh3_lr5667_400ep_1000pre_lr3_oldOverLap
-# experiment_name: _CCCC_1basin_hybrid_mlp_32x5_7305b_euler1d_lr5667_400ep_1000pre_lr3_oldOverLap
-
-# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_bosh3_lr4_200ep_1000pre_lr3_oldOverLap
-# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler1d_lr4_200ep_1000pre_lr3_oldOverLap
-# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler05d_lr4_200ep_1000pre_lr3_oldOverLap
-# experiment_name: _DDDD_1basin_hybrid_mlp_32x5_7305b_euler1d_lr456_300ep_1000pre_lr3_oldOverLap
-
 
 # experiment_name: _____1basin_hybrid_mlp_carryoverYES
-experiment_name: _____1basin_hybrid_mlp_carryoverNO
-
+# experiment_name: _____1basin_hybrid_mlp_carryoverNO
+# experiment_name: _____1basin_hybrid_mlp_bosh3tol46
+experiment_name: _____1basin_hybrid_mlp_bosh3tol33
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu

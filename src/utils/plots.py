@@ -23,10 +23,6 @@ def get_cluster_files(cluster_folder='569_basins_6clusters'):
     '''
 
     cluster_files = sorted(list(Path(f'../../../examples/cluster_files/{cluster_folder}').glob('*.txt')))
-    # print(f"Home directory", os.listdir(home_directory))
-    # print(f"/torchHydroNodes", os.listdir(f'{home_directory}/torchHydroNodes'))
-    # print(f"/examples", os.listdir(f'{home_directory}/torchHydroNodes/examples'))
-    # cluster_files = sorted(list(Path(f'{home_directory}/torchHydroNodes/examples/cluster_files/569_basins_6clusters').glob('*.txt')))
     return cluster_files
 
 def load_config_file(config_file, create_plots_folder=True):
@@ -154,7 +150,8 @@ def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, f
     Annotate the mean or median value on the histogram plot.
     '''
     
-    data_aux = data[data > 0]
+    # data_aux = data[data > 0]
+    data_aux = data.copy()
     
     if statistic == 'mean':
         value = np.mean(data_aux)
@@ -190,17 +187,19 @@ def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, f
     #     ax.text(0.98, 0, label, va='top', ha='right', color=color, fontsize=8)
 
 def plot_histograms_period(metrics_path, periods, metrics, threshold_dict, 
-                          graph_title, epochs, plots_folder, cluster_files):
+                          graph_title, epochs, plots_folder, cluster_files=None,
+                          metric_base_fname='metrics'):
 
     for period in periods:
 
-        metric_file_path = metrics_path / f'metrics_{period}.csv'
+        metric_file_path = metrics_path / f'{metric_base_fname}_{period}.csv'
 
-        # Check if the file exists and is not empty
-        if metric_file_path.exists() and metric_file_path.stat().st_size <= 1:
-            metric_file_path.unlink()  # Deletes the file
-            print(f"Deleted empty file: {metric_file_path}")
-            break
+        if metric_base_fname == 'metrics':
+            # Check if the file exists and is not empty
+            if metric_file_path.exists() and metric_file_path.stat().st_size <= 1:
+                metric_file_path.unlink()  # Deletes the file
+                print(f"Deleted empty file: {metric_file_path}")
+                break
 
         df_period = pd.read_csv(metric_file_path)
 
@@ -250,6 +249,9 @@ def plot_metric_histogram(df_period, metric, threshold_dict, graph_title,
         plt.tight_layout()
         fig.savefig(plots_folder / f'{metric}_histograms_{period}_clusters.png', dpi=150, bbox_inches='tight')
         plt.show()
+
+    # Close the figures
+    plt.close('all')
 
 def apply_threshold(df, metric, threshold_dict):
     '''
@@ -577,6 +579,12 @@ def _plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
     """Plot the CDF of NSE values with a horizontal line at y=0.5."""
     nse_values = np.sort(df['nse'])
     cdf = np.arange(1, len(nse_values) + 1) / len(nse_values)
+
+    # # Print mean and median values
+    # mean_value = np.mean(nse_values)
+    # median_value = np.median(nse_values)
+    # print(f"Median {folder['experiment']}: {median_value:.3f}")
+    # print(f"Mean {folder['experiment']}: {mean_value:.3f}")
     
     # Plot the CDF line
     ax.plot(nse_values, cdf, color=folder['color'], alpha=0.8,
@@ -734,10 +742,12 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
 
             # Calculate and plot the median
             median_value = np.median(hist_values)
+            # print(f"Median {experiment} ({period}): {median_value:.3f}")
             plt.axvline(median_value, color=line_color, linestyle='--', linewidth=2)
 
             # Calculate and plot the mean
             mean_value = np.mean(hist_values)
+            # print(f"Mean {experiment} ({period}): {mean_value:.3f}")
             plt.axvline(mean_value, color=line_color, linestyle=':', linewidth=2)
         
         # ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')
