@@ -11,6 +11,7 @@ src/scripts_paper/4basins_single_*
 src/scripts_paper/569basins_single_*
 src/scripts_paper/M100_results_569basins*
 src/scripts/scripts_plots/plots*
+src/scripts/scripts_plots/AAplots*
 src/scripts/scripts_plots/gifs/*
 src/scripts/scripts_finetuning/runs_*
 src/scripts/scripts_finetuning/test_runs_*

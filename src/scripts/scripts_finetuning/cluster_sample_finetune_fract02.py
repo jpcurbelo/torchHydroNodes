@@ -43,10 +43,10 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 # base_name = f'runs_finetune_{nnmodel_type}'
 # base_name = f'test_runs_finetune_{nnmodel_type}'
 
-SAMPLE_FRACTION = 0.1   # None
-BASIN_FILE = '59_basin_file_sample.txt'   # None 
-# SAMPLE_FRACTION = 0.2   # None
-# BASIN_FILE = '116_basin_file_sample.txt'  # None 
+# SAMPLE_FRACTION = 0.1   # None
+# BASIN_FILE = '59_basin_file_sample.txt'   # None 
+SAMPLE_FRACTION = 0.2   # None
+BASIN_FILE = '116_basin_file_sample.txt'  # None 
 CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 
 # HP_FILE = 'hyperparameters_euler1d.yml'
@@ -61,11 +61,18 @@ CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 # HP_FILE = 'hyperparameters_rk4_1d.yml'
 # BASE_VERSION = 'rk4_1d_'
 
+# HP_FILE = 'hyperparameters_rk4_05d.yml'
+# BASE_VERSION = 'rk4_05d_'
+
 # HP_FILE = 'hyperparameters_rk23tol33.yml'
 # BASE_VERSION = 'rk23tol33_'
 
-HP_FILE = 'hyperparameters_rk23tol33.yml'
-BASE_VERSION = 'rk23tol46_'
+# HP_FILE = 'hyperparameters_rk23tol46.yml'
+# BASE_VERSION = 'rk23tol46_'
+
+HP_FILE = 'hyperparameters_rk23tol69.yml'
+BASE_VERSION = 'rk23tol69_'
+
 
 # base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
 base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
@@ -80,7 +87,7 @@ base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{BASE_VERSION.split("_
 FINETUNE_FOLDER = create_finetune_folder(base_name=base_name)
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 8
+MAX_WORKERS = 16
 
 # Setup dynamic logging for each run
 def setup_logging(log_file):
@@ -216,7 +223,7 @@ def main(basin_file=BASIN_FILE, sample_fraction=SAMPLE_FRACTION, config_file_bas
         # Random selection
         _, _, _, basin_file = random_basins_subset(cluster_files, sample_fraction)
 
-    print(f'Basin file: {basin_file}')
+    # print(f'Basin file: {basin_file}')
 
     # Read the basin_file_all
     with open(basin_file, 'r') as f:

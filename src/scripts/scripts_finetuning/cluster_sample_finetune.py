@@ -43,15 +43,23 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 # base_name = f'runs_finetune_{nnmodel_type}'
 # base_name = f'test_runs_finetune_{nnmodel_type}'
 
-SAMPLE_FRACTION = 0.2   # None
-BASIN_FILE = '116_basin_file_sample.txt'  # None   |   '59_basin_file_sample.txt' 
+SAMPLE_FRACTION = 0.1   # None
+BASIN_FILE = '59_basin_file_sample.txt'   # None 
+# SAMPLE_FRACTION = 0.2   # None
+# BASIN_FILE = '116_basin_file_sample.txt'  # None 
 CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 
 # HP_FILE = 'hyperparameters_euler1d.yml'
 # BASE_VERSION = 'euler1d_'
 
-HP_FILE = 'hyperparameters_euler05d.yml'
-BASE_VERSION = 'euler05d_'
+# HP_FILE = 'hyperparameters_euler1d_64x5.yml'
+# BASE_VERSION = 'euler1d_64x5_'
+
+# HP_FILE = 'hyperparameters_euler1d_64x3.yml'
+# BASE_VERSION = 'euler1d_64x3_'
+
+# HP_FILE = 'hyperparameters_euler05d.yml'
+# BASE_VERSION = 'euler05d_'
 
 # HP_FILE = 'hyperparameters_euler02d.yml'
 # BASE_VERSION = 'euler02d_'
@@ -59,11 +67,24 @@ BASE_VERSION = 'euler05d_'
 # HP_FILE = 'hyperparameters_rk4_1d.yml'
 # BASE_VERSION = 'rk4_1d_'
 
+# HP_FILE = 'hyperparameters_rk4_05d.yml'
+# BASE_VERSION = 'rk4_05d_'
+
 # HP_FILE = 'hyperparameters_rk23tol33.yml'
 # BASE_VERSION = 'rk23tol33_'
 
-# base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
-base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
+# HP_FILE = 'hyperparameters_rk23tol46.yml'
+# BASE_VERSION = 'rk23tol46_'
+
+HP_FILE = 'hyperparameters_rk23tol69.yml'
+BASE_VERSION = 'rk23tol69_'
+
+# Remove trailing underscore if it exists
+formatted_version = BASE_VERSION.rstrip('_')
+
+# Create the base name using the formatted version
+base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
+# base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{formatted_version}'
 
 
 # SAMPLE_FRACTION = 0.01
@@ -75,7 +96,7 @@ base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{BASE_VERSION.split("_
 FINETUNE_FOLDER = create_finetune_folder(base_name=base_name)
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 32
+MAX_WORKERS = 16
 
 # Setup dynamic logging for each run
 def setup_logging(log_file):
@@ -211,7 +232,7 @@ def main(basin_file=BASIN_FILE, sample_fraction=SAMPLE_FRACTION, config_file_bas
         # Random selection
         _, _, _, basin_file = random_basins_subset(cluster_files, sample_fraction)
 
-    print(f'Basin file: {basin_file}')
+    # print(f'Basin file: {basin_file}')
 
     # Read the basin_file_all
     with open(basin_file, 'r') as f:
@@ -219,10 +240,14 @@ def main(basin_file=BASIN_FILE, sample_fraction=SAMPLE_FRACTION, config_file_bas
 
     # Load hyperparameters
     hyperparameters = load_hyperparameters(hyperparameter_file)
-    # print(hyperparameters)
 
     # Generate hyperparameter combinations`
     params_combinations = hyperparameter_combinations(hyperparameters)
+
+    # print(f'Number of hyperparameter combinations: {len(params_combinations)}')
+    # # print('Hyperparameter combinations:', params_combinations)
+    # for i, combination in enumerate(params_combinations):
+    #     print(f"Combination {i + 1}: {combination}")
 
     # Load base configuration file
     if isinstance(config_file_base, Path):

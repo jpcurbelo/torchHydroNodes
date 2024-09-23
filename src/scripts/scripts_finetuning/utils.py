@@ -19,7 +19,7 @@ from src.utils.plots import (
 
 import random
 #Set the seed for reproducibility
-random.seed(42)
+random.seed(42)  # Do not change the seed!!! IMPORTANT FOR REPRODUCIBILITY
 
 # Define custom colors for clusters to match the image
 cluster_colors = {
@@ -289,9 +289,24 @@ def hyperparameter_combinations(hyperparameters):
         # If 'time_step' exists in the method_config, include it
         if 'time_step' in method_config and method_config['time_step'] is not None:
             params_to_combine = {**other_params, 'time_step': method_config['time_step']}
+        elif 'ratol' in method_config and method_config['ratol'] is not None:
+            # Loop through each pair of (rtol, atol) in the ratol list
+            for rtol, atol in method_config['ratol']:
+                # Convert rtol and atol to float and add to params_to_combine
+                params_to_combine = {**other_params, 'rtol': [float(rtol)], 'atol': [float(atol)]}
+                # Ensure that all values in params_to_combine are lists
+                params_to_combine = {k: (v if isinstance(v, list) else [v]) for k, v in params_to_combine.items()}
+                
+                # Get all possible combinations for the current set of parameters
+                param_names = list(params_to_combine.keys())
+                param_values = list(params_to_combine.values())
+
+                for combination in itertools.product(*param_values):
+                    combined_params = dict(zip(param_names, combination))
+                    combined_params.update(base_params)
+                    all_combinations.append(combined_params)
         else:
             params_to_combine = other_params
-        
         # Get all possible combinations for the current set of parameters
         param_names = list(params_to_combine.keys())
         param_values = list(params_to_combine.values())
@@ -299,7 +314,8 @@ def hyperparameter_combinations(hyperparameters):
         for combination in itertools.product(*param_values):
             combined_params = dict(zip(param_names, combination))
             combined_params.update(base_params)
-            all_combinations.append(combined_params)
+            if combined_params not in all_combinations:
+                all_combinations.append(combined_params)
     
     return all_combinations
 

@@ -1,8 +1,7 @@
 odesmethod:
   bosh3: 
-    - 
-      rtol: 1e-3
-      atol: 1e-3
+    ratol: # Relative and absolute tolerance for the ODE solver (rtol, atol)
+      - [1e-3, 1e-3]
 
 batch_size:
   - 256

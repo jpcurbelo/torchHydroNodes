@@ -32,21 +32,48 @@
 # plots_folder: AAplots_hybrid_mlp32x5_256b_rk4_1d_lr4_150ep
 # graph_title: Hybrid model | MLP/RK4-1.0d | 256 batch
 
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_rk4_05d_lr4_150ep
+# graph_title: Hybrid model | MLP/RK4-0.5d | 256 batch
+# epochs: 150
+
 # results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_150ep_1000pre_lr3
 # plots_folder: AAplots_hybrid_mlp32x5_7305b_euler05d_lr4_150ep
 # graph_title: Hybrid model | MLP/Euler0.5d | 7305 batch
 # epochs: 150
 
-results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
-plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep
-graph_title: Hybrid model | MLP/Euler0.5d | 256 batch
-epochs: 150
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep
+# graph_title: Hybrid model | MLP/Euler0.5d | 256 batch
+# epochs: 150
 
 
 # # results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_150ep_1000pre_lr3
 # # plots_folder: AAplots_hybrid_mlp32x5_7305b_bosh3_lr4_150ep
 # # graph_title: Hybrid model | MLP/Bosh3 | 7305 batch
 # # epochs: 150
+
+## re-run
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3_v2
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep_v2
+# graph_title: Hybrid model | MLP/Euler0.5d | 256 batch
+# epochs: 150
+
+results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3_carryoverYES
+plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep_carryoverYES
+graph_title: Hybrid model | MLP/Euler0.5d | 256 batch | carryover
+epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_bosh3tol46_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_bosh3tol46_lr4_150ep
+# graph_title: Hybrid model | MLP/Bosh3tol46 | 256 batch
+# epochs: 150
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3_v2
+# plots_folder: AAplots_hybrid_mlp32x5_256b_rk4_1d_lr4_150ep_v2
+# graph_title: Hybrid model (exp-hydro) - MLP/RK4-1.0d - 256 batch
+# epochs: 150
 
 
 #############################################################################

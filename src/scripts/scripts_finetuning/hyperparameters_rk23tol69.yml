@@ -1,11 +1,11 @@
 odesmethod:
   bosh3: 
     ratol: # Relative and absolute tolerance for the ODE solver (rtol, atol)
-      - [1e-4, 1e-6]
+      - [1e-6, 1e-9]
 
 batch_size:
-  - -1
   - 256
+  - -1
 
 learning_rate:
   - 0.0001

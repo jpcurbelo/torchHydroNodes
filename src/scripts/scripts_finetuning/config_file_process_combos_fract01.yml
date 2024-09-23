@@ -1,9 +1,16 @@
-main_folder: .
+main_folder: cluster_sample_jobs_59basins
 
 run_folders:
   ## Folder name: label
-  # AA_bash_runs_finetune_mlp_euler02d_240919_102340: "Euler 0.2d"
-  A_bash_runs_finetune_fract02_mlp_euler1d_240919_102943: "Euler 1d"
+  AA_bash_runs_finetune_mlp_euler1d_240917_205323: "Euler 1d"
+  AA_bash_runs_finetune_mlp_euler1d_64x3_240921_215256: "Euler 1d 64x3"
+  AA_bash_runs_finetune_mlp_euler1d_64x5_240921_174351: "Euler 1d 64x5"
+  AA_bash_runs_finetune_mlp_euler05d_240917_205505: "Euler 0.5d"
+  AA_bash_runs_finetune_mlp_euler02d_240919_102340: "Euler 0.2d"
+  AA_bash_runs_finetune_mlp_rk4_1d_240918_020503: "RK4 1d"
+  AA_bash_runs_finetune_mlp_rk4_05d_240921_113321: "RK4 0.5d"
+  AA_bash_runs_finetune_mlp_rk23tol33_240918_074306: "RK23 tol33"
+  AA_bash_runs_finetune_mlp_rk23tol46_240921_173646: "RK23 tol46"
 
 periods:
   - train

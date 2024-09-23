@@ -2,29 +2,22 @@ import os
 import re
 import yaml
 
-# results_folder = "../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_euler_lr4_150ep"
-# conditions_to_check = {
-#     "batch_size": 256,
-#     "epochs": 150,
-#     "hidden_size": [32, 32, 32, 32, 32],
-#     "learning_rate": 0.0001
-# }
-
-# results_folder = "../scripts_paper/AAruns_hybrid_single_mlp32x5_256b_bosh3_lr4_200ep"
-# conditions_to_check = {
-#     "batch_size": 256,
-#     "epochs": 200,
-#     "hidden_size": [32, 32, 32, 32, 32],
-#     "learning_rate": 0.0001,
-#     "odesmethod": "bosh3"
-# }
-
-results_folder = "../../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_150ep_1000pre_lr3"
+results_folder = "../../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3"
 conditions_to_check = {
     "batch_size": -1,
     "epochs": 150,
     "hidden_size": [32, 32, 32, 32, 32],
-    "learning_rate": 0.0001
+    "learning_rate": 0.0001,
+
+    # "odesmethod": "euler",
+    # "time_step": 0.5,
+
+    "odesmethod": "rk4",
+    "time_step": 1.0,
+
+    # "odesmethod": "bosh3",
+    # "rtol": '1e-4',
+    # "atol": '1e-6'
 }
 
 
@@ -43,7 +36,7 @@ conditions_to_check = {
 
 
 
-ONLY_TEST_DONOT_DELETE = True
+ONLY_TEST_DONOT_DELETE = 1
 
 def main(results_folder):
 
@@ -64,7 +57,11 @@ def main(results_folder):
         # Check if the conditions match
         match = all(config.get(key) == value for key, value in conditions_to_check.items())
         if not match:
-            print(f"Deleting {job} as it does not meet conditions.")
+            if not ONLY_TEST_DONOT_DELETE:
+                print(f"Deleting {job} as it does not meet conditions.")
+            else:
+                print(f"Would delete {job} as it does not meet conditions.")
+
             if os.path.exists(job_folder):
                 print(f"Folder {job} exists. Deleting.")
                 if not ONLY_TEST_DONOT_DELETE:
