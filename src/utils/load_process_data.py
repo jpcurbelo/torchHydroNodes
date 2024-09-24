@@ -895,9 +895,10 @@ class CustomDatasetToNN(Dataset):
         return self.input_tensor[idx], self.output_tensor[idx], self.basin_ids[idx]
 
 class BasinBatchSampler(Sampler):
-    def __init__(self, basin_ids, batch_size):
+    def __init__(self, basin_ids, batch_size, carryover_state=False):
         self.basin_ids = basin_ids
         self.batch_size = batch_size
+        self.carryover_state = carryover_state
         
         # Create a mapping from basin_id to indices
         self.basin_to_indices = {}
@@ -912,10 +913,20 @@ class BasinBatchSampler(Sampler):
         self.batches = self._create_batches()
 
     def _create_batches(self):
+
         batches = []
         for _, indices in self.basin_to_indices.items():
-            for i in range(0, len(indices), self.batch_size):  ## First (old) overlap version
+
+            if self.carryover_state:
+                len_idx = len(indices) - 1
+                batch_size = self.batch_size - 1
+            else:
+                len_idx = len(indices)
+                batch_size = self.batch_size
+
+            # for i in range(0, len(indices), self.batch_size):  ## First (old) overlap version
             # for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) overlap version
+            for i in range(0, len_idx, batch_size):
                 batch = indices[i:i + self.batch_size]
                 batches.append(batch)
                 # if len(batch) == self.batch_size:
