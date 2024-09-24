@@ -18,7 +18,11 @@ from src.utils.plots import (
 )
 
 # Configuration file path
-COMBO_FILE = Path('config_file_process_combinations.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract01.yml')
+COMBO_FILE = Path('config_file_process_combos_fract02.yml')
+
+
+ONLY_PLOT = 0
 
 
 def load_combinations(file_path):
@@ -177,10 +181,14 @@ def load_metrics_period(basin_folder, period):
 
     return metrics_data
 
-def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid'], threshold_dict=None):
+def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'], periods=['valid'], 
+                             threshold_dict=None, topN=5):
     """
     Scatter plot with mean time and memory on the axes and NSE (or other metrics) as the size of the circle.
     """
+
+    # Construct full paths for each folder
+    run_folders_paths = {folder: f"{main_folder}/{folder}" for folder in run_folders_labels}
 
     for period in periods:
 
@@ -190,8 +198,9 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
         combo_labels = []  # To store labels for each combo
 
         # Loop over the run folders and combination folders
-        for ifolder, run_folder in enumerate(run_folders):
-            run_folder_path = Path(run_folder)
+        for folder, label in run_folders_labels.items():
+
+            run_folder_path = Path(run_folders_paths[folder])
             combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
 
             for icombo, combo_folder in enumerate(combination_folders):
@@ -216,21 +225,43 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
                 memories.append(mean_memory)
 
                 # Store labels for each combination
-                combo_labels.append(f"folder{ifolder+1}/combo{icombo+1}")
+                combo_labels.append(f"{label}/combo{icombo+1}")
 
-                # Calculate mean values for each metric (e.g., 'nse', 'kge')
+                # # Calculate meadian values for each metric (e.g., 'nse', 'kge')
+                # for metric in run_metrics:
+
+                #     if metric in df.columns:
+                #         df, _, _ = apply_threshold(df, metric, threshold_dict)
+                #         # metric_median = df[metric].mean()
+                #         metric_median = df[metric].median()
+                #         metric_values[metric].append(metric_median)
+                #     else:
+                #         metric_values[metric].append(None)  # In case the metric isn't present
+
+                # Define the weights for mean and median
+                weight_median = 1.0   #1.0   #0.6
+                weight_mean   = 0.0   #0.0   #0.4
+
+                # Calculate combined metric for each configuration
                 for metric in run_metrics:
-
                     if metric in df.columns:
-                        df, _, th_value = apply_threshold(df, metric, threshold_dict)
+                        df, _, _ = apply_threshold(df, metric, threshold_dict)
+                        metric_mean = df[metric].mean()
                         metric_median = df[metric].median()
-                        metric_values[metric].append(metric_median)
+                        
+                        # Combined metric calculation
+                        combined_metric = weight_mean * metric_mean + weight_median * metric_median
+                        
+                        # Append the result to your metric values dictionary or list
+                        metric_values[metric].append(combined_metric)
                     else:
-                        metric_values[metric].append(None)  # In case the metric isn't present
+                        # In case the metric isn't present, append None or an appropriate placeholder
+                        metric_values[metric].append(None)
 
         # Create scatter plot based on the specified metrics (e.g., NSE for size)
         for metric in run_metrics:
-            plt.figure(figsize=(10, 7))
+
+            plt.figure(figsize=(12, 7))
             metric_data = metric_values[metric]
 
             # Filter out None and NaN values from metric_data, times, and memories for plotting
@@ -276,11 +307,12 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
             plt.yticks(fontsize=12)
 
             # Highlight the top 5 results by putting the numbers in the center of the circles
-            top_5_indices = sorted(range(len(filtered_metric_data)), key=lambda i: filtered_metric_data[i], reverse=True)[:5]
+            top_N_indices = sorted(range(len(filtered_metric_data)), 
+                                   key=lambda i: filtered_metric_data[i], reverse=True)[:topN]
 
             legend_circles = []
-            top_5_labels = []
-            for idx, rank in zip(top_5_indices, range(1, 6)):
+            top_N_labels = []
+            for idx, rank in zip(top_N_indices, range(1, topN+1)):
                 font_size = sizes[idx] / 30
                 plt.text(times_filtered[idx], memories_filtered[idx], str(rank), fontsize=font_size, 
                         ha='center', va='center', color='black', fontweight='bold')
@@ -289,58 +321,72 @@ def plot_performance_scatter(run_folders, run_metrics=['nse'], periods=['valid']
                                 markerfacecolor=cmap(normalize(filtered_metric_data[idx])), 
                                 markersize=10, markeredgewidth=1.5, markeredgecolor='black')
                 legend_circles.append(circle)
-                top_5_labels.append(f"Top {rank}: {combo_labels[idx]} | ${metric.upper()}$ = {filtered_metric_data[idx]:.3f}")
+                top_N_labels.append(f"{rank}-{combo_labels[idx]} | ${metric.upper()}$ = {filtered_metric_data[idx]:.3f}")
 
-            plt.legend(legend_circles, top_5_labels, fontsize=10)
+            # plt.legend(legend_circles, top_N_labels, fontsize=9)
+            plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.25, 1.0))
 
-            plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+            # # Format the ticks in scientific notation
+            # plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+
+            # Log scale for memory axis
+            plt.yscale('log')
 
             plt.tight_layout()
 
             # Save the plot
-            plt.savefig(f'performance_{metric}_{period}.png')
+            # plt.savefig(f'performance_{metric}_{period}.png')
+            plt.savefig(Path(main_folder) / f'performance_{metric}_{period}.png', bbox_inches='tight', dpi=150)
 
             # Close the plot to avoid memory issues
             plt.close()
             
-
+##########################################################################################################
 def main(combo_file=COMBO_FILE):
     # Load combinations from the YAML file
     combinations = load_combinations(combo_file)
 
-    run_folders = combinations['run_folders']
+    # Accessing the main folder and other parameters
+    main_folder = combinations['main_folder']
+    run_folders_labels = combinations['run_folders']
+    # Construct full paths for each folder
+    run_folders_paths = {folder: f"{main_folder}/{folder}" for folder in run_folders_labels}
     periods = combinations['periods']
     run_metrics = combinations['metrics']
     threshold_dict = combinations['threshold_dict']
     
-    # Iterate through run folders
-    for run_folder in run_folders:
-        print(f"*{run_folder}")
-        run_folder_path = Path(run_folder)
-        combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
-        
-        # Process each run folder
-        for icombo, combo_folder in enumerate(combination_folders):
-            print(f"- {combo_folder}")
-            completed_basins, total_basins, basin_stats = process_combination_folder(combo_folder)
-            print(f"- {len(completed_basins)}/{total_basins} basins completed.")
-            save_basin_stats(combo_folder, basin_stats, periods)
+    if not ONLY_PLOT:
+        # Iterate through run folders
+        for folder in run_folders_labels.keys():
 
-            # Plot histograms for the completed basins
-            epochs = load_config_value(combo_folder, 'epochs')
-            plot_histograms_period(
-                combo_folder / 'combo_results',
-                periods,
-                run_metrics,
-                threshold_dict,
-                f'Combo {icombo+1}',
-                epochs,
-                combo_folder / 'combo_results',
-                metric_base_fname='combo_stats'
-            )
+            run_folder_path = Path(run_folders_paths[folder])
+            combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+        
+            # Process each run folder
+            for icombo, combo_folder in enumerate(combination_folders):
+
+                completed_basins, total_basins, basin_stats = process_combination_folder(combo_folder)
+
+                if len(completed_basins) < total_basins:
+                        print(f"- {combo_folder} | {len(completed_basins)}/{total_basins} basins completed.")
+
+                save_basin_stats(combo_folder, basin_stats, periods)
+
+                # Plot histograms for the completed basins
+                epochs = load_config_value(combo_folder, 'epochs')
+                plot_histograms_period(
+                    combo_folder / 'combo_results',
+                    periods,
+                    run_metrics,
+                    threshold_dict,
+                    f'Combo {icombo+1}',
+                    epochs,
+                    combo_folder / 'combo_results',
+                    metric_base_fname='combo_stats'
+                )
 
     # Generate plots
-    plot_performance_scatter(run_folders, run_metrics, periods, threshold_dict)
+    plot_performance_scatter(main_folder, run_folders_labels, run_metrics, periods, threshold_dict, topN=15)
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,7 @@ import os
 import logging
 
 from utils import (
+    validate_basin_file,
     random_basins_subset,
     load_hyperparameters,
     hyperparameter_combinations,
@@ -42,19 +43,52 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 # base_name = f'runs_finetune_{nnmodel_type}'
 # base_name = f'test_runs_finetune_{nnmodel_type}'
 
-SAMPLE_FRACTION = 0.1
+SAMPLE_FRACTION = 0.1   # None
+BASIN_FILE = '59_basin_file_sample.txt'   # None 
+# SAMPLE_FRACTION = 0.2   # None
+# BASIN_FILE = '116_basin_file_sample.txt'  # None 
 CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 
 # HP_FILE = 'hyperparameters_euler1d.yml'
 # BASE_VERSION = 'euler1d_'
 
+# HP_FILE = 'hyperparameters_euler1d_64x5.yml'
+# BASE_VERSION = 'euler1d_64x5_'
+
+# HP_FILE = 'hyperparameters_euler1d_64x3.yml'
+# BASE_VERSION = 'euler1d_64x3_'
+
 # HP_FILE = 'hyperparameters_euler05d.yml'
 # BASE_VERSION = 'euler05d_'
 
-HP_FILE = 'hyperparameters_rk4_1d.yml'
-BASE_VERSION = 'rk4_1d_'
+# HP_FILE = 'hyperparameters_euler02d.yml'
+# BASE_VERSION = 'euler02d_'
 
-base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
+# HP_FILE = 'hyperparameters_rk4_1d.yml'
+# BASE_VERSION = 'rk4_1d_'
+
+# HP_FILE = 'hyperparameters_rk4_05d.yml'
+# BASE_VERSION = 'rk4_05d_'
+
+# HP_FILE = 'hyperparameters_rk23tol33.yml'
+# BASE_VERSION = 'rk23tol33_'
+
+# HP_FILE = 'hyperparameters_rk23tol46.yml'
+# BASE_VERSION = 'rk23tol46_'
+
+# HP_FILE = 'hyperparameters_rk23tol69.yml'
+# BASE_VERSION = 'rk23tol69_'
+
+HP_FILE = 'hyperparameters_euler05d_finetune.yml'
+BASE_VERSION = 'euler05d_finetune_'
+
+# Remove trailing underscore if it exists
+formatted_version = BASE_VERSION.rstrip('_')
+
+# Create the base name using the formatted version
+# base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
+# base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{formatted_version}'
+base_name = f'bash_{nnmodel_type}_{formatted_version}'
 
 
 # SAMPLE_FRACTION = 0.01
@@ -158,6 +192,8 @@ def train_model_for_basin(run_folder, cfg_file, basin, run_version):
         epochs=cfg_run.epochs_pretrain,
         any_log=False)
     
+
+
     if not pretrain_ok:
         print(f'Pretraining failed for basin {basin}')
         return False
@@ -184,17 +220,23 @@ def train_model_for_basin(run_folder, cfg_file, basin, run_version):
 
     return True  # Training succeeded
 
-def main(sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE, 
+def main(basin_file=BASIN_FILE, sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE, 
          hyperparameter_file=HP_FILE, base_version=BASE_VERSION, finetune_folder=FINETUNE_FOLDER):
+    
+    # Check if basin_file is provided, exists and is not empty
+    if not validate_basin_file(basin_file):
+        print(f'Basin file {basin_file} not found or empty!')
 
-    # Get the cluster files
-    cluster_files = get_cluster_files()
+        # Get the cluster files
+        cluster_files = get_cluster_files()
 
-    if len(cluster_files) == 0:
-        raise FileNotFoundError('No cluster files found! Please, double-check the path.')
+        if len(cluster_files) == 0:
+            raise FileNotFoundError('No cluster files found! Please, double-check the path.')
 
-    # Random selection
-    selected_basins_dict, _, sample_file, basin_file = random_basins_subset(cluster_files, sample_fraction)
+        # Random selection
+        _, _, _, basin_file = random_basins_subset(cluster_files, sample_fraction)
+
+    # print(f'Basin file: {basin_file}')
 
     # Read the basin_file_all
     with open(basin_file, 'r') as f:
@@ -202,10 +244,14 @@ def main(sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE,
 
     # Load hyperparameters
     hyperparameters = load_hyperparameters(hyperparameter_file)
-    # print(hyperparameters)
 
     # Generate hyperparameter combinations`
     params_combinations = hyperparameter_combinations(hyperparameters)
+
+    # print(f'Number of hyperparameter combinations: {len(params_combinations)}')
+    # # print('Hyperparameter combinations:', params_combinations)
+    # for i, combination in enumerate(params_combinations):
+    #     print(f"Combination {i + 1}: {combination}")
 
     # Load base configuration file
     if isinstance(config_file_base, Path):
@@ -234,7 +280,7 @@ def main(sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE,
         # cfg_run['log_every_n_epochs'] = cfg_run['epochs'] // 2
 
         # Save the combination to a YAML file
-        cfg_file = run_folder / f'config_comb{i + 1}.yml'
+        cfg_file = run_folder / f'config_combo{i + 1}.yml'
         with open(cfg_file, 'w') as f:
             yaml.dump(cfg_run, f)
 
@@ -280,4 +326,11 @@ def main(sample_fraction=SAMPLE_FRACTION, config_file_base=CFG_FILE_BASE,
         
 if __name__ == "__main__":
 
-    main()
+    main(
+        basin_file=BASIN_FILE, 
+        sample_fraction=SAMPLE_FRACTION, 
+        config_file_base=CFG_FILE_BASE, 
+        hyperparameter_file=HP_FILE, 
+        base_version=BASE_VERSION, 
+        finetune_folder=FINETUNE_FOLDER
+    )
