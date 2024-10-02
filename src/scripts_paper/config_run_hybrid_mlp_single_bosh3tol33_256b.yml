@@ -11,7 +11,7 @@ atol: 1e-3
 # odesmethod: euler
 # time_step: 0.5
 
-carryover_state: false
+carryover_state: False
 
 # Files to specify training, validation and test basins
 basin_file: This is to be updated!!! # do not delete this line

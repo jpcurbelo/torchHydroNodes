@@ -236,7 +236,7 @@ class NNpretrainer(ExpHydroCommon):
         if self.batch_size == -1:
             self.batch_size = num_dates
         
-        batch_sampler = BasinBatchSampler(basin_ids, self.batch_size)
+        batch_sampler = BasinBatchSampler(basin_ids, self.batch_size, self.cfg.carryover_state)
 
         # Create DataLoader with custom batch sampler
         # kwargs = {'pin_memory': pin_memory, 'num_workers': self.num_workers} if 'cuda' in str(self.device) else {}

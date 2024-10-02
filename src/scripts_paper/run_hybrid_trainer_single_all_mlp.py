@@ -35,8 +35,12 @@ NNMODEL_TYPE = 'mlp'
 
 # CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single.yml')
 # CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_euler05d256b.yml')
-CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_euler05d256b_carryover.yml')
+# CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_euler05d256b32x3.yml')
+# CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_euler02d256b.yml')
+CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_euler02d256b32x3.yml')
+# CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_euler05d256b_carryover.yml')
 # CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_rk4_1d256b.yml')
+# CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_bosh3tol33_256b.yml')
 # CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_bosh3tol46_256b.yml')
 # CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_rk4_05d256b.yml')
 
@@ -47,14 +51,22 @@ BASIN_FILE_ALL = '../../examples/569_basin_file.txt'
 # BASIN_FILE_ALL = '../../examples/4_basin_file.txt'
 
 # RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_euler05d_lr4_150ep_1000pre_lr3_v2'
-RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_euler05d_lr4_150ep_1000pre_lr3_carryoverYES'
+# RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_euler05d_lr4_150ep_1000pre_lr3_carryoverYES'
+# RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x3_256b_euler05d_lr4_150ep_1000pre_lr3'
+# RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_euler02d_lr4_150ep_1000pre_lr3'
+RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x3_256b_euler02d_lr4_150ep_1000pre_lr3'
 # RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3_v2'
+# RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_bosh3tol33_lr4_150ep_1000pre_lr3_v2'
 # RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_bosh3tol46_lr4_150ep_1000pre_lr3'
 # RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3'
 
 # RUN_VERSION = 'euler1d256b'
-RUN_VERSION = 'euler05d256b_carryover'
+# RUN_VERSION = 'euler05d256b_carryover'
+# RUN_VERSION = 'euler05d256b32x3'
+# RUN_VERSION = 'euler02d256b'
+RUN_VERSION = 'euler02d256b32x3'
 # RUN_VERSION = 'rk4_1d256b'
+# RUN_VERSION = 'bosh3tol33'
 # RUN_VERSION = 'bosh3tol46'
 # RUN_VERSION = 'rk4_05d256b'
 

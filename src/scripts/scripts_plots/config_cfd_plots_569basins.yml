@@ -1,104 +1,113 @@
 folders4cdf_dir:
+
+  - directory: ../../scripts_paper/569basins_neuralhydrology_single_lstm_8seeds
+    experiment: 'LSTM/NH | single-basin | ensemble/8 seeds'
+    color: 'tab:blue'
+    marker: o
+    linestyle: '--'
+
+  - directory: ../../scripts_paper/569basins_neuralhydrology_multi_ealstm_8seeds
+    experiment: 'EALSTM/NH | multi-basin | ensemble/8 seeds'
+    color: 'tab:orange'
+    marker: o
+    linestyle: '--'
+
+
   - directory: ../../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
     experiment: '$\mathbf{RK23}$ | batch size 7305 | 150 epochs $^{\dagger}$'
     color: 'red'
     marker: o
-    linestyle: '-.'
+    linestyle: '--'
+
+  # - directory: ../../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_300ep_lr4
+  #   experiment: '$\mathbf{RK23}$ | batch size 7305 | 300 epochs $^{\dagger}$'
+  #   color: 'blue'
+  #   marker: x
+  #   linestyle: '-.'
 
   - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_bosh3tol33_lr4_150ep_1000pre_lr3
-    experiment: 'RK23 | batch size 256 | 150 epochs'
-    color: 'orange'
+    experiment: 'RK23tol33 | batch size 256 | 150 epochs | tol33'
+    color: 'tab:olive'
     marker: null
-    linestyle: ':'
+    linestyle: '-.'
 
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler1.0d | batch size 7305 | 100 epochs'
-  #   color: 'tab:pink'
-  #   marker: null
-  #   linestyle: '-.'
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler1d_lr4_150ep_1000pre_lr3
-    experiment: 'Euler1.0d | batch size 7305 | 150 epochs'
-    color: 'tab:blue'
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_bosh3tol46_lr4_150ep_1000pre_lr3
+    experiment: '$\mathbf{RK23tol46}$ | batch size 256 | 150 epochs'
+    color: 'tab:orange'
     marker: null
-    linestyle: '--'
+    linestyle: '-.'
+
   - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO
     experiment: 'Euler1.0d | batch size 256 | 150 epochs'
     color: 'tab:cyan'
     marker: null
     linestyle: ':'
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler1.0d | batch size 256 | 100 epochs'
-  #   color: 'tab:purple'
-  #   marker: null
-  #   linestyle: '-.'
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3
-    experiment: 'RK4-1.0d | batch size 7305 | 150 epochs'
-    color: 'tab:green'
-    marker: null
-    linestyle: '--'
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3
-    experiment: 'RK4-1.0d | batch size 256 | 150 epochs'
-    color: 'purple'
-    marker: null
-    linestyle: ':'
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3
-    experiment: 'RK4-0.5d | batch size 256 | 150 epochs'
-    color: 'olive'
-    marker: null
-    linestyle: ':'
+
   - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_150ep_1000pre_lr3
     experiment: 'Euler0.5d | batch size 7305 | 150 epochs'
-    color: 'tab:orange'
+    color: 'tab:gray'
     marker: null
-    linestyle: '--'
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
-    experiment: '$\mathbf{Euler0.5d}$ | batch size 256 | 150 epochs'
-    color: 'tab:brown'
-    marker: null
-    linestyle: '-.'
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler0.5d | batch size 256 | 100 epochs'
-  #   color: 'tab:gray'
+    linestyle: ':'
+
+  # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverYES
+  #   experiment: 'Euler1.0d | batch size 256 | 150 epochs | carryover/yes'
+  #   color: 'tab:blue'
   #   marker: null
   #   linestyle: '--'
 
-
-
-
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler05d_lr4_100ep_1000pre_lr3
-  #   experiment: 'Euler0.5d | batch size 7305 | 100 epochs'
-  #   color: 'tab:orange'
-  #   marker: null
-  #   linestyle: '-.'
-
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler01d_lr4_100ep_1000pre_lr3
-  #   experiment: '$\mathbf{Euler0.1d}$ | batch size 7305 | 100 epochs'
-  #   color: 'tab:green'
-  #   marker: null
-  #   linestyle: '--'
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_100ep_1000pre_lr3
-  #   experiment: 'RK23 | batch size 7305 | 100 epochs'
-  #   color: 'tab:cyan'
-  #   marker: null
-  #   linestyle: '-'
-
-
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_bosh3_lr4_150ep_1000pre_lr3
-  #   experiment: 'RK23 | batch size 7305 | 150 epochs'
-  #   color: 'tab:green'
-  #   marker: null
-  #   linestyle: '--'
-
-
-  # - directory: ../../scripts_paper/569basins_single_mlp32x5_512b_euler1d_lr4_150ep_1000pre_lr3
-  #   experiment: 'Euler1.0d | batch size 512 | 150 epochs'
-  #   color: 'tab:gray'
-  #   marker: null
-  #   linestyle: '--'
-  # # - directory: ../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3
-  # #   experiment: 'RK4-1d | batch size 7305 | 150 epochs'
-  # #   color: 'tab:red'
+  # # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverYES
+  # #   experiment: 'Euler1.0d | batch size 256 | 150 epochs | carryover/yes'
+  # #   color: 'tab:blue'
   # #   marker: null
   # #   linestyle: '--'
 
+  # # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3_v1
+  # #   experiment: 'Euler0.5d | batch size 256 | 150 epochs | v1'
+  # #   color: 'tab:orange'
+  # #   marker: null
+  # #   linestyle: '-.'
 
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3_v2
+    experiment: 'Euler0.5d | batch size 256 | 150 epochs'
+    color: 'tab:green'
+    marker: null
+    linestyle: ':'
+
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x3_256b_euler05d_lr4_150ep_1000pre_lr3
+    experiment: 'Euler0.5d | batch size 256 | 150 epochs | 32x3'
+    color: 'blue'
+    marker: null
+    linestyle: ':'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler02d_lr4_150ep_1000pre_lr3
+    experiment: 'Euler0.2d | batch size 256 | 150 epochs'
+    color: 'green'
+    marker: null
+    linestyle: '--'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x3_256b_euler02d_lr4_150ep_1000pre_lr3
+    experiment: '$\mathbf{Euler0.2d}$ | batch size 256 | 150 epochs | 32x3'
+    color: 'tab:purple'
+    marker: null
+    linestyle: '--'
+
+
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3
+    experiment: 'RK4-1.0d | batch size 7305 | 150 epochs'
+    color: 'tab:purple'
+    marker: null
+    linestyle: '-.'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3
+    experiment: 'RK4-1.0d | batch size 256 | 150 epochs'
+    color: 'tab:blue'
+    marker: null
+    linestyle: '-.'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3
+    experiment: '$\mathbf{RK4-0.5d}$ | batch size 256 | 150 epochs'
+    color: 'tab:red'
+    marker: null
+    linestyle: '-.'

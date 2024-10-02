@@ -6,8 +6,11 @@
 # #SBATCH --job-name=569basins_rk4_1d
 # #SBATCH --job-name=569basins_rk4_05d
 # #SBATCH --job-name=569basins_euler1d
-#SBATCH --job-name=569basins_euler05d_carryover
-# #SBATCH --job-name=569basins_bosh3tol46
+# #SBATCH --job-name=569basins_euler05d32x3
+# #SBATCH --job-name=569basins_euler02d
+#SBATCH --job-name=569basins_euler02d32x3
+# #SBATCH --job-name=569basins_euler05d_carryover
+# #SBATCH --job-name=569basins_bosh3tol33
 
 # #SBATCH --time=0-08:00:00
 #SBATCH --time=5-00:00:00

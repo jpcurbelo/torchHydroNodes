@@ -2,18 +2,18 @@ import os
 import re
 import yaml
 
-results_folder = "../../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3"
+results_folder = "../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3_v2"
 conditions_to_check = {
-    "batch_size": -1,
+    "batch_size": 256,
     "epochs": 150,
     "hidden_size": [32, 32, 32, 32, 32],
     "learning_rate": 0.0001,
 
-    # "odesmethod": "euler",
-    # "time_step": 0.5,
+    "odesmethod": "euler",
+    "time_step": 0.5,
 
-    "odesmethod": "rk4",
-    "time_step": 1.0,
+    # "odesmethod": "rk4",
+    # "time_step": 1.0,
 
     # "odesmethod": "bosh3",
     # "rtol": '1e-4',

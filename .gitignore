@@ -10,13 +10,16 @@ src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
 src/scripts_paper/569basins_single_*
 src/scripts_paper/M100_results_569basins*
+src/scripts_paper/569basins_neuralhydrology*
 src/scripts/scripts_plots/plots*
 src/scripts/scripts_plots/AAplots*
 src/scripts/scripts_plots/gifs/*
 src/scripts/scripts_finetuning/runs_*
 src/scripts/scripts_finetuning/test_runs_*
 src/scripts/scripts_finetuning/A*
+src/scripts/scripts_finetuning/bash_runs*
 src/scripts/scripts_finetuning/cluster_sample_jobs**
+src/scripts/scripts_finetuning/bash_mlp_*
 
 # Files
 src/scripts_paper/*_temp_*.yml

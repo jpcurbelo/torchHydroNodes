@@ -24,3 +24,7 @@ hidden_size:
 dropout:
   - 0.0
   # - 0.2
+
+carryover_state:
+  # - False
+  - True  

@@ -44,13 +44,16 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 # base_name = f'test_runs_finetune_{nnmodel_type}'
 
 SAMPLE_FRACTION = 0.1   # None
-BASIN_FILE = '59_basin_file_sample.txt'   # None 
+BASIN_FILE = '59_basin_file_sample_ok.txt'   # None 
 # SAMPLE_FRACTION = 0.2   # None
-# BASIN_FILE = '116_basin_file_sample.txt'  # None 
+# BASIN_FILE = '116_basin_file_sample_ok.txt'  # None 
 CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 
 # HP_FILE = 'hyperparameters_euler1d.yml'
 # BASE_VERSION = 'euler1d_'
+
+# HP_FILE = 'hyperparameters_euler1d_32x3.yml'
+# BASE_VERSION = 'euler1d_32x3_'
 
 # HP_FILE = 'hyperparameters_euler1d_64x5.yml'
 # BASE_VERSION = 'euler1d_64x5_'
@@ -58,33 +61,114 @@ CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 # HP_FILE = 'hyperparameters_euler1d_64x3.yml'
 # BASE_VERSION = 'euler1d_64x3_'
 
+# HP_FILE = 'hyperparameters_euler1d_seeds.yml'
+# BASE_VERSION = 'euler1d_seeds_'
+
+# HP_FILE = 'hyperparameters_euler1d_seeds_32x3.yml'
+# BASE_VERSION = 'euler1d_seeds_32x3_'
+
 # HP_FILE = 'hyperparameters_euler05d.yml'
 # BASE_VERSION = 'euler05d_'
+
+# HP_FILE = 'hyperparameters_euler05d_32x3.yml'
+# BASE_VERSION = 'euler05d_32x3_'
+
+# HP_FILE = 'hyperparameters_euler05d.yml'
+# # BASE_VERSION = 'euler05d_'
+# BASE_VERSION = 'euler05d_carryover_'
+
+# HP_FILE = 'hyperparameters_euler05d_seeds.yml'
+# BASE_VERSION = 'euler05d_seeds_'
+
+# HP_FILE = 'hyperparameters_euler05d_seeds_32x3.yml'
+# BASE_VERSION = 'euler05d_seeds_32x3_'
 
 # HP_FILE = 'hyperparameters_euler02d.yml'
 # BASE_VERSION = 'euler02d_'
 
+# HP_FILE = 'hyperparameters_euler02d_32x3.yml'
+# BASE_VERSION = 'euler02d_32x3_'
+
+# HP_FILE = 'hyperparameters_euler02d_seeds.yml'
+# BASE_VERSION = 'euler02d_seeds_'
+
+# HP_FILE = 'hyperparameters_euler02d_seeds_32x3.yml'
+# BASE_VERSION = 'euler02d_seeds_32x3_'
+
+# HP_FILE = 'hyperparameters_euler01d_seeds.yml'
+# BASE_VERSION = 'euler01d_seeds_'
+
+HP_FILE = 'hyperparameters_euler01d_seeds_32x3.yml'
+BASE_VERSION = 'euler01d_seeds_32x3_'
+
+# HP_FILE = 'hyperparameters_midpoint1d.yml'
+# BASE_VERSION = 'midpoint1d_'
+
+# HP_FILE = 'hyperparameters_midpoint05d.yml'
+# BASE_VERSION = 'midpoint05d_'
+
 # HP_FILE = 'hyperparameters_rk4_1d.yml'
 # BASE_VERSION = 'rk4_1d_'
+
+# HP_FILE = 'hyperparameters_rk4_1d_32x3.yml'
+# BASE_VERSION = 'rk4_1d_32x3_'
+
+# HP_FILE = 'hyperparameters_rk4_1d_seeds.yml'
+# BASE_VERSION = 'rk4_1d_seeds_'
+
+# HP_FILE = 'hyperparameters_rk4_1d_seeds_32x3.yml'
+# BASE_VERSION = 'rk4_1d_seeds_32x3_'
 
 # HP_FILE = 'hyperparameters_rk4_05d.yml'
 # BASE_VERSION = 'rk4_05d_'
 
+# HP_FILE = 'hyperparameters_rk4_05d_32x3.yml'
+# BASE_VERSION = 'rk4_05d_32x3_'
+
+# HP_FILE = 'hyperparameters_rk4_05d_seeds.yml'
+# BASE_VERSION = 'rk4_05d_seeds_'
+
+# HP_FILE = 'hyperparameters_rk4_05d_seeds_32x3.yml'
+# BASE_VERSION = 'rk4_05d_seeds_32x3_'
+
 # HP_FILE = 'hyperparameters_rk23tol33.yml'
 # BASE_VERSION = 'rk23tol33_'
+
+# HP_FILE = 'hyperparameters_rk23tol33_32x3.yml'
+# BASE_VERSION = 'rk23tol33_32x3_'
 
 # HP_FILE = 'hyperparameters_rk23tol46.yml'
 # BASE_VERSION = 'rk23tol46_'
 
-HP_FILE = 'hyperparameters_rk23tol69.yml'
-BASE_VERSION = 'rk23tol69_'
+# HP_FILE = 'hyperparameters_rk23tol46_32x3.yml'
+# BASE_VERSION = 'rk23tol46_32x3_'
+
+# HP_FILE = 'hyperparameters_rk23tol69.yml'
+# BASE_VERSION = 'rk23tol69_'
+
+# HP_FILE = 'hyperparameters_adaptative_heun_tol33.yml'
+# BASE_VERSION = 'adaptative_heun_tol33_'
+
+# HP_FILE = 'hyperparameters_adaptative_heun_tol46.yml'
+# BASE_VERSION = 'adaptative_heun_tol46_'
+
+# HP_FILE = 'hyperparameters_adaptative_heun_tol69.yml'
+# BASE_VERSION = 'adaptative_heun_tol69_'
+
+# HP_FILE = 'hyperparameters_fehlberg2_tol33.yml'
+# BASE_VERSION = 'fehlberg2_tol33_'
+
+# HP_FILE = 'hyperparameters_euler05d_finetune.yml'
+# BASE_VERSION = 'euler05d_finetune_'
 
 # Remove trailing underscore if it exists
 formatted_version = BASE_VERSION.rstrip('_')
 
 # Create the base name using the formatted version
-base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
+# base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
+base_name = f'bash_runs_finetune_fract01_{nnmodel_type}_{formatted_version}'
 # base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{formatted_version}'
+# base_name = f'bash_{nnmodel_type}_{formatted_version}'
 
 
 # SAMPLE_FRACTION = 0.01
@@ -96,7 +180,7 @@ base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
 FINETUNE_FOLDER = create_finetune_folder(base_name=base_name)
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 16
+MAX_WORKERS = 32
 
 # Setup dynamic logging for each run
 def setup_logging(log_file):

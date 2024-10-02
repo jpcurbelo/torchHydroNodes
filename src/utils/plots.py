@@ -103,12 +103,12 @@ def load_results_path(results_folder: Path, periods: list):
 
         # Check if it contains a folder named 'model_metrics'
         model_metrics_path = results_folder / 'model_metrics'
-        if model_metrics_path.exists() and 'julia' not in str(results_folder):
+        if model_metrics_path.exists() and 'julia' not in str(results_folder) and 'neuralhydrology' not in str(results_folder):
             # Delete the folder and merge the metrics again
             print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
             os.system(f'rm -rf {model_metrics_path}')
 
-        if 'julia' not in str(results_folder):
+        if 'julia' not in str(results_folder) and 'neuralhydrology' not in str(results_folder):
 
             # Merge the model metrics for the specified periods
             merge_model_metrics(results_folder, model_metrics_path, periods)
@@ -444,7 +444,6 @@ def _plot_metric_map(df, states, hm_catchment_gdf,
     if threshold_info is not None:
         # Apply threshold to the metric
         df, n_below_threshold, th_value = apply_threshold(df, metric, threshold_dict)
-
         ax.set_title(f'{graph_title} (${metric.upper()} \\leq {th_value}$: ' +
                                 f'{n_below_threshold}/{len(df)} basins) | {period}', fontsize=16)
     else:
@@ -516,12 +515,8 @@ def _plot_metric_map(df, states, hm_catchment_gdf,
     gap_height = gap * (ylim[1] - ylim[0])
 
     # Add mean and median value plots to the histogram
-    if threshold_info is not None:
-        mean_value = df[df[metric] > th_value][metric].mean()
-        median_value = df[df[metric] > th_value][metric].median()
-    else:
-        mean_value = df[metric].mean()
-        median_value = df[metric].median()
+    mean_value = df[metric].mean()
+    median_value = df[metric].median()
 
     max_value = max(mean_value, median_value)  # Find the greatest value
 
@@ -593,6 +588,10 @@ def _plot_cdf(ax, df, folder, zoom_ranges=None, markevery=20, ms=7):
     
     # Plot a solid horizontal line at y=0.5 (median line), without showing in legend
     ax.axhline(y=0.5, color='gray', linestyle='-', linewidth=0.2, label='_nolegend_')
+
+    # Print mean and median values
+    mean_value = np.mean(nse_values)
+    median_value = np.median(nse_values)
 
     # Plot zoomed-in sections if provided
     if zoom_ranges:
@@ -742,12 +741,12 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
 
             # Calculate and plot the median
             median_value = np.median(hist_values)
-            # print(f"Median {experiment} ({period}): {median_value:.3f}")
+            print(f"Median {experiment} ({period}): {median_value:.3f}")
             plt.axvline(median_value, color=line_color, linestyle='--', linewidth=2)
 
             # Calculate and plot the mean
             mean_value = np.mean(hist_values)
-            # print(f"Mean {experiment} ({period}): {mean_value:.3f}")
+            print(f"Mean {experiment} ({period}): {mean_value:.3f}")
             plt.axvline(mean_value, color=line_color, linestyle=':', linewidth=2)
         
         # ax_main.plot([], [], ' ', label=r'$^\dagger$ Julia/SciML')

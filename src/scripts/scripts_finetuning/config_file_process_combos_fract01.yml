@@ -1,16 +1,30 @@
 main_folder: cluster_sample_jobs_59basins
+# main_folder: .
 
 run_folders:
   ## Folder name: label
-  AA_bash_runs_finetune_mlp_euler1d_240917_205323: "Euler 1d"
-  AA_bash_runs_finetune_mlp_euler1d_64x3_240921_215256: "Euler 1d 64x3"
-  AA_bash_runs_finetune_mlp_euler1d_64x5_240921_174351: "Euler 1d 64x5"
-  AA_bash_runs_finetune_mlp_euler05d_240917_205505: "Euler 0.5d"
-  AA_bash_runs_finetune_mlp_euler02d_240919_102340: "Euler 0.2d"
-  AA_bash_runs_finetune_mlp_rk4_1d_240918_020503: "RK4 1d"
-  AA_bash_runs_finetune_mlp_rk4_05d_240921_113321: "RK4 0.5d"
-  AA_bash_runs_finetune_mlp_rk23tol33_240918_074306: "RK23 tol33"
-  AA_bash_runs_finetune_mlp_rk23tol46_240921_173646: "RK23 tol46"
+  AA_bash_runs_finetune_mlp_euler1d_240928_100636: "Euler 1d"
+  AA_bash_runs_finetune_mlp_euler1d_32x3_240928_101122: "Euler 1d 32x3"
+
+  AA_bash_runs_finetune_mlp_euler05d_240928_100946: "Euler 0.5d"
+  AA_bash_runs_finetune_mlp_euler05d_32x3_240928_101408: "Euler 0.5d 32x3"
+  AA_bash_runs_finetune_mlp_euler05d_carryover_240924_182518: "Euler 0.5d carryover"
+  AA_bash_runs_finetune_mlp_euler02d_240928_101516: "Euler 0.2d"
+  AA_bash_runs_finetune_mlp_euler02d_32x3_240928_101614: "Euler 0.2d 32x3"
+  AA_bash_runs_finetune_mlp_midpoint1d_240925_094054: "Midpoint 1d"
+  AA_bash_runs_finetune_mlp_midpoint05d_240925_093914: "Midpoint 0.5d"
+  AA_bash_runs_finetune_mlp_rk4_1d_240928_101650: "RK4 1d"
+  AA_bash_runs_finetune_mlp_rk4_1d_32x3_240928_101801: "RK4 1d 32x3"
+  AA_bash_runs_finetune_mlp_rk4_05d_240928_101826: "RK4 0.5d"
+  AA_bash_runs_finetune_mlp_rk4_05d_32x3_240928_101926: "RK4 0.5d 32x3"
+  AA_bash_runs_finetune_mlp_rk23tol33_240928_102024: "RK23 tol33"
+  AA_bash_runs_finetune_mlp_rk23tol33_32x3_240928_102144: "RK23 tol33 32x3"
+  AA_bash_runs_finetune_mlp_rk23tol46_240923_080804: "RK23 tol46"
+  AA_bash_runs_finetune_mlp_rk23tol46_32x3_240928_102210: "RK23 tol46 32x3"
+
+  # AA_bash_runs_finetune_mlp_rk23tol69_240922_084609: "RK23 tol69"
+  # AA_bash_runs_finetune_mlp_rk23tol69_240923_080852: "RK23 tol69 v2"
+
 
 periods:
   - train

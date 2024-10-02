@@ -1,16 +1,48 @@
 folders4cdf_dir:
-  # - directory: ../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
-  #   experiment: '$\mathbf{RK23}$ | batch size 7305 | 150 epochs | Julia'
-  #   color: 'tab:red'
+  - directory: ../../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
+    experiment: '$\mathbf{RK23}$ | batch size 7305 | 150 epochs | Julia'
+    color: 'tab:red'
+  # - directory: ../../scripts_paper/M100_results_569basins_1980_2010_BS3_julia_300ep_lr4
+  #   experiment: '$\mathbf{RK23}$ | batch size 7305 | 300 epochs | Julia'
+  #   color: 'tab:blue'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_bosh3tol46_lr4_150ep_1000pre_lr3
+    experiment: '$\mathbf{RK23tol46}$ | batch size 256 | 150 epochs'
+    color: 'tab:blue'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_05d_lr4_150ep_1000pre_lr3
+    experiment: 'RK4-0.5d | batch size 256 | 150 epochs'
+    color: 'tab:orange'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_rk4_1d_lr4_150ep_1000pre_lr3
+    experiment: 'RK4-1.0d | batch size 256 | 150 epochs'
+    color: 'tab:green'
+
+  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3_v2
+    experiment: 'Euler0.5d | batch size 256 | 150 epochs'
+    color: 'tab:purple'
+
+  # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO
+  #   experiment: 'Euler1.0d | batch size 256 | 150 epochs'
+  #   color: 'tab:blue'
+    
+  # # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverYES
+  # #   experiment: 'Euler1.0d | batch size 256 | 150 epochs | carryover/yes'
+  # #   color: 'tab:orange'
+
+
+
+
+
   # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3
   #   experiment: 'Euler1.0d | batch size 256 | 150 epochs'
   #   color: 'tab:blue'
   # - directory: ../../scripts_paper/569basins_single_mlp32x5_7305b_euler01d_lr4_100ep_1000pre_lr3
   #   experiment: 'Euler0.1d | batch size 7305 | 100 epochs'
   #   color: 'tab:green'
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
-    experiment: '$\mathbf{Euler0.5d}$ | batch size 256 | 150 epochs'
-    color: 'tab:orange'
+  # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
+  #   experiment: '$\mathbf{Euler0.5d}$ | batch size 256 | 150 epochs'
+  #   color: 'tab:orange'
 
   # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler1d_lr4_150ep_1000pre_lr3_carryoverNO
   #   experiment: 'Euler1.0d | batch size 256 | 150 epochs'
@@ -63,9 +95,9 @@ folders4cdf_dir:
   #   experiment: 'Euler0.5d | batch size 128 | 150 epochs'
   #   color: 'tab:gray'
 
-  - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_100ep_1000pre_lr3
-    experiment: '$\mathbf{Euler0.5d}$ | batch size 256 | 100 epochs'
-    color: 'tab:blue'
+  # - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_100ep_1000pre_lr3
+  #   experiment: '$\mathbf{Euler0.5d}$ | batch size 256 | 100 epochs'
+  #   color: 'tab:blue'
 
 # Periods to be processed
 periods:

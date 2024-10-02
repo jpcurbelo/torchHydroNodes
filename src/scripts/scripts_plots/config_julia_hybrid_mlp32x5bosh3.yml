@@ -1,10 +1,12 @@
 # Folder where the data is stored
 # results_folder: ~/HydroNODE_fork/M100_results_569basins_1980_2010_BS3_julia_150ep_lr4
-results_folder: ~/HydroNODE_fork/M100_results_569basins_1980_2010_BS3_julia_300ep_lr4
+# results_folder: ~/HydroNODE_fork/M100_results_569basins_1980_2010_BS3_julia_300ep_lr4
+results_folder: ~/HydroNODE_fork/M100_results_569basins_1980_2010_BS3tol46_julia_150ep_lr4
 
 # Folder (to be created) where the processed data will be stored
 # plots_folder: plots_hybrid_mlp32x5_7304b_BS3_julia_150ep
-plots_folder: plots_hybrid_mlp32x5_7304b_BS3_julia_300ep
+# plots_folder: plots_hybrid_mlp32x5_7304b_BS3_julia_300ep
+plots_folder: plots_hybrid_mlp32x5_7304b_BS3tol46_julia_150ep
 
 graph_title:  Hybrid model (exp-hydro) - MLP/BS3
 

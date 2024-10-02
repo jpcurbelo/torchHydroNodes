@@ -1,0 +1,35 @@
+odesmethod:
+  euler:
+    time_step: 
+      - 1.0
+      
+batch_size:
+  - 256
+
+learning_rate:
+  - 0.0001
+
+epochs:
+  - 150
+
+hidden_size:
+  - [32, 32, 32]
+  # - [64, 64, 64]
+
+dropout:
+  - 0.0
+  # - 0.2
+
+carryover_state:
+  # - False
+  - True  
+
+seed:
+  - 1111
+  - 2222
+  - 3333
+  - 4444
+  - 5555
+  - 6666
+  - 7777
+  - 8888

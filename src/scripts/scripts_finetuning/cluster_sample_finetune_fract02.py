@@ -58,8 +58,8 @@ CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 # HP_FILE = 'hyperparameters_euler02d.yml'
 # BASE_VERSION = 'euler02d_'
 
-# HP_FILE = 'hyperparameters_rk4_1d.yml'
-# BASE_VERSION = 'rk4_1d_'
+HP_FILE = 'hyperparameters_rk4_1d.yml'
+BASE_VERSION = 'rk4_1d_'
 
 # HP_FILE = 'hyperparameters_rk4_05d.yml'
 # BASE_VERSION = 'rk4_05d_'
@@ -70,8 +70,8 @@ CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 # HP_FILE = 'hyperparameters_rk23tol46.yml'
 # BASE_VERSION = 'rk23tol46_'
 
-HP_FILE = 'hyperparameters_rk23tol69.yml'
-BASE_VERSION = 'rk23tol69_'
+# HP_FILE = 'hyperparameters_rk23tol69.yml'
+# BASE_VERSION = 'rk23tol69_'
 
 
 # base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{BASE_VERSION.split("_")[0]}'
@@ -87,7 +87,7 @@ base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{BASE_VERSION.split("_
 FINETUNE_FOLDER = create_finetune_folder(base_name=base_name)
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 16
+MAX_WORKERS = 32
 
 # Setup dynamic logging for each run
 def setup_logging(log_file):

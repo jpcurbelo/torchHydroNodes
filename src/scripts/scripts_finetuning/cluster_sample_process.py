@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from cmcrameri import cm
 from matplotlib.lines import Line2D
+import re
+import numpy as np
 
 # Get the current working directory (works for Jupyter or interactive environments)
 project_dir = str(Path.cwd().parent.parent.parent)  # Adjust parent levels as needed
@@ -18,11 +20,13 @@ from src.utils.plots import (
 )
 
 # Configuration file path
-COMBO_FILE = Path('config_file_process_combos_fract01.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract01.yml')
 # COMBO_FILE = Path('config_file_process_combos_fract02.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract01_euler05d.yml')
+COMBO_FILE = Path('config_file_process_combos_fract01_seeds.yml')
 
-
-ONLY_PLOT = 0
+ONLY_PLOT = 0   # True or False
+SEEDS_RUN = 1   # True or False
 
 
 def load_combinations(file_path):
@@ -97,7 +101,7 @@ def process_combination_folder(combo_folder_path):
     experiment_name = load_config_value(combo_folder_path, 'experiment_name')
 
     # Iterate over the basins inside the combination folder
-    basin_folders = [f for f in combo_folder_path.iterdir() if f.is_dir() and f.name.startswith(experiment_name)]
+    basin_folders = sorted([f for f in combo_folder_path.iterdir() if f.is_dir() and f.name.startswith(experiment_name)])
 
     completed_basins = []
     basin_stats = {}  # To store mean time and memory for each basin
@@ -181,8 +185,13 @@ def load_metrics_period(basin_folder, period):
 
     return metrics_data
 
+# Function to extract the number at the end of the folder name
+def get_combination_number(folder_name):
+    match = re.search(r'run_combination(\d+)$', folder_name)
+    return int(match.group(1)) if match else float('inf')
+
 def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'], periods=['valid'], 
-                             threshold_dict=None, topN=5):
+                             threshold_dict=None, topN=5, collect_seeds_results=False):
     """
     Scatter plot with mean time and memory on the axes and NSE (or other metrics) as the size of the circle.
     """
@@ -197,13 +206,24 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
         metric_values = {metric: [] for metric in run_metrics}  # Reset for each period
         combo_labels = []  # To store labels for each combo
 
+        number_of_basins = 0
+
+        if collect_seeds_results:
+            # Optional: To store seed data for error bars
+            seeds_metric_data = {metric: {} for metric in run_metrics}  # Dictionary to store seed values
+
         # Loop over the run folders and combination folders
         for folder, label in run_folders_labels.items():
 
             run_folder_path = Path(run_folders_paths[folder])
-            combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+            # Sorting combination folders based on the numerical value at the end
+            combination_folders = sorted(
+                [f for f in run_folder_path.iterdir() if f.is_dir()],
+                key=lambda x: get_combination_number(x.name)
+            )
 
-            for icombo, combo_folder in enumerate(combination_folders):
+            icombo = 0
+            for combo_folder in combination_folders:
         
                 # Load the data for the given period (assuming the metrics are saved in 'combo_stats_{period}.csv')
                 stats_path = combo_folder / 'combo_results' / f'combo_stats_{period}.csv'
@@ -211,11 +231,15 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                     print(f"No stats file found for {combo_folder} (period {period}). Skipping.")
                     continue
 
+                icombo += 1
                 df = pd.read_csv(stats_path)
 
                 if df.empty:
                     print(f"Empty stats file found for {combo_folder} and period {period}. Skipping.")
                     continue
+
+                if len(df) > number_of_basins:
+                    number_of_basins = len(df)
 
                 # Calculate the mean values for time, memory, and the specified metrics
                 mean_time = df['epoch_time_seg_mean'].mean()
@@ -225,7 +249,7 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                 memories.append(mean_memory)
 
                 # Store labels for each combination
-                combo_labels.append(f"{label}/combo{icombo+1}")
+                combo_labels.append(f"{label}/combo{icombo}")
 
                 # # Calculate meadian values for each metric (e.g., 'nse', 'kge')
                 # for metric in run_metrics:
@@ -248,7 +272,16 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                         df, _, _ = apply_threshold(df, metric, threshold_dict)
                         metric_mean = df[metric].mean()
                         metric_median = df[metric].median()
-                        
+
+                        # Collect seed data if requested -> for error bars
+                        if collect_seeds_results:
+                            # Ensure that `seeds_metric_data[metric][label]` exists
+                            if label not in seeds_metric_data[metric]:
+                                seeds_metric_data[metric][label] = []
+                            
+                            # Append the median value (since it's a single number, not iterable)
+                            seeds_metric_data[metric][label].append(metric_median)
+
                         # Combined metric calculation
                         combined_metric = weight_mean * metric_mean + weight_median * metric_median
                         
@@ -261,7 +294,7 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
         # Create scatter plot based on the specified metrics (e.g., NSE for size)
         for metric in run_metrics:
 
-            plt.figure(figsize=(12, 7))
+            plt.figure(figsize=(12, 6))
             metric_data = metric_values[metric]
 
             # Filter out None and NaN values from metric_data, times, and memories for plotting
@@ -294,13 +327,13 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
 
             # Adding color bar for the metric
             cbar = plt.colorbar(scatter)
-            cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=14)  # Color bar label font size
+            cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=12)  # Color bar label font size
             cbar.ax.tick_params(labelsize=12)  # Color bar tick label size
 
             # Add labels and title with larger font sizes
-            plt.xlabel('Mean Time per Epoch ($s$)', fontsize=14)
-            plt.ylabel('Mean Memory Peak ($MB$)', fontsize=14)
-            plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=16)
+            plt.xlabel('Mean Time per Epoch ($s$)', fontsize=12)
+            plt.ylabel('Mean Memory Peak ($MB$)', fontsize=12)
+            plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=14)
             
             # Increase font size for tick labels
             plt.xticks(fontsize=12)
@@ -322,9 +355,11 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                                 markersize=10, markeredgewidth=1.5, markeredgecolor='black')
                 legend_circles.append(circle)
                 top_N_labels.append(f"{rank}-{combo_labels[idx]} | ${metric.upper()}$ = {filtered_metric_data[idx]:.3f}")
-
+            
+            # Adding legend for the colormap
             # plt.legend(legend_circles, top_N_labels, fontsize=9)
-            plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.25, 1.0))
+            legend = plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.2, 1.0))
+            legend.set_title(f"Subsampled basins: {number_of_basins}", prop={'size': 9, 'weight': 'bold'})
 
             # # Format the ticks in scientific notation
             # plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
@@ -340,6 +375,61 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
 
             # Close the plot to avoid memory issues
             plt.close()
+
+
+            # Optional: Plot error bars for seeds data
+            if collect_seeds_results:
+                # Plot error bars for seeds data
+                plt.figure(figsize=(12, 6))
+
+                combo_means = []
+                combo_stds = []
+                combo_mins = []  # To store minimum values for dashed lines
+                combo_labels_sorted = []
+                seeds_count = []
+
+                for combo_label, seed_values in seeds_metric_data[metric].items():
+                    if seed_values:
+                        combo_means.append(np.mean(seed_values))
+                        combo_stds.append(np.std(seed_values))  # Or use other variability measures
+                        combo_mins.append(np.min(seed_values))  # Collect minimum value across seeds
+                        combo_labels_sorted.append(combo_label)
+                        seeds_count.append(len(seed_values))  # Collect the number of seeds for each combo
+
+                # Sort by decreasing mean
+                sorted_indices = np.argsort(combo_means)[::-1]
+                combo_means = np.array(combo_means)[sorted_indices]
+                combo_stds = np.array(combo_stds)[sorted_indices]
+                combo_mins = np.array(combo_mins)[sorted_indices]  # Sort minimum values accordingly
+                combo_labels_sorted = np.array(combo_labels_sorted)[sorted_indices]
+
+                # Create a bar plot with error bars
+                plt.bar(combo_labels_sorted, combo_means, yerr=combo_stds, capsize=5, alpha=0.75)
+
+                # Draw dashed lines for minimum values
+                for i in range(len(combo_means)):
+                    min_value = combo_mins[i]
+                    plt.hlines(min_value, i - 0.4, i + 0.4, colors='red', linestyles='dashed', linewidth=2)
+
+                # Angle x-labels and adjust font size
+                plt.xticks(rotation=45, ha='right', fontsize=9)
+
+                # Add ylabel and title, with number of seeds in title
+                max_seeds = max(seeds_count)  # Maximum number of seeds across all combos
+                plt.ylabel(f'{metric.upper()} (Mean ± Std)')
+                plt.title(f'{metric.upper()} Across Configurations (with {max_seeds} Seeds)')
+
+                # Adjust the scale to highlight std deviations better
+                plt.ylim([max(0, min(combo_means) - 2*max(combo_stds)), max(combo_means) + 1.2*max(combo_stds)])
+
+                plt.tight_layout()
+
+                # Save or show the error bar plot
+                plt.savefig(Path(main_folder) / f'error_bars_{metric}_{period}.png', bbox_inches='tight', dpi=150)
+                plt.close()
+
+
+
             
 ##########################################################################################################
 def main(combo_file=COMBO_FILE):
@@ -360,7 +450,11 @@ def main(combo_file=COMBO_FILE):
         for folder in run_folders_labels.keys():
 
             run_folder_path = Path(run_folders_paths[folder])
-            combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+            # Sorting combination folders based on the numerical value at the end
+            combination_folders = sorted(
+                [f for f in run_folder_path.iterdir() if f.is_dir()],
+                key=lambda x: get_combination_number(x.name)
+            )
         
             # Process each run folder
             for icombo, combo_folder in enumerate(combination_folders):
@@ -386,7 +480,8 @@ def main(combo_file=COMBO_FILE):
                 )
 
     # Generate plots
-    plot_performance_scatter(main_folder, run_folders_labels, run_metrics, periods, threshold_dict, topN=15)
+    plot_performance_scatter(main_folder, run_folders_labels, run_metrics, periods, 
+                             threshold_dict, topN=20, collect_seeds_results=SEEDS_RUN)
 
 if __name__ == "__main__":
     main()

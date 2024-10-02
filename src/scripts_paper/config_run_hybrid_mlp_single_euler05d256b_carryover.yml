@@ -11,7 +11,7 @@ concept_model: exphydro
 odesmethod: euler
 time_step: 0.5
 
-carryover_state: False
+carryover_state: True
 
 # Files to specify training, validation and test basins
 basin_file: This is to be updated!!! # do not delete this line

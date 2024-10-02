@@ -20,8 +20,6 @@ class MLP(BaseNNModel):
         # Hidden Layers
         self.hidden = nn.ModuleList()
         self.dropouts = nn.ModuleList()
-        # self.dropout_layer = nn.Dropout(self.dropout) 
-        # self.dropout_layer.name = 'dropout_layer'
         for li, hidden in enumerate(self.hidden_size[:-1]):
             layer = nn.Linear(hidden, self.hidden_size[li+1])
             layer.name = f'hidden_layer_{li}'
@@ -35,35 +33,12 @@ class MLP(BaseNNModel):
 
     def forward(self, dynamic_inputs, basin_id, static_inputs=None, use_grad=True):
 
-        # # Gather means and stds for the batch
-        # means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-        # stds = torch.stack([self.torch_input_stds[b] for b in basin_list]).squeeze(1).to(dynamic_inputs.device)
-
-        # print('basin_id', basin_id)
-        # print(self.torch_input_means[basin_id].shape)
-        # print(self.torch_input_stds[basin_id].shape)
-        # print('dynamic_inputs', dynamic_inputs.shape)
-        # aux = input("Press Enter to continue...")
-
-        # print('dynamic_inputs', dynamic_inputs.device)
-
+        # Gather means and stds for the batch
         mean = self.torch_input_means[basin_id]  #.to(dynamic_inputs.device)
         std = self.torch_input_stds[basin_id]    #.to(dynamic_inputs.device)
 
-        # print('basin_id', basin_id)
-        # print('mean', mean)
-        # print('std', std)
-        # print('dynamic_inputs', dynamic_inputs[:5,:])
-
         # Normalize the dynamic inputs
         dynamic_inputs = (dynamic_inputs - mean) / (std + np.finfo(float).eps)
-
-        # print('dynamic_inputs', dynamic_inputs[:5,:])
-        # aux = input("Press Enter to continue...")
-
-        # print('basin_list', basin_list[0])
-        # print('dynamic_inputs', dynamic_inputs.shape)
-        # print('static_inputs', static_inputs.shape, static_inputs[:5])
 
         # Concatenate static inputs if included
         if self.include_static and static_inputs is not None:
@@ -73,18 +48,13 @@ class MLP(BaseNNModel):
         else:
             inputs = dynamic_inputs
 
-        # print('inputs', inputs.shape)
-        # aux = input("Press Enter to continue...")
-
         if use_grad:
             # Pass through the input layer
             x = torch.tanh(self.input_layer(inputs))
             # Hidden Layers
             for hidden, dropout in zip(self.hidden, self.dropouts):
-            # for hidden in self.hidden:
                 x = F.leaky_relu(hidden(x))
                 x = dropout(x)
-            # x = self.dropout_layer(x)
             # Output Layer
             x = self.output_layer(x)
         else:
@@ -95,24 +65,14 @@ class MLP(BaseNNModel):
                 for hidden, dropout in zip(self.hidden, self.dropouts):
                 # for hidden in self.hidden:
                     x = F.leaky_relu(hidden(x))
-                    # # x = F.relu(hidden(x))
                     x = dropout(x)
-                # x = self.dropout_layer(x)
                 # Output Layer
                 x = self.output_layer(x)
 
         # # Retrieve the minimum values for the basins
         # min_values = self.torch_input_mins[basin_id]  #.to(dynamic_inputs.device)
 
-        # print('output', x.shape, x[:3])
-        # print('min_values', min_values.shape, min_values)
-      
         # # Clip the outputs
         # x = torch.maximum(x, min_values)
-
-        # print('output', x.shape, x[:3])
-        # aux = input("Press Enter to continue...")
-
-        # print('output', x.shape, x[:5])
 
         return x

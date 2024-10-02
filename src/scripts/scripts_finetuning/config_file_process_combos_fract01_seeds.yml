@@ -1,0 +1,51 @@
+# main_folder: cluster_sample_jobs_59basins_seeds
+
+# run_folders:
+#   ## Folder name: label
+#   bash_runs_finetune_fract01_mlp_euler05d_seeds_240925_153701: "Euler 0.5d"
+#   bash_runs_finetune_fract01_mlp_rk4_1d_seeds_240925_153828: "RK4 1d"
+
+main_folder: .
+
+run_folders:
+  ## Folder name: label
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_241001_194234: "Euler 1d"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_241001_195204: "Euler 1d 32x3"
+  bash_runs_finetune_fract01_mlp_euler05d_seeds_32x3_241001_195405: "Euler 0.5d 32x3"
+  bash_runs_finetune_fract01_mlp_euler02d_seeds_241001_194934: "Euler 0.2d"
+  bash_runs_finetune_fract01_mlp_euler02d_seeds_32x3_241001_195533: "Euler 0.2d 32x3"
+  bash_runs_finetune_fract01_mlp_euler01d_seeds_241002_095428: "Euler 0.1d"
+  bash_runs_finetune_fract01_mlp_euler01d_seeds_32x3_241002_095506: "Euler 0.1d 32x3"
+  bash_runs_finetune_fract01_mlp_rk4_1d_seeds_32x3_241001_195738: "RK4 1d 32x3"
+  bash_runs_finetune_fract01_mlp_rk4_05d_seeds_241001_194703: "RK4 0.5d"
+  bash_runs_finetune_fract01_mlp_rk4_05d_seeds_32x3_241001_195906: "RK4 0.5d 32x3"
+
+
+
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Top models criteria: median, mean, mean_median_score
+top_models_criteria: median
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less
