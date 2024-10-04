@@ -9,6 +9,7 @@ from cmcrameri import cm
 from matplotlib.lines import Line2D
 import re
 import numpy as np
+import plotly.express as px
 
 # Get the current working directory (works for Jupyter or interactive environments)
 project_dir = str(Path.cwd().parent.parent.parent)  # Adjust parent levels as needed
@@ -25,7 +26,7 @@ from src.utils.plots import (
 # COMBO_FILE = Path('config_file_process_combos_fract01_euler05d.yml')
 COMBO_FILE = Path('config_file_process_combos_fract01_seeds.yml')
 
-ONLY_PLOT = 0   # True or False
+ONLY_PLOT = 1   # True or False
 SEEDS_RUN = 1   # True or False
 
 
@@ -294,87 +295,219 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
         # Create scatter plot based on the specified metrics (e.g., NSE for size)
         for metric in run_metrics:
 
-            plt.figure(figsize=(12, 6))
-            metric_data = metric_values[metric]
+            if not collect_seeds_results:
 
-            # Filter out None and NaN values from metric_data, times, and memories for plotting
-            valid_data = [(t, m, n) for t, m, n in zip(times, memories, metric_data) if not pd.isna(n)]
-            if not valid_data:  # Skip if no valid data
-                print(f"No valid data for {metric} in period {period}. Skipping plot.")
-                continue
+                plt.figure(figsize=(12, 6))
+                metric_data = metric_values[metric]
 
-            times_filtered, memories_filtered, filtered_metric_data = zip(*valid_data)
+                # Filter out None and NaN values from metric_data, times, and memories for plotting
+                valid_data = [(t, m, n) for t, m, n in zip(times, memories, metric_data) if not pd.isna(n)]
+                if not valid_data:  # Skip if no valid data
+                    print(f"No valid data for {metric} in period {period}. Skipping plot.")
+                    continue
 
-            # Define the colormap and normalization based on the metric values
-            cmap = cm.oslo  # You can choose any colormap from cmcrameri
-            normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
+                times_filtered, memories_filtered, filtered_metric_data = zip(*valid_data)
 
-            # Normalize sizes between min_size and max_size
-            min_size = 50  # Minimum circle size
-            max_size = 500  # Maximum circle size
-            size_normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
-            sizes = [min_size + (max_size - min_size) * size_normalize(n) for n in filtered_metric_data]
+                # Define the colormap and normalization based on the metric values
+                cmap = cm.oslo  # You can choose any colormap from cmcrameri
+                normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
 
-            # Create scatter plot with normalization
-            scatter = plt.scatter(times_filtered, memories_filtered, 
-                      s=sizes,  # Normalized size of the points
-                      c=filtered_metric_data,  # Color of the points
-                      cmap=cmap,  # Colormap for the points
-                      norm=normalize,  # Normalization for the colormap
-                      alpha=1.0,  # Transparency of the points
-                      edgecolors='black',  # Border color
-                      linewidths=1)  # Border width
+                # Normalize sizes between min_size and max_size
+                min_size = 50  # Minimum circle size
+                max_size = 500  # Maximum circle size
+                size_normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
+                sizes = [min_size + (max_size - min_size) * size_normalize(n) for n in filtered_metric_data]
 
-            # Adding color bar for the metric
-            cbar = plt.colorbar(scatter)
-            cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=12)  # Color bar label font size
-            cbar.ax.tick_params(labelsize=12)  # Color bar tick label size
+                # Create scatter plot with normalization
+                scatter = plt.scatter(times_filtered, memories_filtered, 
+                        s=sizes,  # Normalized size of the points
+                        c=filtered_metric_data,  # Color of the points
+                        cmap=cmap,  # Colormap for the points
+                        norm=normalize,  # Normalization for the colormap
+                        alpha=1.0,  # Transparency of the points
+                        edgecolors='black',  # Border color
+                        linewidths=1)  # Border width
 
-            # Add labels and title with larger font sizes
-            plt.xlabel('Mean Time per Epoch ($s$)', fontsize=12)
-            plt.ylabel('Mean Memory Peak ($MB$)', fontsize=12)
-            plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=14)
-            
-            # Increase font size for tick labels
-            plt.xticks(fontsize=12)
-            plt.yticks(fontsize=12)
+                # Adding color bar for the metric
+                cbar = plt.colorbar(scatter)
+                cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=12)  # Color bar label font size
+                cbar.ax.tick_params(labelsize=12)  # Color bar tick label size
 
-            # Highlight the top 5 results by putting the numbers in the center of the circles
-            top_N_indices = sorted(range(len(filtered_metric_data)), 
-                                   key=lambda i: filtered_metric_data[i], reverse=True)[:topN]
-
-            legend_circles = []
-            top_N_labels = []
-            for idx, rank in zip(top_N_indices, range(1, topN+1)):
-                font_size = sizes[idx] / 30
-                plt.text(times_filtered[idx], memories_filtered[idx], str(rank), fontsize=font_size, 
-                        ha='center', va='center', color='black', fontweight='bold')
+                # Add labels and title with larger font sizes
+                plt.xlabel('Mean Time per Epoch ($s$)', fontsize=12)
+                plt.ylabel('Mean Memory Peak ($MB$)', fontsize=12)
+                plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=14)
                 
-                circle = Line2D([0], [0], marker='o', color='w', 
-                                markerfacecolor=cmap(normalize(filtered_metric_data[idx])), 
-                                markersize=10, markeredgewidth=1.5, markeredgecolor='black')
-                legend_circles.append(circle)
-                top_N_labels.append(f"{rank}-{combo_labels[idx]} | ${metric.upper()}$ = {filtered_metric_data[idx]:.3f}")
-            
-            # Adding legend for the colormap
-            # plt.legend(legend_circles, top_N_labels, fontsize=9)
-            legend = plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.2, 1.0))
-            legend.set_title(f"Subsampled basins: {number_of_basins}", prop={'size': 9, 'weight': 'bold'})
+                # Increase font size for tick labels
+                plt.xticks(fontsize=12)
+                plt.yticks(fontsize=12)
 
-            # # Format the ticks in scientific notation
-            # plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+                # Highlight the top 5 results by putting the numbers in the center of the circles
+                top_N_indices = sorted(range(len(filtered_metric_data)), 
+                                    key=lambda i: filtered_metric_data[i], reverse=True)[:topN]
 
-            # Log scale for memory axis
-            plt.yscale('log')
+                legend_circles = []
+                top_N_labels = []
+                for idx, rank in zip(top_N_indices, range(1, topN+1)):
+                    font_size = sizes[idx] / 30
+                    plt.text(times_filtered[idx], memories_filtered[idx], str(rank), fontsize=font_size, 
+                            ha='center', va='center', color='black', fontweight='bold')
+                    
+                    circle = Line2D([0], [0], marker='o', color='w', 
+                                    markerfacecolor=cmap(normalize(filtered_metric_data[idx])), 
+                                    markersize=10, markeredgewidth=1.5, markeredgecolor='black')
+                    legend_circles.append(circle)
+                    top_N_labels.append(f"{rank}-{combo_labels[idx]} | ${metric.upper()}$ = {filtered_metric_data[idx]:.3f}")
+                
+                # Adding legend for the colormap
+                # plt.legend(legend_circles, top_N_labels, fontsize=9)
+                legend = plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.2, 1.0))
+                legend.set_title(f"Subsampled basins: {number_of_basins}", prop={'size': 9, 'weight': 'bold'})
 
-            plt.tight_layout()
+                # # Format the ticks in scientific notation
+                # plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 
-            # Save the plot
-            # plt.savefig(f'performance_{metric}_{period}.png')
-            plt.savefig(Path(main_folder) / f'performance_{metric}_{period}.png', bbox_inches='tight', dpi=150)
+                # Log scale for memory axis
+                plt.yscale('log')
 
-            # Close the plot to avoid memory issues
-            plt.close()
+                plt.tight_layout()
+
+                # Save the plot
+                # plt.savefig(f'performance_{metric}_{period}.png')
+                plt.savefig(Path(main_folder) / f'performance_{metric}_{period}.png', bbox_inches='tight', dpi=150)
+
+                # Close the plot to avoid memory issues
+                plt.close()
+
+            else:
+                plt.figure(figsize=(10, 6))
+                metric_data = metric_values[metric]
+
+                # Filter out None and NaN values from metric_data, times, and memories for plotting
+                valid_data = [(t, m, n, label) for t, m, n, label in zip(times, memories, metric_data, combo_labels) if not pd.isna(n)]
+                if not valid_data:  # Skip if no valid data
+                    print(f"No valid data for {metric} in period {period}. Skipping plot.")
+                    continue
+
+                times_filtered, memories_filtered, filtered_metric_data, filtered_labels = zip(*valid_data)
+
+                # Group data by folder (label) and calculate the average of median values for each folder
+                folder_metrics = {}  # Dictionary to hold metric data per folder
+                for time, memory, metric_value, label in zip(times_filtered, memories_filtered, filtered_metric_data, filtered_labels):
+                    folder = label.split('/')[0]  # Extract folder name (before '/comboX')
+                    if folder not in folder_metrics:
+                        folder_metrics[folder] = []
+                    folder_metrics[folder].append(metric_value)
+
+                # Calculate the average metric value for each folder
+                folder_avg_metric = {folder: np.mean(values) for folder, values in folder_metrics.items()}
+
+                # Sort folders by their average metric value in descending order
+                sorted_folders = sorted(folder_avg_metric, key=folder_avg_metric.get, reverse=True)
+
+                # Assign a unique color per folder based on the sorted order
+                label_to_color = {label: idx for idx, label in enumerate(sorted_folders)}
+
+                # Define colormap using cmrameri
+                cmap = cm.batlow  # You can choose any colormap from cmcrameri
+
+                # Normalize sizes between min_size and max_size
+                min_size = 50  # Minimum circle size
+                max_size = 500  # Maximum circle size
+                size_normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
+                sizes = [min_size + (max_size - min_size) * size_normalize(n) for n in filtered_metric_data]
+
+                # Create scatter plot with color based on folder (label)
+                scatter = plt.scatter(times_filtered, memories_filtered,
+                                    s=sizes,  # Normalized size of the points
+                                    c=[label_to_color[label.split('/')[0]] for label in filtered_labels],  # Color based on folder
+                                    cmap=cmap,  # Colormap from cmcrameri
+                                    alpha=1.0,  # Transparency of the points
+                                    edgecolors='black',  # Border color
+                                    linewidths=1)  # Border width
+
+                # Create a legend for the folder colors, sorted by average metric
+                legend_circles = []
+                legend_labels = []
+                for label, idx in label_to_color.items():
+                    circle = Line2D([0], [0], marker='o', color='w',
+                                    markerfacecolor=cmap(idx / len(sorted_folders)), markersize=10, markeredgewidth=1.5, markeredgecolor='black')
+                    legend_circles.append(circle)
+                    legend_labels.append(f"{label} | avg ${metric.upper()}$ = {folder_avg_metric[label]:.3f}")  # Add avg metric in legend
+
+                # Display the legend with folder names
+                legend = plt.legend(legend_circles, legend_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.0, 1.0))
+                legend.set_title(f"ODE Solver (sorted by avg ${metric.upper()}$)", prop={'size': 9, 'weight': 'bold'})
+
+                # Add labels and title with larger font sizes
+                plt.xlabel('Mean Time per Epoch ($s$)', fontsize=12)
+                plt.ylabel('Mean Memory Peak ($MB$)', fontsize=12)
+                plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=14)
+
+                # Increase font size for tick labels
+                plt.xticks(fontsize=12)
+                plt.yticks(fontsize=12)
+
+                # Log scale for memory axis
+                plt.yscale('log')
+
+                plt.tight_layout()
+
+                # Save the plot
+                plt.savefig(Path(main_folder) / f'performance_{metric}_{period}.png', bbox_inches='tight', dpi=150)
+
+                # Close the plot to avoid memory issues
+                plt.close()
+
+                # Prepare your data in a DataFrame to work with Plotly
+                data = {
+                    'time': times_filtered,  # Mean time per epoch
+                    'memory': memories_filtered,  # Mean memory peak
+                    'metric': filtered_metric_data,  # The metric you're plotting (e.g., NSE)
+                    'folder': [label.split('/')[0] for label in filtered_labels],  # Extract folder name (before '/comboX')
+                    'size': sizes  # Circle sizes based on metric
+                }
+
+                df = pd.DataFrame(data)
+
+                # Calculate the average metric value for each folder
+                folder_avg_metric = df.groupby('folder')['metric'].mean().sort_values(ascending=False)
+
+                # Reorder the DataFrame based on the sorted folders
+                df['folder'] = pd.Categorical(df['folder'], categories=folder_avg_metric.index, ordered=True)
+                df = df.sort_values('folder')
+
+                # Create an interactive scatter plot
+                fig = px.scatter(
+                    df,
+                    x='time',
+                    y='memory',
+                    size='size',  # Circle sizes based on the metric
+                    color='folder',  # Color based on folder, now ordered by average metric
+                    hover_data=['folder', 'metric'],  # Display folder and metric on hover
+                    labels={
+                        'time': 'Mean Time per Epoch (s)',
+                        'memory': 'Mean Memory Peak (MB)',
+                        'metric': f'{metric.upper()} (Median Value)',
+                        'folder': 'ODE Solver'
+                    },
+                    title=f'Time vs Memory (circle size = {metric.upper()}, period = {period})'
+                )
+
+                # Set the y-axis to log scale for memory, as in your original plot
+                fig.update_layout(yaxis_type="log")
+
+                # Sort legend by folder based on the calculated average metric
+                fig.update_traces(marker=dict(line=dict(width=1, color='black')))  # Optional: Add black border around the circles
+                fig.update_layout(legend_title_text=f"ODE Solver (sorted by avg {metric.upper()})")
+
+                # Show the interactive plot
+                fig.show()
+
+                # Optionally, save the plot as an HTML file
+                fig.write_html(Path(main_folder) / f'performance_{metric}_{period}.html')
+
+
 
 
             # Optional: Plot error bars for seeds data
@@ -412,7 +545,7 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                     plt.hlines(min_value, i - 0.4, i + 0.4, colors='red', linestyles='dashed', linewidth=2)
 
                 # Angle x-labels and adjust font size
-                plt.xticks(rotation=45, ha='right', fontsize=9)
+                plt.xticks(rotation=45, fontsize=9)
 
                 # Add ylabel and title, with number of seeds in title
                 max_seeds = max(seeds_count)  # Maximum number of seeds across all combos
