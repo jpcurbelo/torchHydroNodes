@@ -9,14 +9,19 @@
 # graph_title: Hybrid model (exp-hydro) - MLP/Bosh3 - Julia
 # epochs: 150
 
+results_folder: ../../scripts_paper/M100_results_569basins_1980_2010_BS3tol46_julia_150ep_lr4
+plots_folder: AAAplots_hybrid_mlp35x5_7305b_bosh3tol46_lr4_150ep_julia
+graph_title: Hybrid model (exp-hydro) - MLP/BS3tol46 - Julia
+epochs: 150
+
 # results_folder: ../../scripts_paper/AAruns_hybrid_single_lstm270d_128h_256b_euler_lr4_100ep
 # plots_folder: AAplots_hybrid_lstm270d_128h_256b_euler_lr4_100ep
 # graph_title: Hybrid model (exp-hydro + LSTM) - Euler1.0d
 
-results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
-plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep
-graph_title: Hybrid model (exp-hydro + MLP) - Euler0.5d
-epochs: 150
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_150ep
+# graph_title: Hybrid model (exp-hydro + MLP) - Euler0.5d
+# epochs: 150
 
 # graph_title: Hybrid model (exp-hydro) - MLP/Bosh3
 

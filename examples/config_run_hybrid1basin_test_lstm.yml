@@ -60,7 +60,7 @@ hidden_size:
 
 loss_pretrain: mse
 lr_pretrain: 0.001
-epochs_pretrain: 200
+epochs_pretrain: 50
 ###############################################################
 
 scale_target_vars: True
@@ -82,7 +82,7 @@ valid_end_date: "30/09/2010"
 loss: nse
 
 # Number of epochs to train the model
-epochs: 150
+epochs: 20
 
 # Patience for early stopping
 patience: 20
@@ -100,29 +100,21 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.0001
-learning_rate:
-  initial: 0.0001
-  decay: 0.1
-  decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.0001
+#   decay: 0.1
+#   decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: __1basin_hybrid_lstm_270d_64x1_euler1d_50ep
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_carryoverNO
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler1d_50ep_lr4_200pre_lr3__carryoverNO
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_euler05d_50ep_carryoverNO
-# experiment_name: ________1basin_hybrid_lstm_270d_128x1_bosh3tol36_50ep_carryoverNO
-# experiment_name: _____1basin_hybrid_lstm_carryoverYES
-# experiment_name: _____1basin_hybrid_lstm_carryoverNO
-
-
-# experiment_name: 1basin_hybrid_lstm_270d_128x1_euler1d_150ep_lr45_200pre_lr3_carryoverNO_gpu
-experiment_name: 1basin_hybrid_lstm_270d_128x1_euler1d_150ep_lr45_200pre_lr3_carryoverNO_cpu
+# experiment_name: 1basin_hybrid_lstm_carryoverTrue
+# experiment_name: 1basin_hybrid_lstm_carryoverFalse
+experiment_name: 1basin_hybrid_lstm_carryoverFalseOvelapping
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-# device: cuda:1
-device: cpu
+device: cuda:0
+# device: cpu
 
 # Set seed for reproducibility
 seed: 1111

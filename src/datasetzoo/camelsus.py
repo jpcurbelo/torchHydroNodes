@@ -24,6 +24,7 @@ class CamelsUS(BaseDataset):
         dfs = list()
 
         for forcing in self.cfg.forcings:
+            # print(f"Loading {forcing} forcing data for basin {basin}")
             df, area = load_camels_us_forcings(self.cfg.concept_data_dir, basin, forcing)
 
             # rename columns

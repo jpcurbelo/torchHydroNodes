@@ -103,12 +103,17 @@ def load_results_path(results_folder: Path, periods: list):
 
         # Check if it contains a folder named 'model_metrics'
         model_metrics_path = results_folder / 'model_metrics'
-        if model_metrics_path.exists() and 'julia' not in str(results_folder):
+        if model_metrics_path.exists() \
+        and 'julia' not in str(results_folder) \
+        and 'neuralhydrology' not in str(results_folder) \
+        and 'm0' not in str(results_folder).lower():
             # Delete the folder and merge the metrics again
             print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
             os.system(f'rm -rf {model_metrics_path}')
 
-        if 'julia' not in str(results_folder):
+        if 'julia' not in str(results_folder) \
+            and 'neuralhydrology' not in str(results_folder) \
+            and 'm0' not in str(results_folder).lower():
 
             # Merge the model metrics for the specified periods
             merge_model_metrics(results_folder, model_metrics_path, periods)

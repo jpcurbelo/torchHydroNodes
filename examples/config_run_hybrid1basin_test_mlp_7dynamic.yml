@@ -38,7 +38,10 @@ nn_dynamic_inputs:
   - s_snow
   - s_water
   - prcp
-  - tmean
+  # - tmin
+  # - tmax
+  # - srad
+  # - vp
 
 nn_mech_targets:
   - ps_bucket
@@ -113,8 +116,7 @@ learning_rate: 0.0001
 
 # experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverFalse
 # experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverTrue
-# experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverFalseOvelapping
-experiment_name: 1basin_hybrid_mlp_euler05d_4dynamic
+experiment_name: 1basin_hybrid_mlp_euler05d_7dynamic
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu

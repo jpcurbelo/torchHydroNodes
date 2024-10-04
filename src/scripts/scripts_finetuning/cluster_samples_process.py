@@ -19,7 +19,8 @@ from src.utils.plots import (
 
 # Configuration file path
 # COMBO_FILE = Path('config_file_process_combos_fract01.yml')
-COMBO_FILE = Path('config_file_process_combos_fract02.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract02.yml')
+COMBO_FILE = Path('config_file_process_combos_fract01_euler05d.yml')
 
 
 ONLY_PLOT = 0
@@ -97,7 +98,7 @@ def process_combination_folder(combo_folder_path):
     experiment_name = load_config_value(combo_folder_path, 'experiment_name')
 
     # Iterate over the basins inside the combination folder
-    basin_folders = [f for f in combo_folder_path.iterdir() if f.is_dir() and f.name.startswith(experiment_name)]
+    basin_folders = sorted([f for f in combo_folder_path.iterdir() if f.is_dir() and f.name.startswith(experiment_name)])
 
     completed_basins = []
     basin_stats = {}  # To store mean time and memory for each basin
@@ -197,11 +198,13 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
         metric_values = {metric: [] for metric in run_metrics}  # Reset for each period
         combo_labels = []  # To store labels for each combo
 
+        number_of_basins = 0
+
         # Loop over the run folders and combination folders
         for folder, label in run_folders_labels.items():
 
             run_folder_path = Path(run_folders_paths[folder])
-            combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+            combination_folders = sorted([f for f in run_folder_path.iterdir() if f.is_dir()])
 
             for icombo, combo_folder in enumerate(combination_folders):
         
@@ -216,6 +219,9 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                 if df.empty:
                     print(f"Empty stats file found for {combo_folder} and period {period}. Skipping.")
                     continue
+
+                if len(df) > number_of_basins:
+                    number_of_basins = len(df)
 
                 # Calculate the mean values for time, memory, and the specified metrics
                 mean_time = df['epoch_time_seg_mean'].mean()
@@ -294,13 +300,13 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
 
             # Adding color bar for the metric
             cbar = plt.colorbar(scatter)
-            cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=14)  # Color bar label font size
+            cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=12)  # Color bar label font size
             cbar.ax.tick_params(labelsize=12)  # Color bar tick label size
 
             # Add labels and title with larger font sizes
-            plt.xlabel('Mean Time per Epoch ($s$)', fontsize=14)
-            plt.ylabel('Mean Memory Peak ($MB$)', fontsize=14)
-            plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=16)
+            plt.xlabel('Mean Time per Epoch ($s$)', fontsize=12)
+            plt.ylabel('Mean Memory Peak ($MB$)', fontsize=12)
+            plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=14)
             
             # Increase font size for tick labels
             plt.xticks(fontsize=12)
@@ -322,9 +328,11 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                                 markersize=10, markeredgewidth=1.5, markeredgecolor='black')
                 legend_circles.append(circle)
                 top_N_labels.append(f"{rank}-{combo_labels[idx]} | ${metric.upper()}$ = {filtered_metric_data[idx]:.3f}")
-
+            
+            # Adding legend for the colormap
             # plt.legend(legend_circles, top_N_labels, fontsize=9)
-            plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.25, 1.0))
+            legend = plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.2, 1.0))
+            legend.set_title(f"Subsampled basins: {number_of_basins}", prop={'size': 9, 'weight': 'bold'})
 
             # # Format the ticks in scientific notation
             # plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
@@ -360,7 +368,7 @@ def main(combo_file=COMBO_FILE):
         for folder in run_folders_labels.keys():
 
             run_folder_path = Path(run_folders_paths[folder])
-            combination_folders = [f for f in run_folder_path.iterdir() if f.is_dir()]
+            combination_folders = sorted([f for f in run_folder_path.iterdir() if f.is_dir()])
         
             # Process each run folder
             for icombo, combo_folder in enumerate(combination_folders):

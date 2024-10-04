@@ -43,6 +43,11 @@ vp:
   - vp
   - vp(pa)
 
+# Short-wave radiation
+srad:
+  - srad
+  - srad(w/m2)
+
 # Snow storage
 s_snow:
   - s_snow

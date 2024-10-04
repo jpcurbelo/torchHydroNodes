@@ -14,6 +14,13 @@ from src.utils.load_process_data import (
     ExpHydroCommon,
 )
 
+import yaml
+from pathlib import Path
+# Make sure code directory is in path,
+# Add the parent directory of your project to the Python path
+project_dir = str(Path(__file__).resolve().parent.parent.parent)
+sys.path.append(project_dir)
+
 FIXED_METHODS = ['euler', 'rk4', 'midpoint']
 
 class EulerResult:
@@ -231,7 +238,20 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             period: str, period of the run ('train', 'test', 'valid').
             
         '''
+
+        # Load the variables for the concept model
+        input_vars, output_vars = self.cfg._load_concept_model_vars(self.cfg.concept_model)
+
+        # Open and read the 'variable_aliases.yml' file
+        with open(Path(project_dir) / 'src' / 'utils' / 'variable_aliases.yml', 'r') as file:
+            aliases = yaml.safe_load(file)
+
+        alias_map = {}
+        for col in input_vars + output_vars:
+            if col in aliases:
+                alias_map[col] = aliases[col]
         
+        # Dynamically construct the results_dict using input_vars and the longest alias for each variable
         results_dict = {
             'date': ds['date'],
             's_snow': results[0],
@@ -240,13 +260,26 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             'm_bucket': results[3],
             'ps_bucket': results[4],
             'pr_bucket': results[5],
-            'prcp(mm/day)': ds['prcp'],
-            'tmean(c)': ds['tmean'],
-            'dayl(s)': ds['dayl'],     
-            # the last element is the target variable (q_obs)       
-            'q_bucket': results[-1],
-            'q_obs': ds['obs_runoff'],
         }
+
+        # Add the dynamically generated keys and values for input variables
+        for var in input_vars:
+            alias = alias_map.get(var, var)  # Use the longest alias if available, otherwise fallback to var name
+            # If alias is a list, then pick the longest alias
+            if isinstance(alias, list):
+                alias = max(alias, key=len)
+            results_dict[alias] = ds[var]
+
+        # Add the target variable (output_vars) to the results_dict
+        # Assuming the target variable is 'q_obs' and is stored in the last position of the results tuple
+        results_dict['q_bucket'] = results[-1]
+        for var in output_vars:
+            alias = alias_map.get(var, var)  # Use the longest alias if available, otherwise fallback to var name
+            # If alias is a list, then pick the longest alias
+            if isinstance(alias, list):
+                alias = max(alias, key=len)
+            results_dict[alias] = ds[var]
+            # results_dict[var] = ds[var]
         
         # Create a DataFrame from the results dictionary
         results_df = pd.DataFrame(results_dict)

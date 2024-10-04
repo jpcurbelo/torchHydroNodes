@@ -4,6 +4,10 @@ exphydro:
     - prcp
     - dayl
     - tmean
+    - tmin
+    - tmax
+    - srad
+    - vp
   model_target:
     - obs_runoff
   nn_mech_targets:
@@ -15,7 +19,11 @@ exphydro:
   # clip_targets_to_zero:
   #   - obs_runoff
   #   - q_bucket
-  interpolator_vars:
-    - prcp
-    - dayl
-    - tmean
+  # interpolator_vars:
+  #   - prcp
+  #   - dayl
+  #   - tmean
+  #   - tmin
+  #   - tmax
+  #   - srad
+  #   - vp

@@ -4,6 +4,11 @@ folders4cdf_dir:
     color: 'tab:red'
     marker: o
     linestyle: '-'
+  - directory: ../../scripts_paper/M100_results_569basins_1980_2010_BS3tol46_julia_150ep_lr4
+    experiment: '$\mathbf{RK23}$ | batch size 7304 | 150 epochs | Julia'
+    color: 'tab:blue'
+    marker: o
+    linestyle: '-'
   - directory: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_150ep_1000pre_lr3
     experiment: 'Euler0.5d | batch size 256 | 150 epochs'
     color: 'tab:blue'

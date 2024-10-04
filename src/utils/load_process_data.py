@@ -515,11 +515,11 @@ class Config(object):
 
         # Load utils/concept_model_vars.yml
         with open(script_dir / 'concept_model_vars.yml', 'r') as f:
-            var_alias = yaml.load(f, Loader=yaml.FullLoader)
+            model_vars = yaml.load(f, Loader=yaml.FullLoader)
 
         # Load the variables for the concept model
-        var_inputs = var_alias[concept_model]['model_inputs']
-        var_outputs = var_alias[concept_model]['model_target']
+        var_inputs = model_vars[concept_model]['model_inputs']
+        var_outputs = model_vars[concept_model]['model_target']
 
         return var_inputs, var_outputs
          

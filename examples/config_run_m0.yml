@@ -19,32 +19,32 @@ basin_file: 569_basin_file.txt
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
 
-# ode_solver_lib: scipy
-# # Method to solve the ODEs (using solve_ivp from scipy.integrate)
-# # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
-# # Options: RK45, RK23, DOP853, Radau, BDF, LSODA
-# odesmethod: RK23
-# rtol: 1e-4
-# atol: 1e-6
+ode_solver_lib: scipy
+# Method to solve the ODEs (using solve_ivp from scipy.integrate)
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
+# Options: RK45, RK23, DOP853, Radau, BDF, LSODA
+odesmethod: RK45
+rtol: 1e-4
+atol: 1e-6
 
-ode_solver_lib: torchdiffeq
-# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-# https://github.com/rtqichen/torchdiffeq/blob/master/README.md
-# odesmethod: bosh3
-# rtol: 1e-3
-# atol: 1e-3
+# # ode_solver_lib: torchdiffeq
+# # # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+# # # https://github.com/rtqichen/torchdiffeq/blob/master/README.md
+# # # odesmethod: bosh3
+# # # rtol: 1e-3
+# # # atol: 1e-3
 
-# odesmethod: dopri5
-# rtol: 1e-6
-# atol: 1e-9
+# # # odesmethod: dopri5
+# # # rtol: 1e-6
+# # # atol: 1e-9
 
-# odesmethod: rk4
-# time_step: 1.0
-# odesmethod: scipy_solver
-# scipy_solver: RK23
+# # # odesmethod: rk4
+# # # time_step: 1.0
+# # # odesmethod: scipy_solver
+# # # scipy_solver: RK23
 
-odesmethod: euler
-time_step: 0.05
+# # odesmethod: euler
+# # time_step: 0.05
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -84,11 +84,15 @@ metrics:
 
 # experiment_name: _______________M0_results_4basins_test
 
-experiment_name: M0_results_569basins_1980_2010_euler005d_torchdiffeq
+# experiment_name: M0_results_569basins_1980_2010_euler005d_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_rk4_1d_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK23_tol33_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK45_tol69_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK23_tol46_scipy
+# experiment_name: __M0_results_4basins_1980_2010_RK23_tol33_7vars
+# experiment_name: M0_results_569basins_1980_2010_RK23_tol33_7vars
+experiment_name: M0_results_569basins_1980_2010_RK45_tol46_7vars
+
 
 
 
@@ -96,7 +100,7 @@ experiment_name: M0_results_569basins_1980_2010_euler005d_torchdiffeq
 device: cpu
 
 # Set seed for reproducibility
-seed: 1111
+seed: 111
 
 # Set precision for the model [float32, float64]
 precision: float32
