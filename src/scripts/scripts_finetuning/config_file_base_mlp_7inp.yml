@@ -1,0 +1,119 @@
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# Hybrid model: exphydro + mlp -> M100
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+hybrid_model: exphydroM100
+concept_model: exphydro
+
+# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+odesmethod: This is to be updated!!!
+time_step: This is to be updated!!!
+
+# --- Data configurations --- #
+# Dataset to use for training and testing [camelsus, summaca]
+# data_dir: M0_results_569basins_1980_2010_RK23
+data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+
+# If not nn_model_dir, specify the model and parameters to use:
+###############################################################
+nn_model: mlp
+
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  # - tmean
+  - tmin
+  - tmax
+  - srad
+  - vp
+
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+
+target_variables: 
+  - obs_runoff
+
+# --- Pre- training configurations --- #
+hidden_size: This is to be updated!!!
+
+loss_pretrain: mse
+lr_pretrain: 0.001
+epochs_pretrain: 1000
+###############################################################
+
+scale_target_vars: True
+
+# --- Training configurations --- #
+
+# Period to train, validate and test the model (they should be consecutive)
+train_start_date: "01/10/1980"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2010"
+
+# Loss function to use [mse, nse, nse-nh]
+loss: nse
+
+# Number of epochs to train the model
+epochs: This is to be updated!!!
+
+# Patience for early stopping
+patience: 20
+
+# If a value, clips the gradients during training to that norm.
+clip_gradient_norm: 1.0
+
+# Batch size for training (if -1, it will be only one batch for the whole dataset)
+batch_size: This is to be updated!!!
+
+# Optimizer to use [adam, sgd]
+optimizer: adam
+
+# Learning rate for the optimizer
+learning_rate: This is to be updated!!!
+
+
+## --- Run configurations --- ##
+# Experiment name, used as folder name
+experiment_name: hybrid_mlp_sample
+
+# which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
+device: cpu
+
+# Set seed for reproducibility
+seed: 1111
+
+# Set precision for the model [float32, float64]
+precision: float32
+
+# Number of parallel workers used in the data pipeline
+num_workers: 16
+
+# Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
+verbose: 0
+
+# Metrics to use for evaluation (after training)
+metrics:
+  - NSE
+  - Alpha-NSE
+  - Beta-NSE
+  - FHV
+  - FMS
+  - FLV
+  - KGE
+  - Beta-KGE
+  - Peak-Timing
+  - Peak-MAPE
+  - Pearson-r
+
+# If a value and greater than 0, logs n random basins as figures after pretraining the NN model
+# If list of basins, logs the specified basins: format is either '01013500' or 1013500
+log_n_basins: 1
+
+# # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+# log_every_n_epochs: This is to be updated!!!

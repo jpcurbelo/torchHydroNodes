@@ -1,0 +1,48 @@
+main_folder: .
+
+run_folders:
+  ## Folder name: label
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr3_241005_080827: "Euler_1d_32x3_lr3_4inp"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr4_241004_174411: "Euler_1d_32x3_lr4_4inp"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_l4_300ep_241005_081628: "Euler_1d_32x3_lr4_4inp_300ep"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr34_241004_175042: "Euler_1d_32x3_lr34_4inp"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr4_5inpA_241004_210250: "Euler_1d_32x3_lr4_5inpA"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr34_5inpA_241004_210839: "Euler_1d_32x3_lr34_5inpA"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr4_5inpB_241004_210345: "Euler_1d_32x3_lr4_5inpB"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr34_5inpA_241005_010208: "Euler_1d_32x3_lr34_5inpB"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr4_6innA_241004_180832: "Euler_1d_32x3_lr4_6inpA"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr34_6inpA_241004_180917: "Euler_1d_32x3_lr34_6inpA"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr4_7inp_241004_181203: "Euler_1d_32x3_lr4_7inp"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr34_7inp_241004_181243: "Euler_1d_32x3_lr34_7inp"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr4_8inp_241004_181331: "Euler_1d_32x3_lr4_8inp"
+  bash_runs_finetune_fract01_mlp_euler1d_seeds_32x3_lr34_8inp_241004_181401: "Euler_1d_32x3_lr34_8inp"
+
+
+
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Top models criteria: median, mean, mean_median_score
+top_models_criteria: median
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less

@@ -149,6 +149,9 @@ def get_basin_interpolators(dataset, cfg, project_dir=project_dir):
         Dictionary of interpolators for the 
     """
 
+    # print('dataset:', dataset.__dict__.keys())  
+    
+    
     # Create a dictionary to store interpolator functions for each basin and variable
     interpolators = dict()
 
@@ -165,10 +168,13 @@ def get_basin_interpolators(dataset, cfg, project_dir=project_dir):
 
         # Load interpolator_vars from utils/concept_model_vars.yml
         with open(Path(project_dir) / 'src' / 'utils' / 'concept_model_vars.yml', 'r') as f:
-            var_alias = yaml.load(f, Loader=yaml.FullLoader)
+            model_vars = yaml.load(f, Loader=yaml.FullLoader)
 
         # Load the variables for the concept model
-        interpolator_vars = var_alias[cfg.concept_model]['interpolator_vars']
+        interpolator_vars = model_vars[cfg.concept_model]['model_inputs']
+
+        # print('interpolators_vars:', interpolator_vars)
+        # aux = input("Press Enter to continue...")
 
         # Sort the concatenated dataset by the date dimension
         ds_full = ds_full.sortby('date')
@@ -216,6 +222,9 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
             # Run the model
             model_results = model_concept.run(basin=basin)
 
+            if model_results is None:
+                continue
+
             # Save the results
             model_concept.save_results(basin_data, model_results, basin, period=period)
             
@@ -233,7 +242,7 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
     # run_dir = Path('../examples/runs/concept_run_240506_183950')
     ## After the model has been run for all basins and periods - Evaluate the model
     # Compute the metrics
-    compute_and_save_metrics( metrics=cfg.metrics, run_dir=run_dir)
+    compute_and_save_metrics(metrics=cfg.metrics, run_dir=run_dir)
 
 def pretrain_nn_model(config_file: Path, gpu: int = None):
     
@@ -465,6 +474,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_mlp.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_mlp_7dynamic.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_lstm.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_mlp.yml

@@ -47,13 +47,21 @@ SAMPLE_FRACTION = 0.1   # None
 BASIN_FILE = '59_basin_file_sample_ok.txt'   # None 
 # SAMPLE_FRACTION = 0.2   # None
 # BASIN_FILE = '116_basin_file_sample_ok.txt'  # None 
-CFG_FILE_BASE = Path('config_file_base_mlp.yml')
+
+# # CFG_FILE_BASE = Path('config_file_base_mlp.yml')
+CFG_FILE_BASE = Path('config_file_base_mlp_4inp.yml')
+# CFG_FILE_BASE = Path('config_file_base_mlp_5inp_a.yml')
+# CFG_FILE_BASE = Path('config_file_base_mlp_5inp_b.yml')
+# CFG_FILE_BASE = Path('config_file_base_mlp_6inp_a.yml')
+# CFG_FILE_BASE = Path('config_file_base_mlp_7inp.yml')
+# CFG_FILE_BASE = Path('config_file_base_mlp_8inp.yml')
 
 # HP_FILE = 'hyperparameters_euler1d.yml'
 # BASE_VERSION = 'euler1d_'
 
 # HP_FILE = 'hyperparameters_euler1d_32x3.yml'
-# BASE_VERSION = 'euler1d_32x3_'
+# # BASE_VERSION = 'euler1d_32x3_'
+# BASE_VERSION = 'euler1d_32x3_lr4_'
 
 # HP_FILE = 'hyperparameters_euler1d_64x5.yml'
 # BASE_VERSION = 'euler1d_64x5_'
@@ -65,7 +73,32 @@ CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 # BASE_VERSION = 'euler1d_seeds_'
 
 # HP_FILE = 'hyperparameters_euler1d_seeds_32x3.yml'
-# BASE_VERSION = 'euler1d_seeds_32x3_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr4_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr4_5inpA_'
+# BASE_VERSION = 'euler1d_seeds_32x3_lr4_5inpB_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr4_6inpA_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr4_7inp_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr4_8inp_'
+
+# HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr3.yml'
+# BASE_VERSION = 'euler1d_seeds_32x3_lr3_'
+
+
+# HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr34.yml'
+# # BASE_VERSION = 'euler1d_seeds_32x3_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr34_'
+# BASE_VERSION = 'euler1d_seeds_32x3_lr34_5inpA_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr34_5inpB_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr34_6inpA_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr34_7inp_'
+# # BASE_VERSION = 'euler1d_seeds_32x3_lr34_8inp_'
+
+HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr4_300ep.yml'
+BASE_VERSION = 'euler1d_seeds_32x3_lr4_300ep_'
+
+
+
 
 # HP_FILE = 'hyperparameters_euler05d.yml'
 # BASE_VERSION = 'euler05d_'
@@ -98,8 +131,8 @@ CFG_FILE_BASE = Path('config_file_base_mlp.yml')
 # HP_FILE = 'hyperparameters_euler01d_seeds.yml'
 # BASE_VERSION = 'euler01d_seeds_'
 
-HP_FILE = 'hyperparameters_euler01d_seeds_32x3.yml'
-BASE_VERSION = 'euler01d_seeds_32x3_'
+# HP_FILE = 'hyperparameters_euler01d_seeds_32x3.yml'
+# BASE_VERSION = 'euler01d_seeds_32x3_'
 
 # HP_FILE = 'hyperparameters_midpoint1d.yml'
 # BASE_VERSION = 'midpoint1d_'

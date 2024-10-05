@@ -1,11 +1,11 @@
-# main_folder: cluster_sample_jobs_59basins_seeds
+main_folder: cluster_sample_jobs_59basins_seeds
 
 # run_folders:
 #   ## Folder name: label
 #   bash_runs_finetune_fract01_mlp_euler05d_seeds_240925_153701: "Euler 0.5d"
 #   bash_runs_finetune_fract01_mlp_rk4_1d_seeds_240925_153828: "RK4 1d"
 
-main_folder: .
+# main_folder: .
 
 run_folders:
   ## Folder name: label

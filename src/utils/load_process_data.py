@@ -125,7 +125,7 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer',
         # print('cfg.nn_model_dir', cfg.nn_model_dir)
 
         if not cfg.nn_model_dir:
-            print('cfg.nn_model_dir is not defined - parameters should be defined in the config file')
+            print('cfg.nn_model_dir is not defined - parameters MUST be defined in the config file')
         else:
 
             # Load vars from the nn_model
@@ -210,7 +210,6 @@ def run_job_with_memory_check(model, ds_basin, input_var_names, basin, input_sha
     return outputs
 
 
-
 ## Classes
 class Config(object):
     '''
@@ -228,10 +227,8 @@ class Config(object):
 
         # Set seed for reproducibility
         self.set_seeds()
-
         # Create a folder to save the trained models and dump the configuration data to a ymal file
         if 'run_dir' not in self._cfg:
-        
             # Create a folder to save the trained models
             if isinstance(yml_path_or_dict, Path):
                 self.create_run_folder_tree()
@@ -518,11 +515,11 @@ class Config(object):
 
         # Load utils/concept_model_vars.yml
         with open(script_dir / 'concept_model_vars.yml', 'r') as f:
-            var_alias = yaml.load(f, Loader=yaml.FullLoader)
+            model_vars = yaml.load(f, Loader=yaml.FullLoader)
 
         # Load the variables for the concept model
-        var_inputs = var_alias[concept_model]['model_inputs']
-        var_outputs = var_alias[concept_model]['model_target']
+        var_inputs = model_vars[concept_model]['model_inputs']
+        var_outputs = model_vars[concept_model]['model_target']
 
         return var_inputs, var_outputs
          
@@ -942,7 +939,7 @@ class BasinBatchSampler(Sampler):
 
     def __len__(self):
         return len(self.batches)
-    
+
 class ExpHydroCommon: 
     
     def create_interpolator_dict(self, is_trainer=False):
@@ -1149,7 +1146,17 @@ class ExpHydroCommon:
 
     @property
     def interpolator_vars(self):
-        return ['prcp', 'tmean', 'dayl']
+
+        # Load utils/concept_model_vars.yml
+        with open(script_dir / 'concept_model_vars.yml', 'r') as f:
+            model_vars = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Load the variables for the concept model
+        var_inputs = model_vars[self.cfg.concept_model]['model_inputs']
+
+        # return self.pretrainer.input_var_names that are in var_inputs
+        return [var for var in self.pretrainer.input_var_names if var in var_inputs] + ['dayl']
+        # return ['prcp', 'tmean', 'dayl']
 
 
     # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 

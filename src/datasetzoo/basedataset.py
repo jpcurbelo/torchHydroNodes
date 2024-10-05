@@ -4,8 +4,6 @@ import xarray as xr
 import pandas as pd
 from tqdm import tqdm
 import sys
-import numpy as np
-import torch
 import yaml
 from pathlib import Path
 
@@ -164,7 +162,7 @@ class BaseDataset(Dataset):
             df = self._compute_mean_from_min_max(df, keep_cols)
 
             # Remove unnecessary columns
-            df = self._remove_unnecessary_columns(df, keep_cols)
+            df = self._remove_unnecessary_columns(df, basin)
 
             # Subset the DataFrame by existing periods
             df = self._subset_df_by_periods(df)   
@@ -249,13 +247,12 @@ class BaseDataset(Dataset):
                     
         return alias_map
 
-    def _remove_unnecessary_columns(self, df, keep_cols):
+    def _remove_unnecessary_columns(self, df, basin):
         """
         Remove unnecessary columns from DataFrame.
 
         Args:
             df (DataFrame): The DataFrame containing the data.
-            keep_cols (list): A list of columns to keep.
 
         Returns:
             DataFrame: The DataFrame with unnecessary columns removed.
@@ -266,11 +263,8 @@ class BaseDataset(Dataset):
         """
 
         # Check if any of the specified columns are not found in the DataFrame
-        updated_alias_map = {}
+        available_alias_map = {}
         not_available_columns  = []
-
-        # print(df.head())
-        # aux = input('Press any key to continue...')
         
         for key, aliases in self.alias_map.items():
             # Find the intersection of DataFrame columns and aliases
@@ -278,10 +272,16 @@ class BaseDataset(Dataset):
             
             if matched_columns:
                 # Update the alias map with only the matched columns
-                updated_alias_map[key] = matched_columns[0]  # This assumes that there is only one matched column
+                available_alias_map[key] = matched_columns[0]  # This assumes that there is only one matched column
             else:
                 # Record the key if no matched column is found
                 not_available_columns.append(key)
+
+        # # Read dataset and concept_data_dir fom config file in data_dir
+        # with open(self.cfg.data_dir / 'config.yml', 'r') as file:
+        #     m0_cfg = yaml.safe_load(file)
+        #     dataset = m0_cfg['dataset']
+        #     concept_data_dir = m0_cfg['concept_data_dir']
 
         if not_available_columns:
             msg = [
@@ -292,10 +292,10 @@ class BaseDataset(Dataset):
             raise KeyError("".join(msg))
         
         # Create the alias map with the matched columns (inverted)
-        self.alias_map_clean = {v: k for k, v in updated_alias_map.items()}
+        self.alias_map_clean = {v: k for k, v in available_alias_map.items()}
 
         # Filter the DataFrame to keep only the matched columns
-        df = df[list(updated_alias_map.values())]
+        df = df[list(available_alias_map.values())]
         
         return df
 

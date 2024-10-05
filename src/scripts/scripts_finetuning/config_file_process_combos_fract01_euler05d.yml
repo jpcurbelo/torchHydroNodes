@@ -2,7 +2,7 @@ main_folder: .
 
 run_folders:
   ## Folder name: label
-  bash_mlp_mlp_euler05d_finetune_240924_113218: "Euler 0.5d"
+  bash_mlp_euler05d_finetune_240924_113218: "Euler 0.5d"
 
 periods:
   - train

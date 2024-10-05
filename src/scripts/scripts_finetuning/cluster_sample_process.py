@@ -24,10 +24,12 @@ from src.utils.plots import (
 # COMBO_FILE = Path('config_file_process_combos_fract01.yml')
 # COMBO_FILE = Path('config_file_process_combos_fract02.yml')
 # COMBO_FILE = Path('config_file_process_combos_fract01_euler05d.yml')
-COMBO_FILE = Path('config_file_process_combos_fract01_seeds.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract01_seeds.yml')
+COMBO_FILE = Path('config_file_process_combos_fract01_seeds_lr_inp.yml')
 
 ONLY_PLOT = 1   # True or False
 SEEDS_RUN = 1   # True or False
+PLOT_INTERACTIVE = 0   # True or False
 
 
 def load_combinations(file_path):
@@ -190,6 +192,142 @@ def load_metrics_period(basin_folder, period):
 def get_combination_number(folder_name):
     match = re.search(r'run_combination(\d+)$', folder_name)
     return int(match.group(1)) if match else float('inf')
+
+def create_plotly_interactive(df, metric, period, main_folder):
+    # Create an interactive scatter plot
+    fig = px.scatter(
+        df,
+        x='time',
+        y='memory',
+        size='size',  # Circle sizes based on the metric
+        color='folder',  # Color based on folder, now ordered by average metric
+        hover_data=['folder', 'metric'],  # Display folder and metric on hover
+        labels={
+            'time': 'Mean Time per Epoch (s)',
+            'memory': 'Mean Memory Peak (MB)',
+            'metric': f'{metric.upper()} (Median Value)',
+            'folder': 'ODE Solver'
+        },
+        title=f'Time vs Memory (circle size = {metric.upper()}, period = {period})'
+    )
+
+    # Set the y-axis to log scale for memory
+    fig.update_layout(yaxis_type="log")
+
+    # Sort legend by folder based on the calculated average metric
+    fig.update_traces(marker=dict(line=dict(width=1, color='black')))  # Optional: Add black border around the circles
+    fig.update_layout(legend_title_text=f"ODE Solver (sorted by avg {metric.upper()})")
+
+    # Save and show the interactive plot
+    fig.write_html(Path(main_folder) / f'performance_{metric}_{period}.html')
+    fig.show()
+
+def create_scatter_plot(times, memories, metric_data, metric, period, combo_labels, cmap, main_folder, sizes, topN, number_of_basins):
+    
+    plt.figure(figsize=(12, 6))
+
+    # Create scatter plot
+    scatter = plt.scatter(times, memories, 
+                          s=sizes,  # Normalized size of the points
+                          c=metric_data,  # Color of the points
+                          cmap=cmap,  # Colormap for the points
+                          alpha=1.0,  # Transparency of the points
+                          edgecolors='black',  # Border color
+                          linewidths=1)  # Border width
+
+    # Add color bar for the metric
+    cbar = plt.colorbar(scatter)
+    cbar.set_label(f'${metric.upper()}$ (median value)', fontsize=12)
+    cbar.ax.tick_params(labelsize=12)
+
+    # Add labels and title
+    plt.xlabel('Mean Time per Epoch ($s$)', fontsize=12)
+    plt.ylabel('Mean Memory Peak ($MB$)', fontsize=12)
+    plt.title(f'Time vs Memory (circle size = ${metric.upper()}$, period = {period})', fontsize=14)
+
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    # Highlight the top N results
+    top_N_indices = sorted(range(len(metric_data)), key=lambda i: metric_data[i], reverse=True)[:topN]
+    legend_circles = []
+    top_N_labels = []
+    for idx, rank in zip(top_N_indices, range(1, topN + 1)):
+        font_size = sizes[idx] / 30
+        plt.text(times[idx], memories[idx], str(rank), fontsize=font_size, ha='center', va='center', color='black', fontweight='bold')
+
+        circle = Line2D([0], [0], marker='o', color='w',
+                        markerfacecolor=cmap(metric_data[idx] / max(metric_data)),
+                        markersize=10, markeredgewidth=1.5, markeredgecolor='black')
+        legend_circles.append(circle)
+        top_N_labels.append(f"{rank}-{combo_labels[idx]} | ${metric.upper()}$ = {metric_data[idx]:.3f}")
+
+    # Add legend
+    legend = plt.legend(legend_circles, top_N_labels, fontsize=9, loc='upper left', bbox_to_anchor=(1.2, 1.0))
+    legend.set_title(f"Subsampled basins: {number_of_basins}", prop={'size': 9, 'weight': 'bold'})
+
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.savefig(Path(main_folder) / f'performance_{metric}_{period}.png', bbox_inches='tight', dpi=150)
+    plt.close()
+
+def process_data(metric, metric_values, times, memories, combo_labels, collect_seeds_results, main_folder, period, topN, number_of_basins):
+    metric_data = metric_values[metric]
+    
+    # Filter out None and NaN values
+    if collect_seeds_results:
+        valid_data = [(t, m, n, label) for t, m, n, label in zip(times, memories, metric_data, combo_labels) if not pd.isna(n)]
+    else:
+        valid_data = [(t, m, n) for t, m, n in zip(times, memories, metric_data) if not pd.isna(n)]
+    
+    if not valid_data:
+        print(f"No valid data for {metric} in period {period}. Skipping plot.")
+        return
+    
+    if collect_seeds_results:
+        times_filtered, memories_filtered, filtered_metric_data, filtered_labels = zip(*valid_data)
+        # Folder-based processing for interactive and sorting
+        folder_metrics = {}
+        for t, m, n, label in valid_data:
+            folder = label.split('/')[0]
+            if folder not in folder_metrics:
+                folder_metrics[folder] = []
+            folder_metrics[folder].append(n)
+
+        folder_avg_metric = {folder: np.mean(values) for folder, values in folder_metrics.items()}
+        sorted_folders = sorted(folder_avg_metric, key=folder_avg_metric.get, reverse=True)
+
+        # Prepare data for Plotly
+        label_to_color = {label: idx for idx, label in enumerate(sorted_folders)}
+        cmap = plt.cm.get_cmap('tab20', len(sorted_folders))  # Example colormap
+        
+        size_normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
+        sizes = [50 + (500 - 50) * size_normalize(n) for n in filtered_metric_data]
+
+        data = {
+            'time': times_filtered,
+            'memory': memories_filtered,
+            'metric': filtered_metric_data,
+            'folder': [label.split('/')[0] for label in filtered_labels],
+            'size': sizes
+        }
+        df = pd.DataFrame(data)
+        folder_avg_metric = df.groupby('folder')['metric'].mean().sort_values(ascending=False)
+        df['folder'] = pd.Categorical(df['folder'], categories=folder_avg_metric.index, ordered=True)
+        df = df.sort_values('folder')
+        
+        create_plotly_interactive(df, metric, period, main_folder)
+    else:
+        times_filtered, memories_filtered, filtered_metric_data = zip(*valid_data)
+        cmap = plt.cm.oslo  # Choose any colormap from cmcrameri
+        size_normalize = mcolors.Normalize(vmin=min(filtered_metric_data), vmax=max(filtered_metric_data))
+        sizes = [50 + (500 - 50) * size_normalize(n) for n in filtered_metric_data]
+        
+        create_scatter_plot(times_filtered, memories_filtered, filtered_metric_data, metric, period, combo_labels, cmap, main_folder, sizes, topN, number_of_basins)
+
+
+
+
 
 def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'], periods=['valid'], 
                              threshold_dict=None, topN=5, collect_seeds_results=False):
@@ -459,56 +597,61 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                 # Close the plot to avoid memory issues
                 plt.close()
 
-                # Prepare your data in a DataFrame to work with Plotly
-                data = {
-                    'time': times_filtered,  # Mean time per epoch
-                    'memory': memories_filtered,  # Mean memory peak
-                    'metric': filtered_metric_data,  # The metric you're plotting (e.g., NSE)
-                    'folder': [label.split('/')[0] for label in filtered_labels],  # Extract folder name (before '/comboX')
-                    'size': sizes  # Circle sizes based on metric
-                }
+                if PLOT_INTERACTIVE:
+                    # Prepare your data in a DataFrame to work with Plotly
+                    data = {
+                        'time': times_filtered,  # Mean time per epoch
+                        'memory': memories_filtered,  # Mean memory peak
+                        'metric': filtered_metric_data,  # The metric you're plotting (e.g., NSE)
+                        'folder': [label.split('/')[0] for label in filtered_labels],  # Extract folder name (before '/comboX')
+                        'size': sizes  # Circle sizes based on metric
+                    }
 
-                df = pd.DataFrame(data)
+                    df = pd.DataFrame(data)
 
-                # Calculate the average metric value for each folder
-                folder_avg_metric = df.groupby('folder')['metric'].mean().sort_values(ascending=False)
+                    # Calculate the average metric value for each folder
+                    folder_avg_metric = df.groupby('folder')['metric'].mean().sort_values(ascending=False)
 
-                # Reorder the DataFrame based on the sorted folders
-                df['folder'] = pd.Categorical(df['folder'], categories=folder_avg_metric.index, ordered=True)
-                df = df.sort_values('folder')
+                    # Reorder the DataFrame based on the sorted folders
+                    df['folder'] = pd.Categorical(df['folder'], categories=folder_avg_metric.index, ordered=True)
+                    df = df.sort_values('folder')
 
-                # Create an interactive scatter plot
-                fig = px.scatter(
-                    df,
-                    x='time',
-                    y='memory',
-                    size='size',  # Circle sizes based on the metric
-                    color='folder',  # Color based on folder, now ordered by average metric
-                    hover_data=['folder', 'metric'],  # Display folder and metric on hover
-                    labels={
-                        'time': 'Mean Time per Epoch (s)',
-                        'memory': 'Mean Memory Peak (MB)',
-                        'metric': f'{metric.upper()} (Median Value)',
-                        'folder': 'ODE Solver'
-                    },
-                    title=f'Time vs Memory (circle size = {metric.upper()}, period = {period})'
-                )
+                    # Create an interactive scatter plot
+                    fig = px.scatter(
+                        df,
+                        x='time',
+                        y='memory',
+                        size='size',  # Circle sizes based on the metric
+                        color='folder',  # Color based on folder, now ordered by average metric
+                        hover_data=['folder', 'metric'],  # Display folder and metric on hover
+                        labels={
+                            'time': 'Mean Time per Epoch (s)',
+                            'memory': 'Mean Memory Peak (MB)',
+                            'metric': f'{metric.upper()} (Median Value)',
+                            'folder': 'ODE Solver'
+                        },
+                        title=f'Time vs Memory (circle size = {metric.upper()}, period = {period})'
+                    )
 
-                # Set the y-axis to log scale for memory, as in your original plot
-                fig.update_layout(yaxis_type="log")
+                    # Set the y-axis to log scale for memory, as in your original plot
+                    fig.update_layout(yaxis_type="log")
 
-                # Sort legend by folder based on the calculated average metric
-                fig.update_traces(marker=dict(line=dict(width=1, color='black')))  # Optional: Add black border around the circles
-                fig.update_layout(legend_title_text=f"ODE Solver (sorted by avg {metric.upper()})")
+                    # Sort legend by folder based on the calculated average metric
+                    fig.update_traces(marker=dict(line=dict(width=1, color='black')))  # Optional: Add black border around the circles
+                    fig.update_layout(legend_title_text=f"ODE Solver (sorted by avg {metric.upper()})")
 
-                # Show the interactive plot
-                fig.show()
+                    # Show the interactive plot
+                    fig.show()
 
-                # Optionally, save the plot as an HTML file
-                fig.write_html(Path(main_folder) / f'performance_{metric}_{period}.html')
+                    # Optionally, save the plot as an HTML file
+                    # Check if exists and delete if so
+                    if (Path(main_folder) / f'performance_{metric}_{period}.html').exists():
+                        (Path(main_folder) / f'performance_{metric}_{period}.html').unlink()
+                    fig.write_html(Path(main_folder) / f'performance_{metric}_{period}.html')
 
 
-
+        # for metric in run_metrics:
+        #     process_data(metric, metric_values, times, memories, combo_labels, collect_seeds_results, main_folder, period, topN, number_of_basins)
 
             # Optional: Plot error bars for seeds data
             if collect_seeds_results:
@@ -518,6 +661,7 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                 combo_means = []
                 combo_stds = []
                 combo_mins = []  # To store minimum values for dashed lines
+                combo_maxs = []  # To store maximum values for dashed lines
                 combo_labels_sorted = []
                 seeds_count = []
 
@@ -526,23 +670,28 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                         combo_means.append(np.mean(seed_values))
                         combo_stds.append(np.std(seed_values))  # Or use other variability measures
                         combo_mins.append(np.min(seed_values))  # Collect minimum value across seeds
+                        combo_maxs.append(np.max(seed_values))  # Collect maximum value across seeds
                         combo_labels_sorted.append(combo_label)
                         seeds_count.append(len(seed_values))  # Collect the number of seeds for each combo
 
                 # Sort by decreasing mean
                 sorted_indices = np.argsort(combo_means)[::-1]
                 combo_means = np.array(combo_means)[sorted_indices]
-                combo_stds = np.array(combo_stds)[sorted_indices]
-                combo_mins = np.array(combo_mins)[sorted_indices]  # Sort minimum values accordingly
+                combo_stds = np.array(combo_stds)[sorted_indices]  # Re-index based on the sorted combo_means, not sorted themselves
+                combo_mins = np.array(combo_mins)[sorted_indices]  # Re-index based on sorted combo_means, not sorted themselves
+                combo_maxs = np.array(combo_maxs)[sorted_indices]  # Re-index based on sorted combo_means, not sorted themselves
                 combo_labels_sorted = np.array(combo_labels_sorted)[sorted_indices]
+                seeds_count = np.array(seeds_count)[sorted_indices]  # Re-index seed counts
 
                 # Create a bar plot with error bars
-                plt.bar(combo_labels_sorted, combo_means, yerr=combo_stds, capsize=5, alpha=0.75)
+                bars = plt.bar(combo_labels_sorted, combo_means, yerr=combo_stds, capsize=5, alpha=0.75)
 
                 # Draw dashed lines for minimum values
                 for i in range(len(combo_means)):
                     min_value = combo_mins[i]
+                    max_value = combo_maxs[i]
                     plt.hlines(min_value, i - 0.4, i + 0.4, colors='red', linestyles='dashed', linewidth=2)
+                    plt.hlines(max_value, i - 0.4, i + 0.4, colors='green', linestyles='dashed', linewidth=2)
 
                 # Angle x-labels and adjust font size
                 plt.xticks(rotation=45, fontsize=9)
@@ -554,6 +703,15 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
 
                 # Adjust the scale to highlight std deviations better
                 plt.ylim([max(0, min(combo_means) - 2*max(combo_stds)), max(combo_means) + 1.2*max(combo_stds)])
+
+                # Annotate the number of seeds above the error bars
+                for i, (bar, seed_count) in enumerate(zip(bars, seeds_count)):
+                    # Get the top of the error bar (mean + std) and position the text slightly above it
+                    plt.text(bar.get_x() + bar.get_width() / 2, 
+                            # combo_means[i] + combo_stds[i] + 0.002,  # Position slightly above the error bar (adjust 0.02 for padding)
+                            max(0, min(combo_means) - 2*max(combo_stds)) + 0.002,
+                            f'{seed_count} seeds', 
+                            ha='center', va='bottom', fontsize=9, color='black')
 
                 plt.tight_layout()
 

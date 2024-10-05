@@ -1,20 +1,27 @@
 import os
 import numpy as np
-from scipy.interpolate import Akima1DInterpolator, CubicSpline
 from scipy.integrate import solve_ivp as sp_solve_ivp
-from scipy.integrate import odeint
 import xarray
-from pathlib import Path
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 import torch
+## https://github.com/rtqichen/torchdiffeq/tree/master
+import torchdiffeq
+import sys
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.utils.load_process_data import (
     Config,
     ExpHydroCommon,
 )
+
+import yaml
+from pathlib import Path
+# Make sure code directory is in path,
+# Add the parent directory of your project to the Python path
+project_dir = str(Path(__file__).resolve().parent.parent.parent)
+sys.path.append(project_dir)
+
+FIXED_METHODS = ['euler', 'rk4', 'midpoint']
 
 class EulerResult:
     def __init__(self, t, y):
@@ -44,7 +51,11 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
 
         self.eps = torch.finfo(cfg.precision['torch']).eps
         
-    def conceptual_model(self, t, y, f, smax, qmax, df, tmax, tmin):
+    def conceptual_model(self, t, y):
+
+        # # Flush time
+        # sys.stdout.write(f"t \r{t}")
+        # sys.stdout.flush()
         
         # Bucket parameters                   
         # f: Rate of decline in flow from catchment bucket   
@@ -53,7 +64,13 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Df: Thermal degree‐day factor                   
         # Tmax: Temperature above which snow starts melting 
         # Tmin: Temperature below which precipitation is snow
-         
+        f = self.params['f']
+        smax = self.params['smax']
+        qmax = self.params['qmax']
+        df = self.params['df']
+        tmax = self.params['tmax']
+        tmin = self.params['tmin']
+
         ## Unpack the state variables
         # S0: Storage state S_snow (t)                       
         # S1: Storage state S_water (t)   
@@ -61,9 +78,9 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         s1 = y[1]
 
         # Interpolate the input variables
-        precp = self.precp_interp(t, )
-        temp = self.temp_interp(t, )
-        lday = self.lday_interp(t, )
+        precp = self.precp_interp(t, extrapolate='periodic')
+        temp = self.temp_interp(t, extrapolate='periodic')
+        lday = self.lday_interp(t, extrapolate='periodic')
 
         # Compute and substitute the 5 mechanistic processes
         q_out = Qb(s1, f, smax, qmax, self.step_function) + Qs(s1, smax, self.step_function)
@@ -74,7 +91,10 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = Pr(precp, temp, tmin, self.step_function) + m_out - ET(s1, temp, lday, smax, self.step_function) - q_out
 
-        return [ds0_dt, ds1_dt]
+        if self.ode_solver_lib == 'scipy':
+            return [ds0_dt, ds1_dt]
+        elif self.ode_solver_lib == 'torchdiffeq':
+            return torch.stack([ds0_dt, ds1_dt])
            
     def step_function(self, x):
         '''
@@ -96,10 +116,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         self.precp_interp = self.interpolators[basin]['prcp']
         self.temp_interp = self.interpolators[basin]['tmean']
         self.lday_interp = self.interpolators[basin]['dayl']
-        # self.precp_interp = self.interpolators['prcp']
-        # self.temp_interp = self.interpolators['tmean']
-        # self.lday_interp = self.interpolators['dayl']
-        
+
         # Get input variables for the basin
         self.precp_basin = self.precp.sel(basin=basin).values
         self.temp_basin = self.temp.sel(basin=basin).values
@@ -108,48 +125,86 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Set the initial conditions
         y0 = np.array([basin_params[0], basin_params[1]])
         
-        # Set the parameters
-        params = tuple(basin_params[2:])
+        # Set the parameters as class attributes to avoid passing them in `args`
+        self.params = {
+            'f': basin_params[2],
+            'smax': basin_params[3],
+            'qmax': basin_params[4],
+            'df': basin_params[5],
+            'tmax': basin_params[6],
+            'tmin': basin_params[7]
+        }
 
-        # print('params:', params)
-        # print('y0:', y0)
-        # print('t_span:', (self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1))
-        # print('t_eval:', self.time_series)
-        # print('method:', self.odesmethod)
+        if self.ode_solver_lib == 'scipy':
+            # Run the model
+            if self.odesmethod.lower() in ['euler', 'rk2', 'rk4']:           
+                # Use the desired method: "euler", "rk2", or "rk4"
+                y = self.solve_ivp_custom(
+                    self.conceptual_model, 
+                    t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), 
+                    y0=y0, 
+                    t_eval=self.time_series, 
+                    method="rk4"  # Change this to "euler", "rk2", or "rk4" as needed
+                )
+            else:
+                # Use the scipy's solve_ivp method with the desired method
+                y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
+                                method=self.odesmethod,
+                                # method='LSODA',
+                                #  method='DOP853',
+                                # rtol=1e-3, atol=1e-3,
+                                rtol=self.rtol, atol=self.atol,
+                            )
+        elif self.ode_solver_lib == 'torchdiffeq':
+            # Run the model
+            # Define rtol and atol
+            # Higher rtol and atol values will make the ODE solver faster but less accurate
+            if self.odesmethod in ['euler', 'rk4', 'midpoint']:
+                rtol = 1e-3
+                atol = 1e-3
+            elif self.odesmethod in ['bosh3']:
+                rtol = 1e-4
+                atol = 1e-6
+            elif self.odesmethod in ['dopri5', 'fehlberg2', 'dopri8', 'adaptive_heun', 'heun3']:
+                rtol = 1e-3
+                atol = 1e-6
+            elif self.odesmethod in ['explicit_adams', 'implicit_adams', 'fixed_adams']:
+                rtol = 1e-6
+                atol = 1e-9
+            elif self.odesmethod in ['scipy_solver']:
+                rtol = 1e-4
+                atol = 1e-6
+                solver = self.scipy_solver
 
-        # aux = input("Press Enter to continue...")
+            # Set the options for the ODE solver
+            if self.odesmethod in FIXED_METHODS:
+                options = {"step_size": self.time_step, "interp": "cubic"}
+            elif self.odesmethod == 'scipy_solver':
+                options = {"solver": solver}
+            else:
+                options = {}
 
-        # Run the model
-        # print('ode method1:', self.odesmethod )
-        if self.odesmethod.lower() in ['euler', 'rk2', 'rk4']:           
-            # Use the desired method: "euler", "rk2", or "rk4"
-            y = self.solve_ivp_custom(
-                self.conceptual_model, 
-                t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), 
-                y0=y0, 
-                t_eval=self.time_series, 
-                args=params,
-                method="rk4"  # Change this to "euler", "rk2", or "rk4" as needed
-            )
-        else:
-            # Use the scipy's solve_ivp method with the desired method
-            y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
-                            args=params, 
-                            method=self.odesmethod,
-                            # method='LSODA',
-                            #  method='DOP853',
-                            # rtol=1e-3, atol=1e-3,
-                            rtol=1e-3, atol=1e-6,
-                        )
+            ode_solver = torchdiffeq.odeint
+
+            # Set the initial conditions to  torch.Tensor
+            y0 = torch.tensor(y0, dtype=self.cfg.precision['torch'])
+
+            # Set time series to torch.Tensor
+            self.time_series = torch.tensor(self.time_series, dtype=self.cfg.precision['torch'])
+
+            y = ode_solver(self.conceptual_model, y0=y0, t=self.time_series, method=self.odesmethod, 
+                           rtol=self.rtol, atol=self.atol, options=options)
         
         # Extract snow and water series -> two state variables representing buckets for snow and water Hoge_EtAl_HESS_2022
-        s_snow = y.y[0]
-        s_water = y.y[1]
-        # s_snow = np.maximum(s_snow, 0)
-        # s_water = np.maximum(s_water, 0)
+        if self.ode_solver_lib == 'scipy':
+            s_snow = y.y[0]
+            s_water = y.y[1]
+        elif self.ode_solver_lib == 'torchdiffeq':
+            s_snow = y[:, 0].detach().cpu().numpy()
+            s_water = y[:, 1].detach().cpu().numpy()
 
         # Unpack the parameters to call the mechanistic processes
-        f, smax, qmax, df, tmax, tmin = params
+        f, smax, qmax, df, tmax, tmin = self.params.values()
         
         # Calculate the mechanistic processes -> q_bucket, et_bucket, m_bucket, ps_bucket, pr_bucket
         # Discharge
@@ -183,7 +238,20 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             period: str, period of the run ('train', 'test', 'valid').
             
         '''
+
+        # Load the variables for the concept model
+        input_vars, output_vars = self.cfg._load_concept_model_vars(self.cfg.concept_model)
+
+        # Open and read the 'variable_aliases.yml' file
+        with open(Path(project_dir) / 'src' / 'utils' / 'variable_aliases.yml', 'r') as file:
+            aliases = yaml.safe_load(file)
+
+        alias_map = {}
+        for col in input_vars + output_vars:
+            if col in aliases:
+                alias_map[col] = aliases[col]
         
+        # Dynamically construct the results_dict using input_vars and the longest alias for each variable
         results_dict = {
             'date': ds['date'],
             's_snow': results[0],
@@ -192,13 +260,26 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             'm_bucket': results[3],
             'ps_bucket': results[4],
             'pr_bucket': results[5],
-            'prcp(mm/day)': ds['prcp'],
-            'tmean(c)': ds['tmean'],
-            'dayl(s)': ds['dayl'],     
-            # the last element is the target variable (q_obs)       
-            'q_bucket': results[-1],
-            'q_obs': ds['obs_runoff'],
         }
+
+        # Add the dynamically generated keys and values for input variables
+        for var in input_vars:
+            alias = alias_map.get(var, var)  # Use the longest alias if available, otherwise fallback to var name
+            # If alias is a list, then pick the longest alias
+            if isinstance(alias, list):
+                alias = max(alias, key=len)
+            results_dict[alias] = ds[var]
+
+        # Add the target variable (output_vars) to the results_dict
+        # Assuming the target variable is 'q_obs' and is stored in the last position of the results tuple
+        results_dict['q_bucket'] = results[-1]
+        for var in output_vars:
+            alias = alias_map.get(var, var)  # Use the longest alias if available, otherwise fallback to var name
+            # If alias is a list, then pick the longest alias
+            if isinstance(alias, list):
+                alias = max(alias, key=len)
+            results_dict[alias] = ds[var]
+            # results_dict[var] = ds[var]
         
         # Create a DataFrame from the results dictionary
         results_df = pd.DataFrame(results_dict)
@@ -233,6 +314,12 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                     
             # Load the last states of the model in the previous period
             previous_results_file = os.path.join(self.cfg.results_dir, f'{basin}_results_{previous_period}.csv')
+
+            # Check if the file exists
+            if not os.path.exists(previous_results_file):
+                print(f'File {previous_results_file} does not exist.')
+                return
+            
             previous_results = pd.read_csv(previous_results_file)
             
             # Get the last states of the model in the previous period
@@ -242,10 +329,8 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             self.params_dict[basin][0] = previous_states[0]
             self.params_dict[basin][1] = previous_states[1]
 
-            # Update self.time_series
-
     @staticmethod
-    def solve_ivp_custom(fun, t_span, y0, t_eval=None, args=(), method="euler"):
+    def solve_ivp_custom(fun, t_span, y0, t_eval=None, method="euler"):
         """
         Solve an initial value problem (IVP) for a system of ODEs using Euler, RK2, or RK4 method.
         
@@ -258,8 +343,6 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             Initial state.
         - t_eval: array_like or None, shape (m,), optional
             Times at which to store the computed solution. If None (default), use solver's own time steps.
-        - args: tuple, optional
-            Extra arguments to pass to the user-defined function.
         - method: str, optional
             The integration method to use: "euler", "rk2", or "rk4". Default is "euler".
         
@@ -279,23 +362,23 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         if method == "euler":
             for i in range(1, len(t_eval)):
                 dt = t_eval[i] - t_eval[i - 1]
-                dydt = fun(t_eval[i - 1], y[i - 1], *args)
+                dydt = fun(t_eval[i - 1], y[i - 1])
                 y[i] = y[i - 1] + dt * np.array(dydt)
         
         elif method == "rk2":
             for i in range(1, len(t_eval)):
                 dt = t_eval[i] - t_eval[i - 1]
-                k1 = np.array(fun(t_eval[i - 1], y[i - 1], *args))
-                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1, *args))
+                k1 = np.array(fun(t_eval[i - 1], y[i - 1]))
+                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1))
                 y[i] = y[i - 1] + dt * k2
 
         elif method == "rk4":
             for i in range(1, len(t_eval)):
                 dt = t_eval[i] - t_eval[i - 1]
-                k1 = np.array(fun(t_eval[i - 1], y[i - 1], *args))
-                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1, *args))
-                k3 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k2, *args))
-                k4 = np.array(fun(t_eval[i - 1] + dt, y[i - 1] + dt * k3, *args))
+                k1 = np.array(fun(t_eval[i - 1], y[i - 1]))
+                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1))
+                k3 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k2))
+                k4 = np.array(fun(t_eval[i - 1] + dt, y[i - 1] + dt * k3))
                 y[i] = y[i - 1] + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
         else:
