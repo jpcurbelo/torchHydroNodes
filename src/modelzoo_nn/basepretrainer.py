@@ -61,7 +61,7 @@ class NNpretrainer(ExpHydroCommon):
 
         # Epochs
         if hasattr(self.cfg, 'epochs'):
-            self.epochs = self.cfg.epochs
+            self.epochs = self.cfg.epochs_pretrain
         else:
             self.epochs = 100
 
@@ -79,7 +79,6 @@ class NNpretrainer(ExpHydroCommon):
 
         # Input/output variables
         self.input_var_names = self.cfg.nn_dynamic_inputs #+ ['dayl']
-        # print('self.input_var_names:', self.input_var_names)
         self.output_var_names = self.cfg.nn_mech_targets
         self.target = self.cfg.target_variables[0]
 
@@ -92,7 +91,7 @@ class NNpretrainer(ExpHydroCommon):
         self.num_batches = len(self.dataloader)
 
         # Optimizer and scheduler
-        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler()
+        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler(self.epochs, lr_name='lr_pretrain')
 
         # Loss function setup
         try:
@@ -119,7 +118,7 @@ class NNpretrainer(ExpHydroCommon):
         # print(f'batch_size_pretrain: {self.batch_size}')
         # print(f'epochs_pretrain: {self.epochs}')
 
-    def setup_optimizer_and_scheduler(self):
+    def setup_optimizer_and_scheduler(self, epochs, lr_name='learning_rate'):
         # Default to Adam optimizer if not specified
         optimizer_name = getattr(self.cfg, 'optimizer', 'Adam')
 
@@ -135,31 +134,43 @@ class NNpretrainer(ExpHydroCommon):
         else:
             raise NotImplementedError(f"Optimizer '{optimizer_name}' not found in torch.optim")
 
-        # Extract parameters for optimizer
-        optimizer_params = getattr(self.cfg, 'optimizer_params', {})
-        lr = optimizer_params.get('lr', 0.001)  # Default learning rate
+        # Extract learning rate from the configuration
+        lr = getattr(self.cfg, lr_name, 1e-3)
 
-        # Create the optimizer instance
-        optimizer = optimizer_class(self.nnmodel.parameters(), lr=lr, **optimizer_params)
+        if isinstance(lr, (float, int)):
+            # Create the optimizer instance
+            optimizer = optimizer_class(self.nnmodel.parameters(), lr=lr)
 
-        # Initialize the scheduler as None
-        scheduler = None
+            # Initialize the scheduler as None
+            scheduler = None
 
         # Configure scheduler if a learning rate schedule is specified
-        if isinstance(lr, dict):
+        elif isinstance(lr, dict):
+            # print('lr:', lr)
             if 'initial' in lr and 'decay' in lr and 'decay_step_fraction' in lr:
-                if lr['decay_step_fraction'] > self.epochs:
+                if lr['decay_step_fraction'] > epochs:
                     raise ValueError("'decay_step_fraction' cannot be greater than the number of epochs.")
                 
                 optimizer = optimizer_class(self.nnmodel.parameters(), lr=lr['initial'])
+
+                # Calculate the step size for the learning rate decay
+                step_size = epochs // lr['decay_step_fraction']
+                # print(f"Step size for learning rate decay: {step_size}")  # Debugging: Print the step size
+                
                 # Learning rate scheduler
                 scheduler = torch.optim.lr_scheduler.StepLR(
                     optimizer, 
-                    step_size=self.epochs // lr['decay_step_fraction'],
+                    step_size=step_size,
                     gamma=lr['decay']
                 )
             else:
                 raise ValueError("Learning rate config must have 'initial', 'decay', and 'decay_step_fraction' keys.")
+
+        # If lr is neither a float/int nor a dictionary, raise an error
+        else:
+            raise TypeError("Learning rate must be a float, int, or a dictionary with specific keys.")
+
+        # print(f"Optimizer: {optimizer_name} | Learning rate: {lr}")
 
         return optimizer, scheduler
 
@@ -296,6 +307,10 @@ class NNpretrainer(ExpHydroCommon):
                 inputs = inputs.to(self.device, non_blocking=True)
                 targets = targets.to(self.device, non_blocking=True)
 
+                # print('inputs:', inputs.shape)
+                # print('targets:', targets.shape)
+                # aux = input('Press Enter to continue...')
+
                 # Forward pass
                 if self.nnmodel.include_static:
                     predictions = self.nnmodel(inputs, basin_ids[0], 
@@ -384,7 +399,7 @@ class NNpretrainer(ExpHydroCommon):
             self.evaluate()
 
         # Reset optimizer and scheduler to the initial learning rate for the next training
-        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler()
+        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler(self.cfg.epochs, lr_name='learning_rate')
 
         return True
 

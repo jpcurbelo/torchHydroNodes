@@ -1146,7 +1146,17 @@ class ExpHydroCommon:
 
     @property
     def interpolator_vars(self):
-        return ['prcp', 'tmean', 'dayl']
+
+        # Load utils/concept_model_vars.yml
+        with open(script_dir / 'concept_model_vars.yml', 'r') as f:
+            model_vars = yaml.load(f, Loader=yaml.FullLoader)
+
+        # Load the variables for the concept model
+        var_inputs = model_vars[self.cfg.concept_model]['model_inputs']
+
+        # return self.pretrainer.input_var_names that are in var_inputs
+        return [var for var in self.pretrainer.input_var_names if var in var_inputs] + ['dayl']
+        # return ['prcp', 'tmean', 'dayl']
 
 
     # outputs = self.model.get_model_outputs(ds_basin, input_var_names, 

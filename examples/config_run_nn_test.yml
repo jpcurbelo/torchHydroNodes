@@ -8,14 +8,18 @@ nn_model: mlp
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010_RK23
+# data_dir: M0_results_569basins_1980_2010_RK23
+data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars_241004_104247
 # data_dir: M0_results_4basins_1980_2010_RK23
 
 nn_dynamic_inputs:
   - s_snow
   - s_water
   - prcp
-  - tmean
+  - tmin
+  - tmax
+  - srad
+  - vp
 
 nn_mech_targets:
   - ps_bucket
@@ -62,8 +66,8 @@ scale_target_vars: True
 # Files to specify training, validation and test basins
 # basin_file: 569_basin_file.txt
 # basin_file: 569_basin_file_hydronodes.txt
-# basin_file: 1_basin_file.txt
-basin_file: 1_basin_fileB.txt
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
 # basin_file: 4_basin_file.txt
 # basin_file: 25_basin_file.txt
 # n_first_basins: 100
@@ -72,15 +76,15 @@ basin_file: 1_basin_fileB.txt
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1980"
-train_end_date: "30/09/2000"
-valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
-
-# train_start_date: "01/10/1995"
+# train_start_date: "01/10/1980"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2005"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1995"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: mse
@@ -95,45 +99,43 @@ patience: 5
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 7304
-# batch_size: 256
-# batch_size: 256
+# batch_size: 7304
+batch_size: 256
 
-# Length of the input sequence
-seq_length: 270
+# # Length of the input sequence
+# seq_length: 270
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
-learning_rate:
-  initial: 0.001
-  decay: 0.5
-  decay_step_fraction: 4  # Decay step fraction (e.g., N-> 1/N of the total epochs
+learning_rate: 0.001
+# learning_rate:
+#   initial: 0.001
+#   decay: 0.5
+#   decay_step_fraction: 4  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
-  # - 32
-  # - 32
-  # - 32
-  # - 32
-  # - 32
+  - 32
+  - 32
+  - 32
 
-  - 128
+  # - 128
 
-  # Dropout rate for the NN model
-dropout: 0.4
+#   # Dropout rate for the NN model
+# dropout: 0.4
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 100_basins_pretrainer_run
 # experiment_name: ZZZZ1basin_pretrainer_lstm
 # experiment_name: ZZZZ4basin_pretrainer_mlp_static
-experiment_name: ZZZZ1basin_pretrainer_mlp_06431500
+# experiment_name: ZZZZ1basin_pretrainer_mlp_06431500
+experiment_name: __1basin_pretrainer_mlp_7vars
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111

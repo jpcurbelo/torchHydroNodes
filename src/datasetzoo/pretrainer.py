@@ -41,6 +41,7 @@ class Pretrainer(BaseDataset):
                     break
                 else:
                     df_period = pd.read_csv(file_path)
+                    # print(df_period)
                     df = pd.concat([df, df_period], axis=0)
 
             # Drop equal columns and sort by date

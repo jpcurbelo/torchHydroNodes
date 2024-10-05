@@ -63,6 +63,7 @@ class BaseHybridModelTrainer:
         # if self.model.cfg.verbose:
         print('-' * 60)
         print(f"-- Training the hybrid model on {self.device_to_train} --")
+        print(f'Initial learning rate: {self.model.optimizer.param_groups[0]["lr"]:.2e}')
         print('-' * 60)
 
         # # Save the model weights - Epoch 0
@@ -103,6 +104,10 @@ class BaseHybridModelTrainer:
                 # Transfer to device
                 inputs = inputs.to(self.device_to_train, non_blocking=True)
                 targets = targets.to(self.device_to_train, non_blocking=True) 
+
+                # print('inputs.shape:', inputs.shape)
+                # print(' self.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
+                # aux = input('Press Enter to continue...')
 
                 if self.model.cfg.carryover_state and not first_batch:
                     # Update the s_snow and s_water values for the current batch
@@ -231,6 +236,9 @@ class BaseHybridModelTrainer:
 
     ################################################# 
     def train_finetune(self, is_resume=False, max_nan_batches=5):
+        ''' 
+        Train the model with no (or minimal) logging and plotting just to profile and fine-tune the model.
+        ''' 
 
         # For performance tracking
         total_train_time = 0.0

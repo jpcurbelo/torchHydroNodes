@@ -25,6 +25,11 @@
 # graph_title: Conceptual model (exp-hydro) - RK23tol33
 
 
+results_folder: ../../../data/M0_results_569basins_1980_2010_RK23_tol33_7vars
+plots_folder: plots_conceptualRK23_tol33_7vars
+graph_title: Conceptual model (exp-hydro) - RK23_tol33
+
+
 
 
 # results_folder: ../../../data/M0_results_569basins_1980_2010_RK23_tol46_scipy
@@ -43,9 +48,9 @@
 # plots_folder: plots_conceptualRK45tol36_scipy
 # graph_title: Conceptual model (exp-hydro) - RK45_tol36_scipy
 
-results_folder: ../../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
-plots_folder: plots_conceptualEuler01d_torchdiffeq
-graph_title: Conceptual model (exp-hydro) - Euler01d_torchdiffeq
+# results_folder: ../../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
+# plots_folder: plots_conceptualEuler01d_torchdiffeq
+# graph_title: Conceptual model (exp-hydro) - Euler01d_torchdiffeq
 
 
 
