@@ -40,7 +40,10 @@ def _main():
 
     args = _get_args()
     
-    if args["model"] == "conceptual":
+    if args["model"] == "conceptual" and args["action"] == "calibrate":
+        print('-- Calibrating the model')
+        # run_calibrate_model(config_file=Path(args["config_file"]), gpu=args["cpu"])
+    elif args["model"] == "conceptual":
         run_conceptual_model(config_file=Path(args["config_file"]), gpu=args["gpu"])
     elif args["model"] == "pretrainer" and args["action"] == "train":
         pretrain_nn_model(config_file=Path(args["config_file"]), gpu=args["gpu"])
@@ -57,7 +60,7 @@ def _get_args() -> dict:
 
     parser.add_argument("model", type=str, choices=["conceptual", "pretrainer", "hybrid"],
                         help="Model to run")
-    parser.add_argument("--action", type=str, choices=["train", "evaluate", "resume_training"],
+    parser.add_argument("--action", type=str, choices=["train", "evaluate", "resume_training", "calibrate"],
                         default="train",
                         help="Action to perform")
     parser.add_argument('--config-file', type=str, default='config_run.yml', help='Path to the config file')
@@ -463,6 +466,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
     
 
 # Example usage:
+# python thn_run.py conceptual --action calibrate --config-file ../examples/config_run_calibrate.yml
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_test.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_mlp.yml

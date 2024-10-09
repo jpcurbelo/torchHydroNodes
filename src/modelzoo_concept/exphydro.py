@@ -7,6 +7,7 @@ import torch
 ## https://github.com/rtqichen/torchdiffeq/tree/master
 import torchdiffeq
 import sys
+from scipy.interpolate import Akima1DInterpolator
 
 from src.modelzoo_concept.basemodel import BaseConceptModel
 from src.utils.load_process_data import (
@@ -143,6 +144,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                     self.conceptual_model, 
                     t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), 
                     y0=y0, 
+                    step_size=self.time_step,
                     t_eval=self.time_series, 
                     method="rk4"  # Change this to "euler", "rk2", or "rk4" as needed
                 )
@@ -330,7 +332,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             self.params_dict[basin][1] = previous_states[1]
 
     @staticmethod
-    def solve_ivp_custom(fun, t_span, y0, t_eval=None, method="euler"):
+    def solve_ivp_custom(fun, t_span, y0, t_eval=None, method="euler", step_size=1.0):
         """
         Solve an initial value problem (IVP) for a system of ODEs using Euler, RK2, or RK4 method.
         
@@ -345,50 +347,66 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             Times at which to store the computed solution. If None (default), use solver's own time steps.
         - method: str, optional
             The integration method to use: "euler", "rk2", or "rk4". Default is "euler".
+        - step_size: float, optional
+            Step size for time stepping. Defaults to 1.0.
         
         Returns:
         - EulerResult object with attributes:
             - t: ndarray, shape (n_points,)
-              Time points.
+            Time points.
             - y: ndarray, shape (n, n_points)
-              Solution values at `t`, where each row corresponds to one of the state variables.
+            Solution values at `t`, where each row corresponds to one of the state variables.
         """
+
         if t_eval is None:
-            t_eval = np.linspace(t_span[0], t_span[1], 100)
+            t_eval = np.linspace(t_span[0], t_span[1], int(t_span[1] - t_span[0] + 1))
         
-        y = np.zeros((len(t_eval), len(y0)))
+        # Generate internal time points based on step_size
+        t_internal = np.arange(t_span[0], t_span[1] + step_size, step_size)
+        
+        # Initialize the solution array
+        y = np.zeros((len(t_internal), len(y0)))
         y[0] = y0
 
+        # Select the integration method
         if method == "euler":
-            for i in range(1, len(t_eval)):
-                dt = t_eval[i] - t_eval[i - 1]
-                dydt = fun(t_eval[i - 1], y[i - 1])
+            for i in range(1, len(t_internal)):
+                dt = t_internal[i] - t_internal[i - 1]
+                dydt = fun(t_internal[i - 1], y[i - 1])
                 y[i] = y[i - 1] + dt * np.array(dydt)
         
         elif method == "rk2":
-            for i in range(1, len(t_eval)):
-                dt = t_eval[i] - t_eval[i - 1]
-                k1 = np.array(fun(t_eval[i - 1], y[i - 1]))
-                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1))
+            for i in range(1, len(t_internal)):
+                dt = t_internal[i] - t_internal[i - 1]
+                k1 = np.array(fun(t_internal[i - 1], y[i - 1]))
+                k2 = np.array(fun(t_internal[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1))
                 y[i] = y[i - 1] + dt * k2
 
         elif method == "rk4":
-            for i in range(1, len(t_eval)):
-                dt = t_eval[i] - t_eval[i - 1]
-                k1 = np.array(fun(t_eval[i - 1], y[i - 1]))
-                k2 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1))
-                k3 = np.array(fun(t_eval[i - 1] + dt / 2, y[i - 1] + dt / 2 * k2))
-                k4 = np.array(fun(t_eval[i - 1] + dt, y[i - 1] + dt * k3))
+            for i in range(1, len(t_internal)):
+                dt = t_internal[i] - t_internal[i - 1]
+                k1 = np.array(fun(t_internal[i - 1], y[i - 1]))
+                k2 = np.array(fun(t_internal[i - 1] + dt / 2, y[i - 1] + dt / 2 * k1))
+                k3 = np.array(fun(t_internal[i - 1] + dt / 2, y[i - 1] + dt / 2 * k2))
+                k4 = np.array(fun(t_internal[i - 1] + dt, y[i - 1] + dt * k3))
                 y[i] = y[i - 1] + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
         else:
             raise ValueError(f"Unknown method '{method}'. Supported methods are 'euler', 'rk2', 'rk4'.")
 
         # Transpose the solution array to have each state variable in a row
-        y = y.T
+        y = y.T  # Shape (num_time_points, num_variables), transposing to (num_variables, num_time_points)
 
-        return EulerResult(t_eval, y)
+        # Interpolate each state variable independently
+        y_at_teval = np.zeros((y.shape[0], len(t_eval)))  # Initialize the output array
 
+        # For each state variable (each row in y), perform interpolation
+        for i in range(y.shape[0]):
+            interpolator = Akima1DInterpolator(t_internal, y[i])
+            y_at_teval[i] = interpolator(t_eval)  # Interpolate for this state variable at t_span
+
+        return EulerResult(np.array(t_span), y_at_teval)
+    
     @property
     def nn_outputs(self):
         return ['ps_bucket', 'pr_bucket', 'm_bucket', 'et_bucket', 'q_bucket']
@@ -396,8 +414,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
     @property
     def model_outputs(self):
         return ['s_snow', 's_water']
-
-        
+    
 ## Auxiliary functions
 # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
 Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \

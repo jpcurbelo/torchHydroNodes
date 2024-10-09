@@ -44,23 +44,13 @@ folders4cdf_dir:
     color: 'tab:pink'
     marker: null
     linestyle: ':'
-  - directory: ../../../data/M0_results_569basins_1980_2010_euler05d_custom
-    experiment: 'Euler | dt=0.5d | custom'
-    color: 'gray'
-    marker: null
-    linestyle: '--'
-  - directory: ../../../data/M0_results_569basins_1980_2010_euler01d_custom
-    experiment: 'Euler | dt=0.1d | custom'
+  - directory: ../../../data/M0_results_569basins_1980_2010_euler1d_custom
+    experiment: 'Euler | dt=1d | custom'
     color: 'olive'
     marker: null
     linestyle: '--'
   - directory: ../../../data/M0_results_569basins_1980_2010_rk4_1d_custom
     experiment: 'RK4 | dt=1d | custom'
     color: 'pink'
-    marker: null
-    linestyle: '--'
-  - directory: ../../../data/M0_results_569basins_1980_2010_rk4_05d_custom
-    experiment: 'RK4 | dt=0.5d | custom'
-    color: 'purple'
     marker: null
     linestyle: '--'
