@@ -181,6 +181,7 @@ class NNpretrainer(ExpHydroCommon):
         tensor_dict = {var: torch.tensor(self.dataset[var].values, dtype=self.dtype) for var in self.dataset.data_vars}
 
         # Create a list of input and output tensors based on the variable names
+        # If is_trainer is True, add the time index to the input variables to be used during the ODE solver
         if is_trainer:
             time_series = self.dataset['date'].values
             time_idx = torch.linspace(0, len(time_series) - 1, len(time_series), dtype=self.dtype)
@@ -198,6 +199,11 @@ class NNpretrainer(ExpHydroCommon):
         else:
             input_var_names = self.input_var_names
             output_var_names = self.output_var_names
+
+        # print('is_trainer:', is_trainer)
+        # print('input_var_names:', input_var_names)
+        # print('output_var_names:', output_var_names)
+        # aux = input('Press Enter to continue...')
         
         input_tensors = [tensor_dict[var] for var in input_var_names]
         output_tensors = [tensor_dict[var] for var in output_var_names]
@@ -309,7 +315,16 @@ class NNpretrainer(ExpHydroCommon):
 
                 # print('inputs:', inputs.shape)
                 # print('targets:', targets.shape)
-                # aux = input('Press Enter to continue...')
+                
+                # if epoch == 0 and num_batches_seen == 0:
+                #     print('self.input_var_names:', self.input_var_names)
+                #     print('inputs:', inputs.shape)
+                #     print(inputs[:3, :])
+                #     print(inputs[-3:, :])
+                #     print('targets:', targets.shape)
+                #     print(targets[:3, :])
+                #     print(targets[-3:, :])
+                #     aux = input('Press Enter to continue...')
 
                 # Forward pass
                 if self.nnmodel.include_static:

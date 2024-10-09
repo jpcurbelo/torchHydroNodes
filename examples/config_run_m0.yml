@@ -10,8 +10,8 @@ forcings:
   - daymet
 
 # Files to specify training, validation and test basins
-# basin_file: 569_basin_file.txt
-basin_file: 4_basin_file.txt
+basin_file: 569_basin_file.txt
+# basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
@@ -23,20 +23,23 @@ ode_solver_lib: scipy
 # Method to solve the ODEs (using solve_ivp from scipy.integrate)
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 # Options: RK45, RK23, DOP853, Radau, BDF, LSODA
-odesmethod: RK23
-rtol: 1e-3
-atol: 1e-3
+odesmethod: RK45
+rtol: 1e-9
+atol: 1e-12
+# odesmethod: rk4
+# time_step: 0.5
 
-# # ode_solver_lib: torchdiffeq
-# # # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
-# # # https://github.com/rtqichen/torchdiffeq/blob/master/README.md
-# # # odesmethod: bosh3
-# # # rtol: 1e-3
-# # # atol: 1e-3
 
-# # # odesmethod: dopri5
-# # # rtol: 1e-6
-# # # atol: 1e-9
+# ode_solver_lib: torchdiffeq
+# # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+# # https://github.com/rtqichen/torchdiffeq/blob/master/README.md
+# # odesmethod: bosh3
+# # rtol: 1e-4
+# # atol: 1e-6
+
+# odesmethod: dopri5
+# rtol: 1e-6
+# atol: 1e-9
 
 # # # odesmethod: rk4
 # # # time_step: 1.0
@@ -89,10 +92,20 @@ metrics:
 # experiment_name: ____M0_results_569basins_1980_2010_RK23_tol33_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK45_tol69_torchdiffeq
 # experiment_name: ____M0_results_569basins_1980_2010_RK23_tol46_scipy
-experiment_name: __M0_results_4basins_1980_2010_RK23_tol33_7vars
+# experiment_name: __M0_results_4basins_1980_2010_RK23_tol33_7vars
+# experiment_name: M0_results_569basins_1980_2010_RK23_tol33_7vars
 # experiment_name: M0_results_569basins_1980_2010_RK23_tol33_7vars
 # experiment_name: M0_results_569basins_1980_2010_RK45_tol46_7vars
-
+# experiment_name: M0_results_569basins_1980_2010_RK45_tol69_7vars
+experiment_name: M0_results_569basins_1980_2010_RK45_tol912_7vars
+# experiment_name: M0_results_569basins_1980_2010_DOP853_tol69_7vars
+# experiment_name: M0_results_569basins_1980_2010_bosh3_tol33_torchdiffeq
+# experiment_name: M0_results_569basins_1980_2010_bosh3_tol46_torchdiffeq
+# experiment_name: M0_results_569basins_1980_2010_dopr5_tol69_torchdiffeq
+# experiment_name: M0_results_569basins_1980_2010_euler05d_custom
+# experiment_name: M0_results_569basins_1980_2010_euler01d_custom
+# experiment_name: M0_results_569basins_1980_2010_rk4_1d_custom
+# experiment_name: M0_results_569basins_1980_2010_rk4_05d_custom
 
 
 

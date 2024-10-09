@@ -474,8 +474,10 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_mlp.yml
-# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_mlp_7dynamic.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_mlp_8dynamic.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_lstm_8inputs.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_lstm.yml
+# python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid1basin_test_lstm_8dynamic.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_mlp.yml
 # python thn_run.py hybrid --action train --config-file ../examples/config_run_hybrid4basins_lstm.yml

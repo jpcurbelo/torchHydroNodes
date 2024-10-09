@@ -374,11 +374,11 @@ def plot_metric_map_period(metrics_path, periods, metrics, threshold_dict,
 
         metric_file_path = metrics_path / f'metrics_{period}.csv'
 
-        # Check if the file exists and is not empty
-        if metric_file_path.exists() and metric_file_path.stat().st_size <= 1:
-            metric_file_path.unlink()  # Deletes the file
-            print(f"Deleted empty file: {metric_file_path}")
-            break
+        # # Check if the file exists and is not empty
+        # if metric_file_path.exists() and metric_file_path.stat().st_size <= 1:
+        #     metric_file_path.unlink()  # Deletes the file
+        #     print(f"Deleted empty file: {metric_file_path}")
+        #     break
 
         df_period = pd.read_csv(metric_file_path)
 
@@ -556,6 +556,11 @@ def load_nse_period(folder_dir, period='valid'):
 
     if os.path.exists(metric_file):
         df = pd.read_csv(metric_file)
+    # elif 'julia' in str(folder_dir).lower() and period == 'valid':
+    #     period = 'test'
+    #     model_metrics_path = folder_dir / 'model_metrics'
+    #     metric_file = model_metrics_path / f'metrics_{period}.csv'
+    #     df = pd.read_csv(metric_file)
     else:
         csv_files = [f for f in os.listdir(folder_dir) if f.endswith('.csv')]
         df = pd.read_csv(folder_dir / csv_files[0])

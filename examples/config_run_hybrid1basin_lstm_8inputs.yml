@@ -6,12 +6,10 @@ hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
 # odesmethod: bosh3
-# rtol: 1e-3
-# atol: 1e-3
-odesmethod: euler
-time_step: 0.5
 
-# If True, carries the final state (e.g., s_snow, s_water) from the previous batch as the initial condition for the next batch.
+odesmethod: euler
+time_step: 1.0
+
 carryover_state: False
 
 # Files to specify training, validation and test basins
@@ -21,29 +19,30 @@ basin_file: 1_basin_file.txt
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 # data_dir: M0_results_569basins_1980_2010_RK23
-data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+# data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+# data_dir: M0_results_569basins_1980_2010_RK23_tol46_7vars
+data_dir: M0_results_569basins_1980_2010_RK45_tol69_7vars
 
-# nn_model_dir: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep_01013500_240826_134921
-# # # nn_model_dir: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep_01013500_240826_151012_RELU
-# nn_model_dir: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep_06431500_240826_144437
+# # nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_01013500_240802_092257
+# nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_01013500_240802_092257
 
 # If not nn_model_dir, specify the model and parameters to use:
 ###############################################################
 # NN model to use [mlp, lstm]
-nn_model: mlp
+nn_model: lstm
 
-# # Length of the input sequence
-# seq_length: 270
+# Length of the input sequence
+seq_length: 270
 
 nn_dynamic_inputs:
   - s_snow
   - s_water
   - prcp
   - tmean
-  # - tmin
-  # - tmax
-  - srad
-  - vp
+  # # - tmin
+  # # - tmax
+  # - srad
+  # - vp
 
 nn_mech_targets:
   - ps_bucket
@@ -56,14 +55,19 @@ target_variables:
   - obs_runoff
 
 # Hidden layers for the NN model
-hidden_size: 
-  - 32
-  - 32
-  - 32
+hidden_size:
+  - 128
+
+# hidden_size: 
+#   - 32
+#   - 32
+#   - 32
+#   - 32
+#   - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.001
-epochs_pretrain: 200
+lr_pretrain: 0.01
+epochs_pretrain: 100
 ###############################################################
 
 scale_target_vars: True
@@ -88,49 +92,55 @@ loss: nse
 epochs: 100
 
 # Patience for early stopping
-patience: 30
+patience: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole train time-series)
-# batch_size: 1024
-# batch_size: 512
 batch_size: 256
-# batch_size: 128
-# batch_size: -1
-# batch_size: 914   #1827
-# batch_size: 610
 
 # # Dropout rate for the NN model
 # dropout: 0.4
 
-# Optimizer to use [adam, sgd, rmsprop, radam]
+# Optimizer to use [adam, sgd]
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.0001
-learning_rate:
-  initial: 0.001
-  decay: 0.1
-  decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.001
+#   decay: 0.1
+#   decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
+# experiment_name: 1basin_hybrid_lstm_carryoverTrue
+# experiment_name: 1basin_hybrid_lstm_carryoverFalse
+# experiment_name: 1basin_hybrid_lstm_carryoverFalseOvelapping
+# experiment_name: ___1basin_hybrid_lstm_4inp
+# experiment_name: 1basin_hybrid_lstm_6inp_365d_128x1
+# experiment_name: 1basin_hybrid_lstm_6inp_270d_128x1
+# experiment_name: 1basin_hybrid_lstm_6inp_180d_128x1
+# experiment_name: 1basin_hybrid_lstm_6inp_180d_128x1_lr4
+# experiment_name: 1basin_hybrid_lstm_6inp_270d_128x1_lr4
+# experiment_name: 1basin_hybrid_lstm_4inp_270d_128x1_lr4_euler1d_m0rk23_pre100epLr2
+# experiment_name: 1basin_hybrid_lstm_6inp_270d_128x1_lr4_euler1d_m0rk23tol33_pre100epLr2
+experiment_name: 1basin_hybrid_lstm_4inp_270d_128x1_lr4_euler1d_m0rk45tol69_pre100epLr2
+# experiment_name: 1basin_hybrid_lstm_6inp_270d_128x1_lr4_euler1d_m0rk45tol69_pre100epLr2
+# experiment_name: 1basin_hybrid_lstm_4inp_270d_128x1_lr4_euler05d_m0rk23
+# experiment_name: 1basin_hybrid_lstm_6inp_365d_128x1_lr4
+# experiment_name: 1basin_hybrid_lstm_6inp_180d_128x1_lr34
+# experiment_name: 1basin_hybrid_lstm_6inp_270d_128x1_lr34
+# experiment_name: 1basin_hybrid_lstm_4inp_270d_64x1_lr4_euler05d
 
-# experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverFalse
-# experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverTrue
-# experiment_name: 1basin_hybrid_mlp_euler05d_4dynamic_new
-# experiment_name: 1basin_hybrid_mlp_euler05d_4dynamic_new_lr4
-# experiment_name: 1basin_hybrid_mlp_euler05d_6dynamic_new_lr4
-experiment_name: 1basin_hybrid_mlp_euler05d_6dynamic_new_lr34
-# experiment_name: _____1basin_hybrid_mlp_euler05d_7dynamic
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cpu
+device: cuda:0
+# device: cpu
 
 # Set seed for reproducibility
-seed: 111
+seed: 1111
 
 # Set precision for the model [float32, float64]
 precision: float32
@@ -149,7 +159,7 @@ log_n_basins: 1
   # - 6431500
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 10
+log_every_n_epochs: 20
 
 # Metrics to use for evaluation (after training)
 metrics:

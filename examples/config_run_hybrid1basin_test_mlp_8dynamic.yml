@@ -1,0 +1,172 @@
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# Hybrid model: exphydro + mlp -> M100
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+hybrid_model: exphydroM100
+concept_model: exphydro
+# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+# odesmethod: bosh3
+# rtol: 1e-3
+# atol: 1e-3
+odesmethod: euler
+time_step: 1.0
+
+# If True, carries the final state (e.g., s_snow, s_water) from the previous batch as the initial condition for the next batch.
+carryover_state: False
+
+# Files to specify training, validation and test basins
+basin_file: 1_basin_file.txt
+# basin_file: 1_basin_fileB.txt
+
+# --- Data configurations --- #
+# Dataset to use for training and testing [camelsus, summaca]
+# data_dir: M0_results_569basins_1980_2010_RK23
+# data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+# data_dir: M0_results_569basins_1980_2010_RK23_tol46_7vars
+# data_dir: M0_results_569basins_1980_2010_RK45_tol69_7vars
+data_dir: M0_results_569basins_1980_2010_rk4_1d_custom
+
+# nn_model_dir: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep_01013500_240826_134921
+# # # nn_model_dir: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep_01013500_240826_151012_RELU
+# nn_model_dir: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep_06431500_240826_144437
+
+# If not nn_model_dir, specify the model and parameters to use:
+###############################################################
+# NN model to use [mlp, lstm]
+nn_model: mlp
+
+# # Length of the input sequence
+# seq_length: 270
+
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  - tmean
+  # - tmin
+  # - tmax
+  # - srad
+  # - vp
+
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+
+target_variables: 
+  - obs_runoff
+
+# Hidden layers for the NN model
+hidden_size: 
+  - 32
+  - 32
+  - 32
+
+loss_pretrain: mse
+lr_pretrain: 0.001
+epochs_pretrain: 500
+###############################################################
+
+scale_target_vars: True
+
+# --- Training configurations --- #
+
+# Period to train, validate and test the model (they should be consecutive)
+# train_start_date: "01/10/1980"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1995"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2005"
+
+# Loss function to use [mse, nse, nse-nh]
+loss: nse
+
+# Number of epochs to train the model
+epochs: 50
+
+# Patience for early stopping
+patience: 30
+
+# If a value, clips the gradients during training to that norm.
+clip_gradient_norm: 1.0
+
+# Batch size for training (if -1, it will be only one batch for the whole train time-series)
+# batch_size: 1024
+# batch_size: 512
+batch_size: 256
+# batch_size: 128
+# batch_size: -1
+# batch_size: 914   #1827
+# batch_size: 610
+
+# # Dropout rate for the NN model
+# dropout: 0.4
+
+# Optimizer to use [adam, sgd, rmsprop, radam]
+optimizer: adam
+
+# # Learning rate for the optimizer
+learning_rate: 0.0001
+# learning_rate:
+#   initial: 0.001
+#   decay: 0.1
+#   decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
+
+## --- Run configurations --- ##
+# Experiment name, used as folder name
+
+# experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverFalse
+# experiment_name: 1basin_hybrid_mlp_euler1d_adam_carryoverTrue
+# experiment_name: 1basin_hybrid_mlp_euler05d_4dynamic_new
+# experiment_name: 1basin_hybrid_mlp_euler05d_4dynamic_new_lr4
+# experiment_name: 1basin_hybrid_mlp_euler05d_6dynamic_new_lr4
+# experiment_name: 1basin_hybrid_mlp_euler05d_6dynamic_new_lr34
+# experiment_name: _____1basin_hybrid_mlp_euler1d_4inp_m0rk23tol33
+# experiment_name: _____1basin_hybrid_mlp_euler1d_4inp_m0rk23tol46
+# experiment_name: _____1basin_hybrid_mlp_euler1d_4inp_m0rk45tol69
+experiment_name: _____1basin_hybrid_mlp_euler1d_4inp_m0rk4custom1d
+
+# which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
+device: cpu
+
+# Set seed for reproducibility
+seed: 111
+
+# Set precision for the model [float32, float64]
+precision: float32
+
+# Number of parallel workers used in the data pipeline
+num_workers: 16
+
+# Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
+verbose: 1
+
+
+# If a value and greater than 0, logs n random basins as figures after pretraining the NN model
+# If list of basins, logs the specified basins: format is either '01013500' or 1013500
+log_n_basins: 1
+  # - 1013500
+  # - 6431500
+
+# If a value and greater than 0, logs figures and metrics, and save model after each n epochs
+log_every_n_epochs: 10
+
+# Metrics to use for evaluation (after training)
+metrics:
+  - NSE
+  - Alpha-NSE
+  - Beta-NSE
+  - FHV
+  - FMS
+  - FLV
+  - KGE
+  - Beta-KGE
+  - Peak-Timing
+  - Peak-MAPE
+  - Pearson-r

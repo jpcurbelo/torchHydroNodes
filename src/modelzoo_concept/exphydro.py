@@ -21,7 +21,7 @@ from pathlib import Path
 project_dir = str(Path(__file__).resolve().parent.parent.parent)
 sys.path.append(project_dir)
 
-FIXED_METHODS = ['euler', 'rk4', 'midpoint']
+FIXED_METHODS = ['euler', 'rk2', 'rk4', 'midpoint']
 
 class EulerResult:
     def __init__(self, t, y):
@@ -177,7 +177,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                 solver = self.scipy_solver
 
             # Set the options for the ODE solver
-            if self.odesmethod in FIXED_METHODS:
+            if self.odesmethod.lower() in FIXED_METHODS:
                 options = {"step_size": self.time_step, "interp": "cubic"}
             elif self.odesmethod == 'scipy_solver':
                 options = {"solver": solver}

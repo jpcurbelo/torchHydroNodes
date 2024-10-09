@@ -105,9 +105,15 @@ class BaseHybridModelTrainer:
                 inputs = inputs.to(self.device_to_train, non_blocking=True)
                 targets = targets.to(self.device_to_train, non_blocking=True) 
 
-                # print('inputs.shape:', inputs.shape)
-                # print(' self.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
-                # aux = input('Press Enter to continue...')
+                # if epoch == 0 and num_batches_seen == 0:
+                #     print('self.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
+                #     print('inputs:', inputs.shape)
+                #     print(inputs[:3, :])
+                #     print(inputs[-3:, :])
+                #     print('targets:', targets.shape)
+                #     print(targets[:3, :])
+                #     print(targets[-3:, :])
+                #     aux = input('Press Enter to continue...')
 
                 if self.model.cfg.carryover_state and not first_batch:
                     # Update the s_snow and s_water values for the current batch
