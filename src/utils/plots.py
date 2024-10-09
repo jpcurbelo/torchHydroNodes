@@ -9,6 +9,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import geopandas as gpd
 from cmcrameri import cm
 
+from src.utils.metrics import metric_name_func_dict
+
 # Expand the '~' to the full path of the home directory
 home_directory = os.path.expanduser('~')
 
@@ -101,48 +103,54 @@ def load_results_path(results_folder: Path, periods: list):
 
     if results_folder.exists():
 
-        # Check if it contains a folder named 'model_metrics'
+        # print(f"Loading results from: {results_folder}")
+        # print("'julia' not in str(results_folder)", 'julia' not in str(results_folder))
+        # print("'neuralhydrology' not in str(results_folder)", 'neuralhydrology' not in str(results_folder))
+        # print("'m0' not in str(results_folder).lower()", 'm0' not in str(results_folder).lower())
+
+
+        # # Check if it contains a folder named 'model_metrics'
         model_metrics_path = results_folder / 'model_metrics'
-        if model_metrics_path.exists() \
-        and 'julia' not in str(results_folder) \
-        and 'neuralhydrology' not in str(results_folder) \
-        and 'm0' not in str(results_folder).lower():
-            # Delete the folder and merge the metrics again
-            print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
-            os.system(f'rm -rf {model_metrics_path}')
+        # if model_metrics_path.exists() \
+        # and 'julia' not in str(results_folder) \
+        # and 'neuralhydrology' not in str(results_folder) \
+        # and 'm0' not in str(results_folder).lower():
+        #     # Delete the folder and merge the metrics again
+        #     print(f"Folder 'model_metrics' already exists in {results_folder}. Deleting the folder...")
+        #     os.system(f'rm -rf {model_metrics_path}')
 
-        if 'julia' not in str(results_folder) \
-            and 'neuralhydrology' not in str(results_folder) \
-            and 'm0' not in str(results_folder).lower():
+        # if 'julia' not in str(results_folder) \
+        #     and 'neuralhydrology' not in str(results_folder) \
+        #     and 'm0' not in str(results_folder).lower():
 
-            # Merge the model metrics for the specified periods
-            merge_model_metrics(results_folder, model_metrics_path, periods)
+        #     # Merge the model metrics for the specified periods
+        #     merge_model_metrics(results_folder, model_metrics_path, periods)
 
-            # # Create a folder named 'model_metrics'
-            # os.makedirs(model_metrics_path, exist_ok=True)
+        #     # # Create a folder named 'model_metrics'
+        #     # os.makedirs(model_metrics_path, exist_ok=True)
 
-            # # There might be a bunch of single folders that have to be merged
-            # # Get list of folders
-            # folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
+        #     # # There might be a bunch of single folders that have to be merged
+        #     # # Get list of folders
+        #     # folders = sorted([f.name for f in results_folder.iterdir() if f.is_dir()])
 
-            # # Iterate over each period and folder
-            # for period in periods:
-            #     df_period = pd.DataFrame()
-            #     for folder in folders:
-            #         # Ensure that folder is a Path object
-            #         folder_path = results_folder / folder
-            #         # Construct the path for the model_metrics directory within each folder
-            #         metrics_folder = folder_path / 'model_metrics'
-            #         # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
-            #         for file in metrics_folder.glob(f'*metrics_{period}*'):
-            #             if file.is_file():
-            #                 # Load the file
-            #                 df = pd.read_csv(file)
-            #                 # Add to df_period
-            #                 df_period = pd.concat([df_period, df], ignore_index=True)
+        #     # # Iterate over each period and folder
+        #     # for period in periods:
+        #     #     df_period = pd.DataFrame()
+        #     #     for folder in folders:
+        #     #         # Ensure that folder is a Path object
+        #     #         folder_path = results_folder / folder
+        #     #         # Construct the path for the model_metrics directory within each folder
+        #     #         metrics_folder = folder_path / 'model_metrics'
+        #     #         # Find a file that contains 'metrics_period' in its name within the folder / model_metrics
+        #     #         for file in metrics_folder.glob(f'*metrics_{period}*'):
+        #     #             if file.is_file():
+        #     #                 # Load the file
+        #     #                 df = pd.read_csv(file)
+        #     #                 # Add to df_period
+        #     #                 df_period = pd.concat([df_period, df], ignore_index=True)
                 
-            #     # Save the merged dataframe
-            #     df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
+        #     #     # Save the merged dataframe
+        #     #     df_period.to_csv(model_metrics_path / f'metrics_{period}.csv', index=False)
 
         return model_metrics_path, results_folder
 
@@ -546,6 +554,61 @@ def _plot_metric_map(df, states, hm_catchment_gdf,
     fig.savefig(plots_path / f'{metric}_map_{period}.png', dpi=150, bbox_inches='tight')
     plt.show()
 
+
+def metrics_from_results(metrics, period, results_path, metrics_path):
+
+    '''
+    Load the results from the Julia model and calculate the metrics for each basin.
+    
+    - Args:
+        metrics (list): List of metrics to calculate.
+        period (str): Period for which the metrics are calculated.
+        results_path (Path): Path to the folder containing the results.
+        metrics_path (Path): Path to the folder where the metrics will be saved.
+        
+    - Returns:
+        df_metrics (DataFrame): DataFrame containing the metrics for each basin.
+    '''
+
+    # Check if 'model_results' folder exists in the results_path
+    if 'model_results' in [f.name for f in results_path.iterdir() if f.is_dir()]:
+        model_results_path = results_path / 'model_results'
+
+        # List all files in the model_results folder that contain the period
+        files = sorted([str(f) for f in model_results_path.glob(f'*{period}*') if f.is_file()])
+
+        # Create a dataframe to store the metrics (columns: basin_id, metric1, metric2, ...)
+        df_metrics = pd.DataFrame(columns=['basin_id'] + metrics)
+        # Load the results for each file
+        for file in files:
+            df = pd.read_csv(file)
+            # Filter by columns 'Date', 'q_bucket', and 'q_obs' or 'y_sim' and 'y_obs'
+            if 'y_sim' in df.columns:
+                # Rename the columns
+                df = df.rename(columns={'y_sim': 'q_bucket', 'y_obs': 'q_obs'})
+            if 'obs_runoff(mm/day)' in df.columns:
+                # Rename the columns
+                df = df.rename(columns={'obs_runoff(mm/day)': 'q_obs'})
+            
+            if 'Date' in df.columns:
+                df = df.rename(columns={'Date': 'date'})
+
+            df = df[['date', 'q_bucket', 'q_obs']]
+            # Extract basin name from the file name
+            basin_id = file.split('/')[-1].split('_')[0]
+            # Calculate the metrics for the basin and add
+            basin_metrics = [metric_name_func_dict[metric](df['q_obs'].values, df['q_bucket'].values) for metric in metrics]
+
+            # Add the basin_id and the metrics to the dataframe
+            df_metrics.loc[len(df_metrics)] = [basin_id] + basin_metrics
+
+        # Save the dataframe to a csv file
+        df_metrics.to_csv(metrics_path / f'metrics_{period}.csv', index=False)
+
+        return df_metrics
+
+
+
 def load_nse_period(folder_dir, period='valid'):
     '''
     Load the metrics for the given period from the folder directory.
@@ -554,7 +617,9 @@ def load_nse_period(folder_dir, period='valid'):
     model_metrics_path = folder_dir / 'model_metrics'
     metric_file = model_metrics_path / f'metrics_{period}.csv'
 
-    if os.path.exists(metric_file):
+    # print('os.path.exists(metric_file)', os.path.exists(metric_file))
+    # print('os.path.getsize(metric_file)', os.path.getsize(metric_file))
+    if os.path.exists(metric_file) and os.path.getsize(metric_file) > 1:
         df = pd.read_csv(metric_file)
     # elif 'julia' in str(folder_dir).lower() and period == 'valid':
     #     period = 'test'
@@ -562,8 +627,14 @@ def load_nse_period(folder_dir, period='valid'):
     #     metric_file = model_metrics_path / f'metrics_{period}.csv'
     #     df = pd.read_csv(metric_file)
     else:
+        # print(f"File is empty or contains no data: {metric_file}")
         csv_files = [f for f in os.listdir(folder_dir) if f.endswith('.csv')]
-        df = pd.read_csv(folder_dir / csv_files[0])
+        # print(f"csv_files: {csv_files}")
+        if len(csv_files) == 0:
+            # Compute and save the metrics from the results
+            df = metrics_from_results(['nse'], period, folder_dir, model_metrics_path)
+        else:
+            df = pd.read_csv(folder_dir / csv_files[0])
 
     # Rename NSE column to lowercase 'nse' if it exists
     df.rename(columns={'NSE': 'nse'}, inplace=True, errors='ignore')
@@ -621,6 +692,7 @@ def plot_nse_cdf(folder4cdf_dir_list, zoom_ranges_x=None, zoom_ranges_y=None):
 
     # Main plot loop
     for folder in folder4cdf_dir_list:
+        # print(f"Processing folder: {folder['directory']}")
         folder_dir = Path(folder['directory']).expanduser()
         if folder_dir.exists():
             df = load_nse_period(folder_dir, period='valid')
@@ -701,22 +773,28 @@ def plot_comparative_histograms(folder4hist_dir_list, periods):
             model_metrics_path = results_folder / 'model_metrics'
             metric_file_path = model_metrics_path / f'metrics_{period}.csv'
 
-            if model_metrics_path.exists() and 'julia' not in str(results_folder):
-                # Delete the folder and merge the metrics again
-                os.system(f'rm -rf {model_metrics_path}')
+            # if model_metrics_path.exists() and 'julia' not in str(results_folder):
+            #     # Delete the folder and merge the metrics again
+            #     os.system(f'rm -rf {model_metrics_path}')
 
-            if 'julia' not in str(results_folder):
-                # Merge the model metrics for the specified periods
-                merge_model_metrics(results_folder, model_metrics_path, periods)
+            # if 'julia' not in str(results_folder):
+            #     # Merge the model metrics for the specified periods
+            #     merge_model_metrics(results_folder, model_metrics_path, periods)
 
             try:
                 # Try reading the file first
-                df_period = pd.read_csv(str(metric_file_path))
+                if os.path.getsize(metric_file_path) > 1:
+                    df_period = pd.read_csv(str(metric_file_path))
+                else:
+                    # Metrics form results
+                    df_period = metrics_from_results(['nse'], period, results_folder, model_metrics_path)
                 
-                # Check if the DataFrame is empty (even if the file exists and has some lines)
-                if df_period.empty:
-                    print(f"File is empty or contains no data: {metric_file_path}")
-                    continue
+                # # Check if the DataFrame is empty (even if the file exists and has some lines)
+                # if df_period.empty:
+                #     print(f"File is empty or contains no data: {metric_file_path}")
+                #     continue
+
+
             except pd.errors.EmptyDataError:
                 # Handle the case where the file is completely empty or malformed
                 print(f"File contains no data (EmptyDataError): {metric_file_path}")
