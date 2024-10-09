@@ -146,7 +146,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                     y0=y0, 
                     step_size=self.time_step,
                     t_eval=self.time_series, 
-                    method="rk4"  # Change this to "euler", "rk2", or "rk4" as needed
+                    method=self.odesmethod  # Change this to "euler", "rk2", or "rk4" as needed
                 )
             else:
                 # Use the scipy's solve_ivp method with the desired method
