@@ -299,6 +299,8 @@ class NNpretrainer(ExpHydroCommon):
             # Clear CUDA cache at the beginning of each epoch
             torch.cuda.empty_cache()
 
+            # print(f"Starting epoch {epoch + 1} GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
             pbar = tqdm(self.dataloader, disable=disable_pbar, file=sys.stdout)
             pbar.set_description(f'# Epoch {epoch + 1:05d}')
 
@@ -401,10 +403,16 @@ class NNpretrainer(ExpHydroCommon):
             if not verbose and any_log:
                 print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
 
+        
+        # print(f"Final train GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+        
         # Save the final model weights and plots
         if verbose and any_log:
             print("-- Saving final plots --")
         self.save_plots()
+
+        # print(f"Final save plot memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
         if verbose and any_log:
             print("-- Saving final model weights --")
         self.save_model()
@@ -412,6 +420,9 @@ class NNpretrainer(ExpHydroCommon):
             if verbose and any_log:
                 print("-- Evaluating the model --")
             self.evaluate()
+
+        # print(f"Final save model memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
 
         # Reset optimizer and scheduler to the initial learning rate for the next training
         self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler(self.cfg.epochs, lr_name='learning_rate')
@@ -447,6 +458,8 @@ class NNpretrainer(ExpHydroCommon):
         # Extract keys that start with 'ds_'
         ds_periods = [key for key in self.fulldataset.__dict__.keys() if key.startswith('ds_') \
                            and 'static' not in key]
+        
+        # print(f"ds_periods Max gpu memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
 
         # Check if log_n_basins exists and is either a positive integer or a non-empty list
         if self.basins_to_log is not None:
@@ -466,26 +479,53 @@ class NNpretrainer(ExpHydroCommon):
 
                 for dsp in ds_periods:
 
+                    # print(f"{dsp} period Max gpu memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
                     ds_period = getattr(self.fulldataset, dsp)
                     ds_basin = ds_period.sel(basin=basin)
 
                     # Get model outputs
                     inputs = self.get_model_inputs(ds_basin, self.input_var_names, basin, is_trainer=False)
 
-                    # Get model outputs
-                    # Forward pass
+                    # print(f"Size of inputs: {inputs.size()}, dtype: {inputs.dtype}")
+
+                    # print(torch.cuda.memory_summary(self.device, abbreviated=False))
+
+                    # # Get model outputs
+                    # # Forward pass
+                    # if self.nnmodel.include_static:
+                    #     outputs = self.nnmodel(inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                    # else:
+                    #     print(f"Before forward pass, GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+                    #     with torch.no_grad():
+                    #         outputs = self.nnmodel(inputs, basin, use_grad=False)  # Forward pass
+                    #     print(f"Output tensor size: {outputs.size()}, memory allocated: {torch.cuda.memory_allocated() / 1024 ** 2:.2f} MB")
+                    #     print(f"After forward pass, GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
+                    #     # outputs = run_job_with_memory_check(self.nnmodel, ds_basin,  self.input_var_names, basin, inputs.shape, inputs.dtype(), use_grad=False)
+
+
                     if self.nnmodel.include_static:
-                        outputs = self.nnmodel(inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                        outputs = self.evaluate_with_batches(inputs, basin, static_inputs=self.nnmodel.torch_static[basin])
                     else:
-                        outputs = self.nnmodel(inputs, basin, use_grad=False)
-                        # outputs = run_job_with_memory_check(self.nnmodel, ds_basin,  self.input_var_names, basin, inputs.shape, inputs.dtype(), use_grad=False)
+                        # print(f"Before forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+                        with torch.no_grad():
+                            outputs = self.evaluate_with_batches(inputs, basin)
+                        # print(f"After forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
+
+                    # print(torch.cuda.memory_summary(self.device, abbreviated=False))
+
 
                     # Reshape outputs
                     outputs = self.reshape_outputs(outputs)
 
                     # Scale back outputs
                     if self.cfg.scale_target_vars:
+                        # print(f"Before scaling, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
                         outputs = self.scale_back_simulated(outputs, ds_basin)
+                        # print(f"After scaling, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
 
                         # If period is ds_train, also scale back the observed variables
                         if dsp == 'ds_train':
@@ -528,8 +568,9 @@ class NNpretrainer(ExpHydroCommon):
                             plt.savefig(basin_dir / f'_{var}_{basin}_{period_name}.png', dpi=75)
                         plt.close('all')
 
-                # Clear CUDA cache to free memory
-                torch.cuda.empty_cache()
+                    # Clear CUDA cache to free memory
+                    del inputs, outputs
+                    torch.cuda.empty_cache()
             
             pbar_basins.close()
 
@@ -627,5 +668,43 @@ class NNpretrainer(ExpHydroCommon):
 
             # Save the results to a CSV file
             df_results.to_csv(metrics_file_path, index=False)
+
+    def evaluate_with_batches(self, inputs, basin):
+        """
+        Perform evaluation using batch processing.
+
+        Args:
+            inputs (torch.Tensor): The input tensor for the model.
+            basin (str): The basin ID.
+            batch_size (int): The size of each batch for evaluation.
+
+        Returns:
+            torch.Tensor: The concatenated output from all batches.
+        """
+        num_samples = inputs.size(0)  # Total number of samples
+        outputs_list = []  # To store the outputs from each batch
+
+        # Process each batch
+        with torch.no_grad():  # Disable gradients for inference
+            for i in range(0, num_samples, self.batch_size):
+                # Slice the input tensor into batches
+                batch_inputs = inputs[i:i + self.batch_size]
+
+                # Perform the forward pass for the current batch
+                if self.nnmodel.include_static:
+                    batch_outputs = self.nnmodel(batch_inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
+                else:
+                    # print(f"Before forward pass (batch {i // self.batch_size + 1}), GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+                    batch_outputs = self.nnmodel(batch_inputs, basin, use_grad=False)
+                    # print(f"After forward pass (batch {i // self.batch_size + 1}), GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
+
+                # Append the outputs to the list
+                outputs_list.append(batch_outputs)
+
+        # Concatenate all the batch outputs along the first dimension (the sample dimension)
+        outputs = torch.cat(outputs_list, dim=0)
+
+        return outputs
+
 
 ############################################################################################################
