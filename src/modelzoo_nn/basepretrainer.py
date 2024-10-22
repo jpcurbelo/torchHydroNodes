@@ -85,7 +85,7 @@ class NNpretrainer(ExpHydroCommon):
         # Scale the target variables
         if self.cfg.scale_target_vars:
             self.scale_target_vars(is_trainer=False)
-
+        
         # Create the dataloader
         self.dataloader = self.create_dataloaders()
         self.num_batches = len(self.dataloader)
@@ -94,18 +94,19 @@ class NNpretrainer(ExpHydroCommon):
         self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler(self.epochs, lr_name='lr_pretrain')
 
         # Loss function setup
-        try:
-            # Try to get the loss function name from configuration
-            loss_name = self.cfg.loss
-            self.loss = loss_name_func_dict[loss_name.lower()]
-        except KeyError:
-            # Handle the case where the loss name is not recognized
-            raise NotImplementedError(f"Loss function {loss_name} not implemented")
-        except ValueError:
-            # Handle the case where 'loss' is not specified in the config
-            # Optionally, set a default loss function
+        loss_name = getattr(self.cfg, 'loss', None)
+        
+        # Loss function setup
+        if loss_name is None:
+            # If 'loss' is not specified in the config, default to MSELoss
             print("Warning! (Inputs): 'loss' not specified in the config. Defaulting to MSELoss.")
             self.loss = torch.nn.MSELoss()
+        else:
+            # Try to get the loss function from the dictionary
+            try:
+                self.loss = loss_name_func_dict[loss_name.lower()]
+            except KeyError:
+                raise NotImplementedError(f"Loss function '{loss_name}' is not implemented.")
 
         # ## Pretrainer Initialized
         # # loss_pretrain: mse
@@ -497,20 +498,19 @@ class NNpretrainer(ExpHydroCommon):
                     #     outputs = self.nnmodel(inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
                     # else:
                     #     print(f"Before forward pass, GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
-                    #     with torch.no_grad():
-                    #         outputs = self.nnmodel(inputs, basin, use_grad=False)  # Forward pass
+                    #     outputs = self.nnmodel(inputs, basin, use_grad=False)  # Forward pass
                     #     print(f"Output tensor size: {outputs.size()}, memory allocated: {torch.cuda.memory_allocated() / 1024 ** 2:.2f} MB")
                     #     print(f"After forward pass, GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
 
                     #     # outputs = run_job_with_memory_check(self.nnmodel, ds_basin,  self.input_var_names, basin, inputs.shape, inputs.dtype(), use_grad=False)
 
 
+                    # Get model outputs with batches
                     if self.nnmodel.include_static:
                         outputs = self.evaluate_with_batches(inputs, basin, static_inputs=self.nnmodel.torch_static[basin])
                     else:
                         # print(f"Before forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
-                        with torch.no_grad():
-                            outputs = self.evaluate_with_batches(inputs, basin)
+                        outputs = self.evaluate_with_batches(inputs, basin)
                         # print(f"After forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
 
 
@@ -605,10 +605,12 @@ class NNpretrainer(ExpHydroCommon):
 
                 # Get model outputs
                 # Forward pass
+                # print(f"Before forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
                 if self.nnmodel.include_static:
                     outputs = self.nnmodel(inputs, basin, static_inputs=self.nnmodel.torch_static[basin], use_grad=False)
                 else:
                     outputs = self.nnmodel(inputs, basin, use_grad=False)
+                # print(f"After forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device) / 1024**2:.2f} MB")
 
                 # Reshape outputs
                 outputs = self.reshape_outputs(outputs)
@@ -676,7 +678,6 @@ class NNpretrainer(ExpHydroCommon):
         Args:
             inputs (torch.Tensor): The input tensor for the model.
             basin (str): The basin ID.
-            batch_size (int): The size of each batch for evaluation.
 
         Returns:
             torch.Tensor: The concatenated output from all batches.

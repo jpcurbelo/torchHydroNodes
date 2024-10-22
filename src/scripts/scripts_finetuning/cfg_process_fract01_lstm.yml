@@ -1,0 +1,38 @@
+main_folder: .
+
+run_folders:
+  ## Folder name: label
+  # bash_mlp_euler05d_finetune_240924_113218: "Euler 0.5d"
+  # finetune_lstm_euler1d_finetune_4inp_241010_091331: "Euler nse"
+  finetune_lstm_euler1d_finetune_4inp_241011_193528: "Euler 1d mse"
+  finetune_lstm_euler1d_finetune_drop02mse_4inp_241013_082344_bad: "Euler 1d mse drop02"
+  finetune_lstm_euler1d_finetune_drop02nse_4inp_241013_082127_bad: "Euler 1d nse drop02"
+  finetune_lstm_euler05d_finetune_drop02mse_4inp_241013_082550_bad: "Euler 0.5d mse drop02"
+
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Top models criteria: median, mean, mean_median_score
+top_models_criteria: median
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less

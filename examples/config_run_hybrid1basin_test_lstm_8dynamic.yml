@@ -20,8 +20,9 @@ basin_file: 1_basin_file.txt
 # Dataset to use for training and testing [camelsus, summaca]
 # data_dir: M0_results_569basins_1980_2010_RK23
 # data_dir: M0_results_569basins_1980_2010_RK23_tol46_7vars
-data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+# data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
 # data_dir: M0_results_569basins_1980_2010_RK45_tol69_7vars
+data_dir: M0_results_569basins_1980_2010_rk4_1d_custom
 
 # # nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_01013500_240802_092257
 # nn_model_dir: 1basin_pretrainer_lstm_270d_128x1_relu_01013500_240802_092257
@@ -66,8 +67,8 @@ hidden_size:
 #   - 32
 
 loss_pretrain: mse
-lr_pretrain: 0.001
-epochs_pretrain: 1000
+lr_pretrain: 0.01
+epochs_pretrain: 5
 ###############################################################
 
 scale_target_vars: True
@@ -75,21 +76,21 @@ scale_target_vars: True
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-# train_start_date: "01/10/1980"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2010"
-
-train_start_date: "01/10/1995"
+train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2005"
+valid_end_date: "30/09/2010"
+
+# train_start_date: "01/10/1995"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 50
+epochs: 2
 
 # Patience for early stopping
 patience: 20
@@ -107,18 +108,18 @@ batch_size: 256
 optimizer: adam
 
 # # Learning rate for the optimizer
-learning_rate: 0.0001
-# learning_rate:
-#   initial: 0.001
-#   decay: 0.1
-#   decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
+# learning_rate: 0.0001
+learning_rate:
+  initial: 0.001
+  decay: 0.1
+  decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
 # experiment_name: 1basin_hybrid_lstm_carryoverTrue
 # experiment_name: 1basin_hybrid_lstm_carryoverFalse
 # experiment_name: 1basin_hybrid_lstm_carryoverFalseOvelapping
-experiment_name: ___1basin_hybrid_lstm_4inp_m0rk23tol33
+experiment_name: ___1basin_hybrid_lstm_4inp_m0rk4_1d
 # experiment_name: ___1basin_hybrid_lstm_4inp_m0rk45tol69
 # experiment_name: 1basin_hybrid_lstm_6inp_365d_128x1
 # experiment_name: 1basin_hybrid_lstm_6inp_270d_128x1

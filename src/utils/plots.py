@@ -183,10 +183,11 @@ def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, f
         gap_height = gap * (ylim[1] - ylim[0])
         
 
+        # Plot annotations for mean and median
         if statistic == 'mean':
             # Check if mean is greater (right) or smaller (left) than the median
             if value > np.median(data_aux):
-                ax.text(value + 100*gap, ylim[1] - gap_height, label, va='top', ha='left', color=color, fontsize=fontsize, **kwargs)
+                ax.text(value + gap, ylim[1] - gap_height, label, va='top', ha='left', color=color, fontsize=fontsize, **kwargs)
             else:
                 ax.text(value - gap, ylim[1] - gap_height, label, va='top', ha='right', color=color, fontsize=fontsize, **kwargs)
         elif statistic == 'median':
@@ -194,7 +195,8 @@ def annotate_statistics(ax, data, statistic='mean', color='tab:red', gap=0.05, f
             if value > np.mean(data_aux):
                 ax.text(value + gap, ylim[1] - gap_height, label, va='top', ha='left', color=color, fontsize=fontsize, **kwargs)
             else:
-                ax.text(value - 100*gap, ylim[1] - gap_height, label, va='top', ha='right', color=color, fontsize=fontsize, **kwargs)
+                ax.text(value - gap, ylim[1] - gap_height, label, va='top', ha='right', color=color, fontsize=fontsize, **kwargs)
+
     # else:
     #     # Add the label to the legend - top right corner
     #     ax.text(0.98, 0, label, va='top', ha='right', color=color, fontsize=8)

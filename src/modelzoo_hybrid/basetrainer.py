@@ -9,6 +9,7 @@ import time
 import csv
 import tracemalloc  # For CPU memory tracking
 import gc
+import subprocess
 
 from src.utils.metrics import loss_name_func_dict
 from src.utils.metrics import (
@@ -79,6 +80,8 @@ class BaseHybridModelTrainer:
 
         for epoch in range(self.model.epochs):
 
+            # print(f"Starting epoch {epoch + 1} GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
+
             # Clear CUDA cache at the beginning of each epoch if running on GPU
             if is_gpu:
                 torch.cuda.empty_cache()
@@ -106,7 +109,7 @@ class BaseHybridModelTrainer:
                 targets = targets.to(self.device_to_train, non_blocking=True) 
 
                 # if epoch == 0 and num_batches_seen == 0:
-                #     print('self.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
+                #     print('self.model.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
                 #     print('inputs:', inputs.shape)
                 #     print(inputs[:3, :])
                 #     print(inputs[-3:, :])
@@ -200,8 +203,16 @@ class BaseHybridModelTrainer:
             if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) and epoch < self.model.epochs - 1:               
                 if self.model.cfg.verbose:
                     print(f"-- Saving the basin plots (epoch {epoch + 1}) | --")
+
+                # gpu_memory_used = get_used_memory_by_gpu(self.device_to_train)
+                # print(f"GPU memory used in {self.device_to_train} (nvidia-smi): {gpu_memory_used:.2f} MB")
+
+                # print(f"Saving - Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
+
                 # Save plots 
                 self.save_plots(epoch=epoch+1)
+
+                # print(f"Saved - Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
 
             # Check for the best model and save it
             if avg_loss < best_loss:
@@ -235,10 +246,17 @@ class BaseHybridModelTrainer:
             # Save the final model weights and plots
             if self.model.cfg.verbose:
                 print("-- Training completed | Evaluating the model --")
+
+            # print(f"Evaluating - Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
             self.evaluate()
+            # print(f"Evaluated - Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
+
             if is_gpu:
                 torch.cuda.empty_cache()
+
+            # print(f"Final Saving - Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
             self.save_plots(epoch=epoch + 1)
+            # print(f"Final Saved - GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
 
     ################################################# 
     def train_finetune(self, is_resume=False, max_nan_batches=5):
@@ -371,6 +389,9 @@ class BaseHybridModelTrainer:
                         print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
 
                 # Save the model weights and plots
+                # print(f"Epoch {type(epoch + 1)}")
+                # print(f"self.model.cfg.log_every_n_epochs: {type(self.model.cfg.log_every_n_epochs)}")
+                # print(f"self.model.cfg.log_every_n_epochs == 0: {type(self.model.cfg.log_every_n_epochs == 0)}")
                 if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) \
                     and epoch < self.model.epochs - 1:
                     self.save_plots(epoch=epoch+1)
@@ -385,6 +406,7 @@ class BaseHybridModelTrainer:
             if not stop_training:
                 # Save the final model weights and plots
                 self.save_model()
+                # print("Model saved after training.")
 
                 # Start tracemalloc only if running on CPU
                 if is_cpu:
@@ -393,6 +415,7 @@ class BaseHybridModelTrainer:
                 # Time tracking for evaluation
                 eval_start_time = time.time()
                 self.evaluate()
+                # print("Evaluation completed.")
                 eval_time = time.time() - eval_start_time
 
                 # Track CPU memory during evaluation
@@ -421,6 +444,7 @@ class BaseHybridModelTrainer:
                 plot_start_time = time.time()
                 self.save_plots(epoch=epoch + 1)
                 plot_time = time.time() - plot_start_time
+                # print("Final plots saved.")
 
                 # Track CPU memory during final plotting
                 cpu_peak_memory_mb = 'N/A'
@@ -500,7 +524,10 @@ class BaseHybridModelTrainer:
                     inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
 
                     # No GPU memory control - this is standard
+                    # print(f"Before forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
                     outputs, _, _ = self.model(inputs, basin, use_grad=False)
+                    # outputs = self.evaluate_with_batches(inputs, basin)
+                    # print(f"After forward pass, Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
                     # outputs = run_job_with_memory_check(self.model, ds_basin,  input_var_names, basin, inputs.shape, inputs.dtype, use_grad=False)
 
                     # Reshape outputs
@@ -560,13 +587,32 @@ class BaseHybridModelTrainer:
 
             # Check if the best model exists
             if best_model_path.exists():
+
+                # if torch.cuda.is_available():
+                #     before_memory_allocated = torch.cuda.memory_allocated()
+                #     before_memory_reserved = torch.cuda.memory_reserved()
+                #     print("GPU Memory before loading the model:")
+                #     print(f"Allocated = {before_memory_allocated / 1024**2:.2f} MB, Reserved = {before_memory_reserved / 1024**2:.2f} MB")
+
+
+
                 # Load best model saved during training
                 self.model.pretrainer.nnmodel.load_state_dict(torch.load(best_model_path))
                 if self.model.cfg.verbose:
                     print(f"Loaded best model from {best_model_path}")
+
+
+                # if torch.cuda.is_available():
+                #     after_memory_allocated = torch.cuda.memory_allocated()
+                #     after_memory_reserved = torch.cuda.memory_reserved()
+                #     print("GPU Memory after loading the model:")
+                #     print(f"Allocated = {after_memory_allocated / 1024**2:.2f} MB, Reserved = {after_memory_reserved / 1024**2:.2f} MB")
+
             else:
                 print(f"Best model file not found at {best_model_path}. Evaluation will not be performed.")
                 return
+            
+        # aux = input('Press Enter to continue after Load...')
 
         metrics_dir = self.model.cfg.run_dir / 'model_metrics'
         if not metrics_dir.exists():
@@ -593,9 +639,9 @@ class BaseHybridModelTrainer:
 
                 ds_basin = ds_period.sel(basin=basin)
 
-                # Clear GPU/CPU cache before processing the next basin
-                torch.cuda.empty_cache()  # Clear GPU memory
-                gc.collect()  # Clear CPU memory
+                # # Clear GPU/CPU cache before processing the next basin
+                # torch.cuda.empty_cache()  # Clear GPU memory
+                # gc.collect()  # Clear CPU memory
 
                 time_series = ds_basin['date'].values
                 time_idx = self.get_time_idx(dsp, time_series) # Get the time index
@@ -608,8 +654,20 @@ class BaseHybridModelTrainer:
                 # Get the outputs from the hybrid model
                 inputs = self.model.get_model_inputs(ds_basin, input_var_names, basin, is_trainer=True)
 
+                # before_memory_allocated = torch.cuda.memory_allocated()
+                # before_memory_reserved = torch.cuda.memory_reserved()
+                # print("GPU Memory before evaluating the model:")
+                # print(f"Allocated = {before_memory_allocated / 1024**2:.2f} MB, Reserved = {before_memory_reserved / 1024**2:.2f} MB")
+
                 # Get model outputs
                 outputs, _, _ = self.model(inputs, basin, use_grad=False)
+
+                # after_memory_allocated = torch.cuda.memory_allocated()
+                # after_memory_reserved = torch.cuda.memory_reserved()
+                # print("GPU Memory after evaluating the model:")
+                # print(f"Allocated = {after_memory_allocated / 1024**2:.2f} MB, Reserved = {after_memory_reserved / 1024**2:.2f} MB")
+
+                # aux = input('Press Enter to continue after Evaluate...')
 
                 # Reshape outputs
                 outputs = self.model.reshape_outputs(outputs)
@@ -733,4 +791,119 @@ class BaseHybridModelTrainer:
         metrics_file = f'evaluation_metrics_{period_name}.csv'
         metrics_file_path = metrics_dir / metrics_file
         df_results.to_csv(metrics_file_path, index=False)
+
+    def evaluate_with_batches(self, inputs, basin):
+        """
+        Perform evaluation using batch processing.
+
+        Args:
+            inputs (torch.Tensor): The input tensor for the model.
+            basin (str): The basin ID.
+
+        Returns:
+            torch.Tensor: The concatenated output from all batches.
+        """
+
+        num_samples = inputs.size(0)  # Total number of samples
+        outputs_list = []  # To store the outputs from each batch
+
+        # # Create tensors to store the s_snow and s_water values to be used in the next batch
+        # carryover_s_snow = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+        # carryover_s_water = torch.zeros(self.model.pretrainer.batch_size).to(self.device_to_train)
+
+        # Carryover initialization
+        carryover_s_snow = None
+        carryover_s_water = None
+
+        print('inputs.shape:', inputs.shape)
+        # Process each batch
+        with torch.no_grad():  # Disable gradients for inference
+            for bi in range(0, num_samples, self.model.pretrainer.batch_size - 1):
+
+                print(f"bi: {bi}")
+                
+                # # Slice the input tensor into batches
+                # batch_inputs = inputs[i:i + self.model.pretrainer.batch_size]
+
+                # Adjust for batch size carryover
+                if bi > 0:
+                    batch_inputs = inputs[bi-1:bi + self.model.pretrainer.batch_size - 1]  # Include carryover
+                else:
+                    batch_inputs = inputs[bi:bi + self.model.pretrainer.batch_size]  # First batch, no carryover
+
+                print(f"batch_inputs.shape: {batch_inputs.shape}")
+
+                # If this is not the first batch, prepend the carryover (last output of the previous batch)
+                if carryover_s_snow is not None and carryover_s_water is not None:
+
+                    # Update the s_snow and s_water values for the current batch
+                    if len(batch_inputs.shape) == 2: # For LSTM models (inputs are 2D)
+                        # Update the first timestep (index 0) of the sequence for the carryover features
+                        batch_inputs[0, 0] = carryover_s_snow
+                        batch_inputs[0, 1] = carryover_s_water
+                    # Ensure carryover states are applied correctly between batches in LSTM
+                    elif len(batch_inputs.shape) == 3:  # For LSTM models (inputs are 3D)
+                        current_batch_size = batch_inputs.shape[0]  # Get current batch size (might be smaller for last batch)
+                        
+                        # Inject carryover state into the first timestep of each window
+                        batch_inputs[:, 0, 0] = carryover_s_snow[:current_batch_size]  # Inject carryover snow state
+                        batch_inputs[:, 0, 1] = carryover_s_water[:current_batch_size]  # Inject carryover water state
+                
+                # Print GPU memory usage before the forward pass
+                print(f"Before forward pass (batch {bi // self.model.pretrainer.batch_size + 1}), Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
+
+                # Perform the forward pass for the current batch
+                batch_outputs, s_snow, s_water = self.model(batch_inputs, basin, use_grad=False)
+
+                if len(batch_inputs.shape) == 2:  # For MLP models (inputs are 2D)
+                    carryover_s_snow = s_snow[-1].clone().detach()
+                    carryover_s_water = s_water[-1].clone().detach()
+                elif len(batch_inputs.shape) == 3:  # For LSTM models (inputs are 3D)
+                    carryover_s_snow = s_snow[:, -1].clone().detach()
+                    carryover_s_water = s_water[:, -1].clone().detach()
+
+                print(f"batch_outputs.shape: {batch_outputs.shape}")
+                print(f"s_snow.shape: {s_snow.shape}")
+                print(f"s_water.shape: {s_water.shape}")
+                # Print GPU memory usage after the forward pass
+                print(f"After forward pass (batch {bi // self.model.pretrainer.batch_size + 1}), Max GPU memory used: {torch.cuda.max_memory_allocated(self.device_to_train) / 1024**2:.2f} MB")
+
+                # Store the outputs (include all outputs, but skip carryover on subsequent batches)
+                if bi > 0:
+                    outputs_list.append(batch_outputs[1:])  # Skip the first carryover output
+                else:
+                    outputs_list.append(batch_outputs)  # First batch, include all outputs
+
+                print('len(outputs_list)', len(outputs_list))
+
+        # Concatenate all the batch outputs along the first dimension (the sample dimension)
+        outputs = torch.cat(outputs_list, dim=0)
+
+        # Check if we have one extra element
+        if outputs.size(0) > num_samples:
+            outputs = outputs[:num_samples]  # Trim the extra carryover element
+
+        return outputs
+
 # # ####################################################################################################
+
+
+def get_used_memory_by_gpu(device):
+    """
+    Get the memory used by a specific GPU based on its index (gpu_id).
+    
+    Args:
+        device (torch.device): The device object representing the GPU.
+        
+    Returns:
+        int: The amount of memory used by the specified GPU in MiB.
+    """
+
+    gpu_id = device.index  # Get the GPU index
+
+    # Run nvidia-smi for the specific GPU using -i flag
+    result = subprocess.check_output(
+        ['nvidia-smi', '--query-gpu=memory.used', '--format=csv,nounits,noheader', '-i', str(gpu_id)]
+    )
+    memory_used = int(result.decode('utf-8').strip())  # Parse the result as an integer
+    return memory_used

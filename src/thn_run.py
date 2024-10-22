@@ -34,6 +34,7 @@ from src.modelzoo_hybrid import (
 from src.utils.log_results import (
     save_and_plot_simulation,
     compute_and_save_metrics,
+    log_gpu_memory_summary
 )
 
 def _main():
@@ -286,12 +287,18 @@ def pretrain_nn_model(config_file: Path, gpu: int = None):
         return
 
 def train_hybrid_model(config_file: Path, gpu: int = None):
+
+    # print(f"Starting train_hybrid_mode GPU memory used: {torch.cuda.max_memory_allocated('cuda:0') / 1024**2:.2f} MB")
         
     # Load the configuration file and dataset
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='hybrid')
 
+    # print(f"cfg, dataset GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+
     # Get the basin interpolators
     interpolators = get_basin_interpolators(dataset, cfg, project_dir)
+
+    # print(f"interpolators GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
 
     # Conceptual model
     time_idx0 = 0
@@ -300,11 +307,15 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
 
     print(f'-- Conceptual model: {model_concept.__class__.__name__}')
 
+    # print(f"model_concept GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+
     # Neural network model
     model_nn = get_nn_model(model_concept, dataset.ds_static)
 
     print(f'-- Neural network model: {model_nn.__class__.__name__}')
     # print(model_nn)
+
+    # print(f"model_nn GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
 
     # Load the neural network model state dictionary if cfg.nn_model_dir exists
     if cfg.nn_model_dir is not False:
@@ -331,6 +342,9 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     # Pretrainer
     pretrainer = get_nn_pretrainer(model_nn, dataset)
 
+    # print(f"pretrainer created GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+    # print(torch.cuda.memory_summary(cfg.device, abbreviated=False))
+
     # Pretrain the model if no pre-trained model is loaded
     if cfg.nn_model_dir is False:
         start_time = time.time()
@@ -342,13 +356,26 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
             print(f'-- Pretraining failed')
             return
 
+    # print(f"pretrainer trained GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+    # print(torch.cuda.memory_summary(cfg.device, abbreviated=False))
+
     # Build the hybrid model
     model_hybrid = get_hybrid_model(cfg, pretrainer, dataset)
 
+    # print(f"model_hybrid GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+
     # Build the trainer 
     trainer = get_trainer(model_hybrid)
+
+    # print(f"trainer GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+
     # Train the model
     trainer.train()
+
+    # print(f"End of train_hybrid_mode GPU memory used: {torch.cuda.max_memory_allocated(cfg.device) / 1024**2:.2f} MB")
+    # print(torch.cuda.memory_summary(cfg.device, abbreviated=False))
+    if cfg.device != 'cpu':
+        log_gpu_memory_summary(cfg.device, log_file_path=Path(cfg.run_dir / "gpu_memory_report.txt"), abbreviated=False)
 
 def evaluate_model(run_dir: Path, period: str, gpu: int=None, 
                    config_file=None, model='pretrainer', epoch: int=-1):

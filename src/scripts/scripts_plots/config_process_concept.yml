@@ -37,9 +37,9 @@
 # plots_folder: plots_conceptualRK45_tol46_7vars
 # graph_title: Conceptual model (exp-hydro) - RK45_tol46
 
-results_folder: ../../../data/M0_results_569basins_1980_2010_RK45_tol69_7vars
-plots_folder: plots_conceptualRK45_tol69_7vars
-graph_title: Conceptual model (exp-hydro) - RK45_tol69
+# results_folder: ../../../data/M0_results_569basins_1980_2010_RK45_tol69_7vars
+# plots_folder: plots_conceptualRK45_tol69_7vars
+# graph_title: Conceptual model (exp-hydro) - RK45_tol69
 
 # results_folder: ../../../data/M0_results_569basins_1980_2010_DOP853_tol69_7vars
 # plots_folder: plots_conceptualDOP853_tol69_7vars
@@ -65,6 +65,42 @@ graph_title: Conceptual model (exp-hydro) - RK45_tol69
 # results_folder: ../../../data/M0_results_569basins_1980_2010_euler01d_torchdiffeq
 # plots_folder: plots_conceptualEuler01d_torchdiffeq
 # graph_title: Conceptual model (exp-hydro) - Euler01d_torchdiffeq
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_rk4_1d_torchdiffeq
+# plots_folder: plots_conceptualRK4_1d_torchdiffeq
+# graph_title: Conceptual model (exp-hydro) - RK4_1d_torchdiffeq
+
+
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_rk4_1d_custom
+# plots_folder: plots_conceptualRK4_1d_custom
+# graph_title: Conceptual model (exp-hydro) - RK4_1d_custom
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_rk4_05d_custom
+# plots_folder: plots_conceptualRK4_05d_custom
+# graph_title: Conceptual model (exp-hydro) - RK4_05d_custom
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_euler1d_custom
+# plots_folder: plots_conceptualEuler1d_custom
+# graph_title: Conceptual model (exp-hydro) - Euler1d_custom
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_euler05d_custom
+# plots_folder: plots_conceptualEuler05d_custom
+# graph_title: Conceptual model (exp-hydro) - Euler05d_custom
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_euler01d_custom
+# plots_folder: plots_conceptualEuler01d_custom
+# graph_title: Conceptual model (exp-hydro) - Euler01d_custom
+
+# results_folder: ../../../data/M0_results_569basins_1980_2010_euler005d_custom
+# plots_folder: plots_conceptualEuler005d_custom
+# graph_title: Conceptual model (exp-hydro) - Euler005d_custom
+
+results_folder: ../../../data/M0_results_569basins_1980_2010_euler001d_custom
+plots_folder: plots_conceptualEuler001d_custom
+graph_title: Conceptual model (exp-hydro) - Euler001d_custom
+
+
 
 
 

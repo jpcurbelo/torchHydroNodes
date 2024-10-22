@@ -33,7 +33,7 @@ class LSTM(BaseNNModel):
     def forward(self, dynamic_inputs, basin_id, static_inputs=None, use_grad=True):
 
         # print(f"Dynamic Inputs: {dynamic_inputs.device}")
-        # # modwel parameters device
+        # # model parameters device
         # print(f"Model Parameters: {next(self.parameters()).device}")
 
         # means = torch.stack([self.torch_input_means[b] for b in basin_list]).squeeze(1)   #.to(dynamic_inputs.device)
@@ -42,8 +42,8 @@ class LSTM(BaseNNModel):
         # means = means.unsqueeze(1)
         # stds = stds.unsqueeze(1)
 
-        mean = self.torch_input_means[basin_id].unsqueeze(1)  #.to(dynamic_inputs.device)
-        std = self.torch_input_stds[basin_id].unsqueeze(1)    #.to(dynamic_inputs.device)
+        mean = self.torch_input_means[basin_id].unsqueeze(1).to(dynamic_inputs.device)
+        std = self.torch_input_stds[basin_id].unsqueeze(1).to(dynamic_inputs.device)
 
         # print(dynamic_inputs.device, mean.device, std.device)
         # aux = input("Press Enter to continue...")
@@ -74,11 +74,14 @@ class LSTM(BaseNNModel):
             output = self.fc(lstm_out[:, -1, :])
         else:
             with torch.no_grad():  # Disable gradient calculation for inference
+                # print(f"Before lstm: {torch.cuda.max_memory_allocated() / (1024 ** 2):.2f} MB")
                 lstm_out, _ = self.lstm(dynamic_inputs)
+                # print(f"During lstm: {torch.cuda.max_memory_allocated() / (1024 ** 2):.2f} MB")
                 if input_gate_activations is not None:
                     lstm_out = lstm_out * input_gate_activations.unsqueeze(1)
                 lstm_out = self.dropout_layer(lstm_out)
                 output = self.fc(lstm_out[:, -1, :])
+                # print(f"After lstm: {torch.cuda.max_memory_allocated() / (1024 ** 2):.2f} MB")
 
         # # Print the memory usage on the GPU
         # allocated = torch.cuda.memory_allocated()
@@ -92,8 +95,12 @@ class LSTM(BaseNNModel):
         # # Clip the outputs
         # output = torch.maximum(output, min_values)
 
-        # # # Clear the cache
-        # # torch.cuda.empty_cache()
-        
+        # Clear the cache
+        del dynamic_inputs, lstm_out
+        torch.cuda.empty_cache()
+
+        # print(f"After fc: {torch.cuda.max_memory_allocated() / (1024 ** 2):.2f} MB")
+        # print(f"Output tensor size: {output.size()}, memory allocated: {torch.cuda.memory_allocated() / 1024 ** 2:.2f} MB")
+
         return output
     

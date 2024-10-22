@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import YearLocator, MonthLocator, DateFormatter
 import pandas as pd
 import numpy as np
+import torch
 
 from src.utils.metrics import (
     NSE_eval,
@@ -120,7 +121,21 @@ def compute_and_save_metrics(metrics, run_dir):
         
         metrics_df.to_csv(metrics_dir / f'metrics_{period}.csv', float_format='%.4e')
 
+def log_gpu_memory_summary(device, log_file_path="gpu_memory_log.txt", abbreviated=False):
+    """
+    Logs the GPU memory summary to a specified file.
 
+    Args:
+        device (str): The device for which to generate the memory summary (e.g., 'cuda:0').
+        log_file_path (str): The path of the file to save the memory summary.
+        abbreviated (bool): Whether to abbreviate the memory summary (default is False).
+    """
+    # Get the memory summary as a string
+    memory_summary = torch.cuda.memory_summary(device, abbreviated=abbreviated)
+
+    # Open the file and write the memory summary
+    with open(log_file_path, "w") as file:
+        file.write(memory_summary)
 
 if __name__ == "__main__":
     pass

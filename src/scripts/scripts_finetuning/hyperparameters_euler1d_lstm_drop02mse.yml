@@ -1,0 +1,33 @@
+odesmethod:
+  euler:
+    time_step: 
+      - 1.0
+      # - 0.5
+
+batch_size:
+  - 256
+
+learning_rate:
+  - 
+    initial: 0.0001
+    decay: 0.1
+    decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs)
+  - 0.0001
+
+epochs:
+  - 80
+  # - 100
+
+# Length of the input sequence
+seq_length: 
+  - 270
+
+# Loss function to use [mse, nse, nse-nh]
+loss: 
+  - mse
+
+hidden_size:
+  - [128]
+
+dropout:
+  - 0.2

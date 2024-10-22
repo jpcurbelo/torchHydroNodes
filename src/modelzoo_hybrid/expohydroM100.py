@@ -38,11 +38,22 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         if self.cfg.scale_target_vars:
             self.scale_target_vars(is_trainer=True)
-    
 
+        # Set the device
+        self.device_eval = torch.device('cpu')
+    
     def forward(self, inputs, basin, use_grad=True):
 
         self.use_grad = use_grad
+
+        if not self.use_grad:
+            # Disable GPU usage and transfer everything to CPU
+            self.device_eval = torch.device('cpu')
+            self.pretrainer.nnmodel.to(self.device_eval)
+            inputs = inputs.to(self.device_eval)
+        else:
+            self.device_eval = self.device
+
 
         # print('use_grad', use_grad)
         # print(f"IN - Memory usage before forward pass: {torch.cuda.memory_allocated() / 1024**2:.2f} MB")
@@ -63,9 +74,6 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             self.window_size = inputs.shape[1]
             self.s_snow = inputs[:, :, 0]
             self.s_water = inputs[:, :, 1]
-            # self.precp_series = inputs[:, :, 2]
-            # self.tmean_series = inputs[:, :, 3]
-            # self.time_series_lstm = inputs[:, :, 4]
             self.nn_inputs = {}
             for i, var in enumerate(self.pretrainer.input_var_names[2:]):
                 self.nn_inputs[var] = inputs[:, :, i + 2]
@@ -74,12 +82,10 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             # Flatten self.time_series to have a 1D vector containing the time idxs values
             self.time_series, _ = torch.unique(self.time_series_lstm.flatten(), sorted=True, return_inverse=True)
             # Transfer to device
-            self.time_series = self.time_series.to(self.device)
+            self.time_series = self.time_series.to(self.device_eval)
 
             self.s_snow_lstm = self.s_snow[0, :-1]
             self.s_water_lstm = self.s_water[0, :-1]
-            # self.precp_lstm = self.precp_series[0, :-1]
-            # self.tmean_lstm = self.tmean_series[0, :-1]
             self.nn_inputs_lstm = {}
             for var in self.nn_inputs:
                 self.nn_inputs_lstm[var] = self.nn_inputs[var][0, :-1]
@@ -87,38 +93,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             # Add the first value of the sequence at the begining of the tensor
             self.s_snow_lstm = torch.cat((self.s_snow_lstm[0].unsqueeze(0), self.s_snow_lstm), dim=0)   #.to(self.device)
             self.s_water_lstm = torch.cat((self.s_water_lstm[0].unsqueeze(0), self.s_water_lstm), dim=0)   #.to(self.device)
-            # self.precp_lstm = torch.cat((self.precp_lstm[0].unsqueeze(0), self.precp_lstm), dim=0)   #.to(self.device)
-            # self.tmean_lstm = torch.cat((self.tmean_lstm[0].unsqueeze(0), self.tmean_lstm), dim=0)    #.to(self.device)
             for var in self.nn_inputs_lstm:
                 self.nn_inputs_lstm[var] = torch.cat((self.nn_inputs_lstm[var][0].unsqueeze(0), self.nn_inputs_lstm[var]), dim=0)
 
         # Make basin global to be used in hybrid_model
         self.basin = basin
-
-
-        # print('self.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
-        # print('inputs:', inputs.shape)
-        # print(inputs[:3, :])
-        # print(inputs[-3:, :])
-        # print('targets:', targets.shape)
-        # print(targets[:3, :])
-        # print(targets[-3:, :])
-        # aux = input('Press Enter to continue...')
-
-        # print('self.pretrainer.input_var_names[2:]', self.pretrainer.input_var_names[2:])
-        # print('self.nn_inputs:', self.nn_inputs.keys())
-        # for var in self.nn_inputs:
-        #     print(var, self.nn_inputs[var][:3])
-        #     print(var, self.nn_inputs[var][-3:])
-        # aux = input('Press Enter to continue...')
-
-
-
-        # # Set the interpolators 
-        # # self.precp_interp = self.interpolators[self.basin]['prcp']
-        # # self.temp_interp = self.interpolators[self.basin]['tmean']
-        # # self.lday_interp = self.interpolators[self.basin]['dayl']
-
 
         # # Profile the ODE solver
         # time_start = time.time()
@@ -212,6 +191,10 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         # Clear the cache
         torch.cuda.empty_cache()
 
+        # Get nnmodel back to the device
+        if not self.use_grad:
+            self.pretrainer.nnmodel.to(self.device)
+
         # Return the last variable (last column) from the output + the state variables
         return q_output, s_snow_nn, s_water_nn
     
@@ -232,18 +215,19 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         input_list = [self.interpolators[self.basin][var](t_np, extrapolate='periodic') for var in self.pretrainer.input_var_names[2:]]
 
         # Convert to tensor
-        input_tensors = [torch.tensor(input_, dtype=self.data_type_torch).unsqueeze(0).to(self.device) for input_ in input_list]
+        input_tensors = [torch.tensor(input_, dtype=self.data_type_torch).unsqueeze(0).to(self.device_eval) for input_
+                                in input_list]
         
         # Stack tensors to create inputs for the neural network
         inputs_nn = torch.stack([s0, s1] + input_tensors, dim=-1)
 
         # Forward pass
         if self.pretrainer.nnmodel.include_static:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin, 
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn, self.basin, 
                                         static_inputs=self.pretrainer.nnmodel.torch_static[self.basin],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin,
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn, self.basin,
                                         use_grad=self.use_grad)[0]
 
         # Unpacking target variables from m100_outputs list
@@ -265,7 +249,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             
             # Find lday from interterpolators
             lday = self.interpolators[self.basin]['dayl'](t_np, extrapolate='periodic')
-            lday = torch.tensor(lday, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
+            lday = torch.tensor(lday, dtype=self.data_type_torch).unsqueeze(0).to(self.device_eval)
 
             p_snow = torch.relu(torch.sinh(p_snow) * self.step_function(-temp[0]))
             p_rain = torch.relu(torch.sinh(p_rain))
@@ -310,7 +294,8 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
         input_list = [self.interpolators[self.basin][var](t_np, extrapolate='periodic') for var in self.pretrainer.input_var_names[2:]]
 
         # Convert to tensor
-        input_tensors = [torch.tensor(input_, dtype=self.data_type_torch).unsqueeze(0).to(self.device) for input_ in input_list]
+        input_tensors = [torch.tensor(input_, dtype=self.data_type_torch).unsqueeze(0).to(self.device_eval) for input_
+                            in input_list]
 
         # Prepare lstm inputs. Remove the first element and add the new value to the last entry
         self.s_snow_lstm = torch.cat((self.s_snow_lstm[1:], s0), dim=0)
@@ -323,11 +308,11 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
 
         # Forward pass
         if self.pretrainer.nnmodel.include_static:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin, 
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn, self.basin, 
                                         static_inputs=self.pretrainer.nnmodel.torch_static[self.basin],
                                         use_grad=self.use_grad)[0]
         else:
-            m100_outputs = self.pretrainer.nnmodel(inputs_nn.to(self.device), self.basin,
+            m100_outputs = self.pretrainer.nnmodel(inputs_nn, self.basin,
                                         use_grad=self.use_grad)[0]
 
         # Target variables:  Psnow, Prain, M, ET and, Q
@@ -350,7 +335,7 @@ class ExpHydroM100(BaseHybridModel, ExpHydroCommon, nn.Module):
             
             # Find lday from interterpolators
             lday = self.interpolators[self.basin]['dayl'](t_np, extrapolate='periodic')
-            lday = torch.tensor(lday, dtype=self.data_type_torch).unsqueeze(0).to(self.device)
+            lday = torch.tensor(lday, dtype=self.data_type_torch).unsqueeze(0).to(self.device_eval)
 
             p_snow = torch.relu(torch.sinh(p_snow) * self.step_function(-temp[0]))
             p_rain = torch.relu(torch.sinh(p_rain))

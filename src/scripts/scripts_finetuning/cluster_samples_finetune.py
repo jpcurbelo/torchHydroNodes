@@ -38,69 +38,41 @@ from src.modelzoo_hybrid import (
     get_trainer,
 )
 
-nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+# nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
+nnmodel_type = 'lstm'   # 'lstm' or 'mlp'
 
 # base_name = f'runs_finetune_{nnmodel_type}'
 # base_name = f'test_runs_finetune_{nnmodel_type}'
 
 SAMPLE_FRACTION = 0.1   # None
-BASIN_FILE = '59_basin_file_sample.txt'   # None 
+BASIN_FILE = '../../59_basin_file_sample_ok.txt'   # None 
 # SAMPLE_FRACTION = 0.2   # None
 # BASIN_FILE = '116_basin_file_sample.txt'  # None 
-CFG_FILE_BASE = Path('config_file_base_mlp.yml')
+# CFG_FILE_BASE = Path('config_file_base_mlp.yml')
+CFG_FILE_BASE = Path('config_file_base_lstm_4inp.yml')
 
-# HP_FILE = 'hyperparameters_euler1d.yml'
-# BASE_VERSION = 'euler1d_'
+# HP_FILE = 'hyperparameters_euler1d_lstm.yml'
+# BASE_VERSION = 'euler1d_finetune_'
 
-# HP_FILE = 'hyperparameters_euler1d_64x5.yml'
-# BASE_VERSION = 'euler1d_64x5_'
+# HP_FILE = 'hyperparameters_euler1d_lstm_drop02nse.yml'
+# BASE_VERSION = 'euler1d_finetune_drop02nse_'
 
-# HP_FILE = 'hyperparameters_euler1d_64x3.yml'
-# BASE_VERSION = 'euler1d_64x3_'
+# HP_FILE = 'hyperparameters_euler1d_lstm_drop02mse.yml'
+# BASE_VERSION = 'euler1d_finetune_drop02mse_'
 
-# HP_FILE = 'hyperparameters_euler05d.yml'
-# BASE_VERSION = 'euler05d_'
-
-# HP_FILE = 'hyperparameters_euler02d.yml'
-# BASE_VERSION = 'euler02d_'
-
-# HP_FILE = 'hyperparameters_rk4_1d.yml'
-# BASE_VERSION = 'rk4_1d_'
-
-# HP_FILE = 'hyperparameters_rk4_05d.yml'
-# BASE_VERSION = 'rk4_05d_'
-
-# HP_FILE = 'hyperparameters_rk23tol33.yml'
-# BASE_VERSION = 'rk23tol33_'
-
-# HP_FILE = 'hyperparameters_rk23tol46.yml'
-# BASE_VERSION = 'rk23tol46_'
-
-# HP_FILE = 'hyperparameters_rk23tol69.yml'
-# BASE_VERSION = 'rk23tol69_'
-
-HP_FILE = 'hyperparameters_euler05d_finetune.yml'
-BASE_VERSION = 'euler05d_finetune_'
+HP_FILE = 'hyperparameters_euler05d_lstm_drop02mse.yml'
+BASE_VERSION = 'euler05d_finetune_drop02mse_'
 
 # Remove trailing underscore if it exists
 formatted_version = BASE_VERSION.rstrip('_')
 
 # Create the base name using the formatted version
-# base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
-# base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{formatted_version}'
-base_name = f'bash_{nnmodel_type}_{formatted_version}'
-
-
-# SAMPLE_FRACTION = 0.01
-# CFG_FILE_BASE = Path(f'config_file_base_{nnmodel_type}_testing.yml')
-# HP_FILE = f'hyperparameters_{nnmodel_type}_testing.yml'
-# base_name = f'test_runs_finetune_{nnmodel_type}'
-# BASE_VERSION = ''
+base_name = f'finetune_{nnmodel_type}_{formatted_version}_4inp'
 
 FINETUNE_FOLDER = create_finetune_folder(base_name=base_name)
 
-USE_PROCESS_POOL = 1
-MAX_WORKERS = 32
+USE_PROCESS_POOL = 0
+MAX_WORKERS = 1
 
 # Setup dynamic logging for each run
 def setup_logging(log_file):
@@ -191,8 +163,6 @@ def train_model_for_basin(run_folder, cfg_file, basin, run_version):
         lr=cfg_run.lr_pretrain, 
         epochs=cfg_run.epochs_pretrain,
         any_log=False)
-    
-
 
     if not pretrain_ok:
         print(f'Pretraining failed for basin {basin}')
@@ -247,11 +217,6 @@ def main(basin_file=BASIN_FILE, sample_fraction=SAMPLE_FRACTION, config_file_bas
 
     # Generate hyperparameter combinations`
     params_combinations = hyperparameter_combinations(hyperparameters)
-
-    # print(f'Number of hyperparameter combinations: {len(params_combinations)}')
-    # # print('Hyperparameter combinations:', params_combinations)
-    # for i, combination in enumerate(params_combinations):
-    #     print(f"Combination {i + 1}: {combination}")
 
     # Load base configuration file
     if isinstance(config_file_base, Path):
