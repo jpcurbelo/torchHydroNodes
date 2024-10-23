@@ -1,0 +1,38 @@
+odesmethod:
+  euler:
+    time_step: 
+      - 1.0
+      
+batch_size:
+  - 256
+
+learning_rate:
+  - 
+    initial: 0.001
+    decay: 0.1
+    decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs)
+
+epochs:
+  - 100
+
+hidden_size:
+  - [32, 32, 32]
+  # - [64, 64, 64]
+
+dropout:
+  - 0.0
+  # - 0.2
+
+carryover_state:
+  # - False
+  - True  
+
+seed:
+  - 1111
+  - 2222
+  - 3333
+  - 4444
+  - 5555
+  - 6666
+  - 7777
+  - 8888

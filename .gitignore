@@ -9,6 +9,7 @@ src/scripts_paper/ZZZruns_*
 src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
 src/scripts_paper/569basins_single_*
+src/scripts_paper/59basins_single_*
 src/scripts_paper/M100_results_569basins*
 src/scripts_paper/569basins_neuralhydrology*
 src/scripts/scripts_plots/plots*
@@ -20,6 +21,8 @@ src/scripts/scripts_finetuning/A*
 src/scripts/scripts_finetuning/bash_runs*
 src/scripts/scripts_finetuning/cluster_sample_jobs**
 src/scripts/scripts_finetuning/bash_mlp_*
+src/scripts/scripts_finetuning/finetune_*
+src/scripts/scripts_finetuning/__test_*
 
 # Files
 src/scripts_paper/*_temp_*.yml

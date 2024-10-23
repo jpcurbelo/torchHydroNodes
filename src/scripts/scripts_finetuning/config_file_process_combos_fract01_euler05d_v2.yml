@@ -1,0 +1,38 @@
+main_folder: cluster_sample_jobs_59basins_euler05d_Ninp
+
+run_folders:
+  ## Folder name: label
+  finetune_fract01_mlp_euler05d_finetune_4inp_241007_124122: "Euler 0.5d - 4inp"
+  finetune_fract01_mlp_euler05d_finetune_5inpA_241007_124216: "Euler 0.5d - 5inpA"
+  finetune_fract01_mlp_euler05d_finetune_5inpB_241007_124301: "Euler 0.5d - 5inpB"
+  finetune_fract01_mlp_euler05d_finetune_6inp_241007_124339: "Euler 0.5d - 6inp"
+  finetune_fract01_mlp_euler05d_finetune_7inp_241007_124506: "Euler 0.5d - 7inp"
+  finetune_fract01_mlp_euler05d_finetune_8inp_241007_124543: "Euler 0.5d - 8inp"
+
+periods:
+  - train
+  - valid
+
+# Metrics to be plotted
+metrics:
+  - nse
+  # - fhv
+  # - kge
+
+# Top models criteria: median, mean, mean_median_score
+top_models_criteria: median
+
+# Thresholds for the metrics
+threshold_dict:
+  # metric:
+  #   - value # Threshold value
+  #   - type  # Threshold type, greater or less (greater means that the metric should be greater than the threshold)
+  nse : 
+    - 0.0         # Threshold value
+    - greater     # Threshold type (greater means that the metric should be greater than the threshold)
+  kge: 
+    - 0.0
+    - greater
+  fhv:
+    - 500
+    - less

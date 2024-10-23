@@ -9,6 +9,7 @@ run_folders:
   AA_bash_runs_finetune_mlp_euler05d_240928_100946: "Euler 0.5d"
   AA_bash_runs_finetune_mlp_euler05d_32x3_240928_101408: "Euler 0.5d 32x3"
   AA_bash_runs_finetune_mlp_euler05d_carryover_240924_182518: "Euler 0.5d carryover"
+  bash_runs_finetune_fract01_mlp_euler05d_32x3_m0rk4_1d_241010_123935: "Euler 0.5d 32x3 m0rk4 1d"
   AA_bash_runs_finetune_mlp_euler02d_240928_101516: "Euler 0.2d"
   AA_bash_runs_finetune_mlp_euler02d_32x3_240928_101614: "Euler 0.2d 32x3"
   AA_bash_runs_finetune_mlp_midpoint1d_240925_094054: "Midpoint 1d"

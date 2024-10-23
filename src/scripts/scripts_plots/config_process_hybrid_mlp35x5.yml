@@ -72,15 +72,30 @@
 # # graph_title: Hybrid model | MLP/Euler0.5d | 256 batch | carryover
 # # epochs: 150
 
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr4_100ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr4_100ep
+# graph_title: Hybrid model | MLP/Euler0.5d | 256 batch
+# epochs: 100
+
+# results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr34_100ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr34_100ep
+# graph_title: Hybrid model | MLP/Euler0.5d | 256 batch | lr34
+# epochs: 100
+
+results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler05d_lr34_100ep_1000pre_lr3_carryoverYES
+plots_folder: AAplots_hybrid_mlp32x5_256b_euler05d_lr34_100ep_carryoverYES
+graph_title: Hybrid model | MLP/Euler0.5d | 256 batch | lr34 | carryover
+epochs: 100
+
 # results_folder: ../../scripts_paper/569basins_single_mlp32x5_256b_euler02d_lr4_150ep_1000pre_lr3
 # plots_folder: AAplots_hybrid_mlp32x5_256b_euler02d_lr4_150ep
 # graph_title: Hybrid model | MLP/Euler0.2d | 256 batch
 # epochs: 150
 
-results_folder: ../../scripts_paper/569basins_single_mlp32x3_256b_euler02d_lr4_150ep_1000pre_lr3
-plots_folder: AAplots_hybrid_mlp32x3_256b_euler02d_lr4_150ep
-graph_title: Hybrid model | MLP/Euler0.2d | 256 batch | 32x3
-epochs: 150
+# results_folder: ../../scripts_paper/569basins_single_mlp32x3_256b_euler02d_lr4_150ep_1000pre_lr3
+# plots_folder: AAplots_hybrid_mlp32x3_256b_euler02d_lr4_150ep
+# graph_title: Hybrid model | MLP/Euler0.2d | 256 batch | 32x3
+# epochs: 150
 
 # results_folder: ../../scripts_paper/569basins_single_mlp32x5_7305b_rk4_1d_lr4_150ep_1000pre_lr3
 # plots_folder: AAplots_hybrid_mlp32x5_7305b_rk4_1d_lr4_150ep

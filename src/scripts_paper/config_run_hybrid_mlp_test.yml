@@ -6,9 +6,12 @@ hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
 # odesmethod: bosh3
-odesmethod: rk4
-time_step: 1.0
+# rtol: 1e-3
+# atol: 1e-3
+odesmethod: euler
+time_step: 0.5
 
+# carryover_state: true
 carryover_state: false
 
 # Files to specify training, validation and test basins
@@ -16,7 +19,7 @@ basin_file: This is to be updated!!! # do not delete this line
 
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010_RK23
+data_dir: M0_results_569basins_1980_2010_rk4_05d_custom
 
 nn_model_dir: This is to be updated!!! # do not delete this line
 
@@ -57,27 +60,32 @@ hidden_size:
 
 loss_pretrain: mse
 lr_pretrain: 0.001
-epochs_pretrain: 1000
+epochs_pretrain: 20
 ###############################################################
 
-scale_target_vars: True
+scale_target_vars: true
 
 # --- Training configurations --- #
 
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1980"
+# train_start_date: "01/10/1980"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1985"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
+valid_end_date: "30/09/2005"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: nse
 
 # Number of epochs to train the model
-epochs: 150
+epochs: 5
 
 # Patience for early stopping
-patience: 30
+patience: 20
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
@@ -88,18 +96,18 @@ batch_size: 256
 # batch_size: 7304
 # batch_size: -1
 
-# # Dropout rate for the model
-# dropout: 0.2
+# Dropout rate for the model
+dropout: 0.0
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
 
 # # Learning rate for the optimizer
-learning_rate: 0.0001
-# learning_rate:
-#   initial: 0.001
-#   decay: 0.5
-#   decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
+# learning_rate: 0.0001
+learning_rate:
+  initial: 0.001
+  decay: 0.1
+  decay_step_fraction: 2  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
@@ -117,14 +125,14 @@ precision: float32
 # Number of parallel workers used in the data pipeline
 num_workers: 16
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
-verbose: 0
+verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
 log_n_basins: 1
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 25
+log_every_n_epochs: 5
 
 # Metrics to use for evaluation (after training)
 metrics:

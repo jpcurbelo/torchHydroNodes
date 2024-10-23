@@ -865,6 +865,10 @@ class Config(object):
     def carryover_state(self) -> bool:
         return self._get_property_value("carryover_state", default=False)
 
+    @carryover_state.setter
+    def carryover_state(self, value: bool):
+        self._cfg['carryover_state'] = value
+
 ## Classes for data loading
 class BatchSampler(Sampler):
     def __init__(self, dataset_len, batch_size):
@@ -923,6 +927,9 @@ class BasinBatchSampler(Sampler):
             else:
                 len_idx = len(indices)
                 batch_size = self.batch_size
+
+            # len_idx = len(indices) - 1
+            # batch_size = self.batch_size - 1
 
             # for i in range(0, len(indices), self.batch_size):  ## First (old) overlap version
             # for i in range(0, len(indices) - 1, self.batch_size - 1):  ## Second (new) overlap version

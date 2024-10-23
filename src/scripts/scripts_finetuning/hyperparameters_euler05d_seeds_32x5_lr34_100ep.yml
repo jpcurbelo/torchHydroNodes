@@ -1,21 +1,19 @@
 odesmethod:
-  rk4:
+  euler:
     time_step: 
       - 0.5
-
+      
 batch_size:
   - 256
 
 learning_rate:
-  - 0.001
-  - 0.0001
   - 
     initial: 0.001
     decay: 0.1
-    decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs) 
+    decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs)
 
 epochs:
-  - 150
+  - 100
 
 hidden_size:
   - [32, 32, 32, 32, 32]
@@ -25,13 +23,16 @@ dropout:
   - 0.0
   # - 0.2
 
+carryover_state:
+  - False
+  # - True  
+
 seed:
-  # - 1111
-  # - 2222
-  # - 3333
-  # - 4444
-  # - 5555
-  # - 6666
+  - 1111
+  - 2222
+  - 3333
+  - 4444
+  - 5555
+  - 6666
   - 7777
   - 8888
-  - 9999

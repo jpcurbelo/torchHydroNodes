@@ -91,7 +91,7 @@ class NNpretrainer(ExpHydroCommon):
         self.num_batches = len(self.dataloader)
 
         # Optimizer and scheduler
-        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler(self.epochs, lr_name='lr_pretrain')
+        self.optimizer, self.scheduler = self.setup_optimizer_and_scheduler(self.cfg.epochs_pretrain, lr_name='lr_pretrain')
 
         # Loss function setup
         try:
@@ -154,7 +154,9 @@ class NNpretrainer(ExpHydroCommon):
                 optimizer = optimizer_class(self.nnmodel.parameters(), lr=lr['initial'])
 
                 # Calculate the step size for the learning rate decay
-                step_size = epochs // lr['decay_step_fraction']
+                step_size = epochs // lr['decay_step_fraction'] + 1
+                # print("lr['decay_step_fraction']", lr['decay_step_fraction'])
+                # print(f"Step size for learning rate decay: {step_size}")  # Debugging: Print the step size
                 # print(f"Step size for learning rate decay: {step_size}")  # Debugging: Print the step size
                 
                 # Learning rate scheduler

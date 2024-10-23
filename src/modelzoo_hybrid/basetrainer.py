@@ -58,13 +58,15 @@ class BaseHybridModelTrainer:
 
     def train(self, is_resume=False, max_nan_batches=5):
 
+        self.model.cfg.carryover_state = False  # Disable carryover state for training
+
         early_stopping = EarlyStopping(patience=self.model.cfg.patience)
 
-        # if self.model.cfg.verbose:
-        print('-' * 60)
-        print(f"-- Training the hybrid model on {self.device_to_train} --")
-        print(f'Initial learning rate: {self.model.optimizer.param_groups[0]["lr"]:.2e}')
-        print('-' * 60)
+        if self.model.cfg.verbose:
+            print('-' * 60)
+            print(f"-- Training the hybrid model on {self.device_to_train} --")
+            print(f'Initial learning rate: {self.model.optimizer.param_groups[0]["lr"]:.2e}')
+            print('-' * 60)
 
         # # Save the model weights - Epoch 0
         # self.save_model()
@@ -124,6 +126,9 @@ class BaseHybridModelTrainer:
                 # Forward pass
                 q_sim, s_snow, s_water = self.model(inputs, basin_ids[0])
 
+                # print('q_sim:', q_sim)
+                # aux = input('Press Enter to continue...')
+
                 nan_mask = torch.isnan(q_sim)
                 if nan_mask.any():
                     nan_count += 1
@@ -164,12 +169,14 @@ class BaseHybridModelTrainer:
 
                 # Backward pass
                 loss.backward()
-                # Update the weights
-                self.model.optimizer.step()
+
                 # Gradient clipping
                 if self.model.cfg.clip_gradient_norm is not None:
                     torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
                
+                # Update the weights
+                self.model.optimizer.step()
+
                 # Accumulate the loss
                 epoch_loss_sum += loss.item()
                 num_batches_seen += 1
@@ -180,7 +187,8 @@ class BaseHybridModelTrainer:
 
                 # Delete variables to free memory
                 del inputs, targets, q_sim, loss
-                # torch.cuda.empty_cache()
+                torch.cuda.empty_cache()  # If using GPU
+                gc.collect()
 
                 first_batch = False  # Set the flag to False after processing the first batch
 
@@ -211,6 +219,8 @@ class BaseHybridModelTrainer:
                 break
 
             # Learning rate scheduler
+            # print('self.model.scheduler is not None', self.model.scheduler is not None)
+            # print('epoch < self.model.epochs - 1', epoch < self.model.epochs - 1)
             if (self.model.scheduler is not None) and epoch < self.model.epochs - 1:
                 current_lr = self.model.optimizer.param_groups[0]['lr']
                 self.model.scheduler.step()
@@ -218,17 +228,21 @@ class BaseHybridModelTrainer:
                 # Check if learning rate has changed
                 new_lr = self.model.optimizer.param_groups[0]['lr']
                 if self.model.cfg.verbose and new_lr != current_lr:
-                    print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
+                    print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e} (epoch {epoch + 1})")
 
             # Print the average loss for the epoch if not verbose (pbar is disabled)
             if not self.model.cfg.verbose:
                 print(f"Epoch {epoch + 1} Loss: {avg_loss:.4e}")
+
+            # Clear CUDA cache after the epoch if running on GPU
+            torch.cuda.empty_cache()
 
         # Evaluate and save the final plots
         if not stop_training:
             # Save the final model weights and plots
             if self.model.cfg.verbose:
                 print("-- Training completed | Evaluating the model --")
+            self.save_model()
             self.evaluate()
             if is_gpu:
                 torch.cuda.empty_cache()
@@ -251,6 +265,10 @@ class BaseHybridModelTrainer:
 
             # Write the header
             writer.writeheader()
+
+            # # Save the model weights - Epoch 0
+            # self.save_model()
+            # self.save_plots(epoch=0)
 
             nan_count = 0
             stop_training = False  # Flag to signal when to stop both loops
@@ -284,8 +302,16 @@ class BaseHybridModelTrainer:
                     inputs = inputs.to(self.device_to_train, non_blocking=True)
                     targets = targets.to(self.device_to_train, non_blocking=True) 
 
+
+                    # print('inputs.shape:', inputs.shape)
+                    # print(' self.pretrainer.input_var_names:', self.model.pretrainer.input_var_names)
+                    # aux = input('Press Enter to continue...')
+
                     # Forward pass
                     q_sim, _, _ = self.model(inputs, basin_ids[0])
+
+                    # print('q_sim:', q_sim)
+                    # aux = input('Press Enter to continue...')
 
                     # Check for NaN values
                     nan_mask = torch.isnan(q_sim)
@@ -355,6 +381,8 @@ class BaseHybridModelTrainer:
                 })
 
                 # Learning rate scheduler
+                # print('self.model.scheduler is not None', self.model.scheduler is not None)
+                # print('epoch < self.model.epochs - 1', epoch < self.model.epochs - 1)
                 if (self.model.scheduler is not None) and epoch < self.model.epochs - 1:
                     current_lr = self.model.optimizer.param_groups[0]['lr']
                     self.model.scheduler.step()
@@ -362,7 +390,7 @@ class BaseHybridModelTrainer:
                     # Check if learning rate has changed
                     new_lr = self.model.optimizer.param_groups[0]['lr']
                     if self.model.cfg.verbose and new_lr != current_lr:
-                        print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e}")
+                        print(f"Learning rate updated from {current_lr:.2e} to {new_lr:.2e} (epoch {epoch + 1})")
 
                 # Save the model weights and plots
                 if ((epoch == 0 or ((epoch + 1) % self.model.cfg.log_every_n_epochs == 0))) \

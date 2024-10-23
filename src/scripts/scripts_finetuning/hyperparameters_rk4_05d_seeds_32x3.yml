@@ -8,6 +8,11 @@ batch_size:
 
 learning_rate:
   - 0.001
+  - 0.0001
+  - 
+    initial: 0.001
+    decay: 0.1
+    decay_step_fraction: 2  # Decay step fraction (e.g., N -> 1/N of the total epochs) 
 
 epochs:
   - 150
@@ -28,4 +33,5 @@ seed:
   # - 5555
   # - 6666
   # - 7777
-  - 8888
+  # - 8888
+  - 9999

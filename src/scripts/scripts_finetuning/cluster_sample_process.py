@@ -24,12 +24,20 @@ from src.utils.plots import (
 # COMBO_FILE = Path('config_file_process_combos_fract01.yml')
 # COMBO_FILE = Path('config_file_process_combos_fract02.yml')
 # COMBO_FILE = Path('config_file_process_combos_fract01_euler05d.yml')
+# COMBO_FILE = Path('config_file_process_combos_fract01_euler05d_v2.yml')
 # COMBO_FILE = Path('config_file_process_combos_fract01_seeds.yml')
 COMBO_FILE = Path('config_file_process_combos_fract01_seeds_lr_inp.yml')
 
 ONLY_PLOT = 1   # True or False
-SEEDS_RUN = 1   # True or False
+SEEDS_RUN = 0   # True or False
 PLOT_INTERACTIVE = 0   # True or False
+
+TOPN = 20
+
+if 'seeds' in COMBO_FILE.stem.lower():
+    SEEDS_RUN = 1
+else:
+    SEEDS_RUN = 0
 
 
 def load_combinations(file_path):
@@ -324,10 +332,6 @@ def process_data(metric, metric_values, times, memories, combo_labels, collect_s
         sizes = [50 + (500 - 50) * size_normalize(n) for n in filtered_metric_data]
         
         create_scatter_plot(times_filtered, memories_filtered, filtered_metric_data, metric, period, combo_labels, cmap, main_folder, sizes, topN, number_of_basins)
-
-
-
-
 
 def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'], periods=['valid'], 
                              threshold_dict=None, topN=5, collect_seeds_results=False):
@@ -702,14 +706,14 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                 plt.title(f'{metric.upper()} Across Configurations (with {max_seeds} Seeds)')
 
                 # Adjust the scale to highlight std deviations better
-                plt.ylim([max(0, min(combo_means) - 2*max(combo_stds)), max(combo_means) + 1.2*max(combo_stds)])
+                plt.ylim([max(0, min(combo_mins) - 0.002), max(combo_means) + 1.2*max(combo_stds)])
 
                 # Annotate the number of seeds above the error bars
                 for i, (bar, seed_count) in enumerate(zip(bars, seeds_count)):
                     # Get the top of the error bar (mean + std) and position the text slightly above it
                     plt.text(bar.get_x() + bar.get_width() / 2, 
                             # combo_means[i] + combo_stds[i] + 0.002,  # Position slightly above the error bar (adjust 0.02 for padding)
-                            max(0, min(combo_means) - 2*max(combo_stds)) + 0.002,
+                            max(0, min(combo_mins) - 0.002) + 0.002,
                             f'{seed_count} seeds', 
                             ha='center', va='bottom', fontsize=9, color='black')
 
@@ -718,9 +722,6 @@ def plot_performance_scatter(main_folder, run_folders_labels, run_metrics=['nse'
                 # Save or show the error bar plot
                 plt.savefig(Path(main_folder) / f'error_bars_{metric}_{period}.png', bbox_inches='tight', dpi=150)
                 plt.close()
-
-
-
             
 ##########################################################################################################
 def main(combo_file=COMBO_FILE):
@@ -772,7 +773,7 @@ def main(combo_file=COMBO_FILE):
 
     # Generate plots
     plot_performance_scatter(main_folder, run_folders_labels, run_metrics, periods, 
-                             threshold_dict, topN=20, collect_seeds_results=SEEDS_RUN)
+                             threshold_dict, topN=TOPN, collect_seeds_results=SEEDS_RUN)
 
 if __name__ == "__main__":
     main()

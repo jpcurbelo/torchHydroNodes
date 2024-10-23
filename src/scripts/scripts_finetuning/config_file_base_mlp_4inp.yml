@@ -12,7 +12,8 @@ time_step: This is to be updated!!!
 # --- Data configurations --- #
 # Dataset to use for training and testing [camelsus, summaca]
 # data_dir: M0_results_569basins_1980_2010_RK23
-data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+# data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+data_dir: M0_results_569basins_1980_2010_rk4_05d_custom
 
 # If not nn_model_dir, specify the model and parameters to use:
 ###############################################################

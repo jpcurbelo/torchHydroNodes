@@ -43,12 +43,15 @@ nnmodel_type = 'mlp'   # 'lstm' or 'mlp'
 # base_name = f'runs_finetune_{nnmodel_type}'
 # base_name = f'test_runs_finetune_{nnmodel_type}'
 
+# SAMPLE_FRACTION = None
+# BASIN_FILE = '4_basin_file.txt'  # None
 SAMPLE_FRACTION = 0.1   # None
 BASIN_FILE = '59_basin_file_sample_ok.txt'   # None 
 # SAMPLE_FRACTION = 0.2   # None
 # BASIN_FILE = '116_basin_file_sample_ok.txt'  # None 
 
 # # CFG_FILE_BASE = Path('config_file_base_mlp.yml')
+# CFG_FILE_BASE = Path('config_file_base_test.yml')
 CFG_FILE_BASE = Path('config_file_base_mlp_4inp.yml')
 # CFG_FILE_BASE = Path('config_file_base_mlp_5inp_a.yml')
 # CFG_FILE_BASE = Path('config_file_base_mlp_5inp_b.yml')
@@ -94,17 +97,36 @@ CFG_FILE_BASE = Path('config_file_base_mlp_4inp.yml')
 # # BASE_VERSION = 'euler1d_seeds_32x3_lr34_7inp_'
 # # BASE_VERSION = 'euler1d_seeds_32x3_lr34_8inp_'
 
-HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr4_300ep.yml'
-BASE_VERSION = 'euler1d_seeds_32x3_lr4_300ep_'
 
+# HP_FILE = 'hyperparameters_test.yml'
+# BASE_VERSION = 'test_'
 
+# HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr4_300ep.yml'
+# BASE_VERSION = 'euler1d_seeds_32x3_lr4_300ep_'
+
+# HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr45.yml'
+# BASE_VERSION = 'euler1d_seeds_32x3_lr45_'
+
+# HP_FILE = 'hyperparameters_euler1d_seeds_32x3_lr34_100ep.yml'
+# BASE_VERSION = 'euler1d_seeds_32x3_lr34_100ep_'
 
 
 # HP_FILE = 'hyperparameters_euler05d.yml'
 # BASE_VERSION = 'euler05d_'
 
+# HP_FILE = 'hyperparameters_euler05d_seeds_32x3_lr34_100ep.yml'
+# BASE_VERSION = 'euler05d_seeds_32x3_lr34_100ep_'
+
+# HP_FILE = 'hyperparameters_euler05d_seeds_32x4_lr34_100ep.yml'
+# BASE_VERSION = 'euler05d_seeds_32x4_lr34_100ep_'
+
+HP_FILE = 'hyperparameters_euler05d_seeds_32x5_lr34_100ep.yml'
+# BASE_VERSION = 'euler05d_seeds_32x5_lr34_100ep_'
+BASE_VERSION = 'euler05d_seeds_32x5_lr34_100ep_carryNO_'
+
 # HP_FILE = 'hyperparameters_euler05d_32x3.yml'
-# BASE_VERSION = 'euler05d_32x3_'
+# # BASE_VERSION = 'euler05d_32x3_'
+# BASE_VERSION = 'euler05d_32x3_m0rk4_1d'
 
 # HP_FILE = 'hyperparameters_euler05d.yml'
 # # BASE_VERSION = 'euler05d_'
@@ -115,6 +137,15 @@ BASE_VERSION = 'euler1d_seeds_32x3_lr4_300ep_'
 
 # HP_FILE = 'hyperparameters_euler05d_seeds_32x3.yml'
 # BASE_VERSION = 'euler05d_seeds_32x3_'
+
+# HP_FILE = 'hyperparameters_euler05d_seeds_32x4.yml'
+# BASE_VERSION = 'euler05d_seeds_32x4_5inpA_'
+
+# HP_FILE = 'hyperparameters_euler05d_seeds_32x3_lr4_mse.yml'
+# BASE_VERSION = 'euler05d_seeds_32x3_m0rk4_lr4_mse_'
+
+# HP_FILE = 'hyperparameters_euler05d_seeds_32x4_lr4_mse.yml'
+# BASE_VERSION = 'euler05d_seeds_32x4_m0rk4_lr4_mse_'
 
 # HP_FILE = 'hyperparameters_euler02d.yml'
 # BASE_VERSION = 'euler02d_'
@@ -194,14 +225,29 @@ BASE_VERSION = 'euler1d_seeds_32x3_lr4_300ep_'
 # HP_FILE = 'hyperparameters_euler05d_finetune.yml'
 # BASE_VERSION = 'euler05d_finetune_'
 
+# HP_FILE = 'hyperparameters_euler05d_finetune_v2.yml'
+# # BASE_VERSION = 'euler05d_finetune_4inp_'
+# # BASE_VERSION = 'euler05d_finetune_5inpA_'
+# # BASE_VERSION = 'euler05d_finetune_5inpB_'
+# # BASE_VERSION = 'euler05d_finetune_6inp_'
+# # BASE_VERSION = 'euler05d_finetune_7inp_'
+# BASE_VERSION = 'euler05d_finetune_8inp_'
+
+
+
 # Remove trailing underscore if it exists
 formatted_version = BASE_VERSION.rstrip('_')
 
 # Create the base name using the formatted version
+# base_name = f'__test_4basins_{nnmodel_type}_{formatted_version}_carryoverYES'
+# base_name = f'__test_4basins_{nnmodel_type}_{formatted_version}_carryoverNO'
 # base_name = f'AA_bash_runs_finetune_{nnmodel_type}_{formatted_version}'
 base_name = f'bash_runs_finetune_fract01_{nnmodel_type}_{formatted_version}'
+# base_name = f'bash_runs_finetune_fract02_{nnmodel_type}_{formatted_version}'
 # base_name = f'A_bash_runs_finetune_fract02_{nnmodel_type}_{formatted_version}'
 # base_name = f'bash_{nnmodel_type}_{formatted_version}'
+
+# base_name = f'finetune_fract01_{nnmodel_type}_{formatted_version}'
 
 
 # SAMPLE_FRACTION = 0.01
@@ -303,7 +349,8 @@ def train_model_for_basin(run_folder, cfg_file, basin, run_version):
         loss=cfg_run.loss_pretrain, 
         lr=cfg_run.lr_pretrain, 
         epochs=cfg_run.epochs_pretrain,
-        any_log=False)
+        # any_log=False
+    )
     
 
 
