@@ -8,6 +8,9 @@ import xarray as xr
 import numpy as np
 from scipy.interpolate import Akima1DInterpolator
 import time
+import pandas as pd
+from spotpy import algorithms, parameter, analyser  # SPOTPY:
+from pathlib import Path
 
 # Make sure code directory is in path,
 # Add the parent directory of your project to the Python path
@@ -17,6 +20,7 @@ sys.path.append(project_dir)
 from src.utils.load_process_data import (
     Config,
     update_hybrid_cfg,
+    spotSetupExpHydro,
 )
 from src.datasetzoo import (
     get_dataset, 
@@ -43,7 +47,7 @@ def _main():
     
     if args["model"] == "conceptual" and args["action"] == "calibrate":
         print('-- Calibrating the model')
-        # run_calibrate_model(config_file=Path(args["config_file"]), gpu=args["cpu"])
+        run_calibrate_model(config_file=Path(args["config_file"]))
     elif args["model"] == "conceptual":
         run_conceptual_model(config_file=Path(args["config_file"]), gpu=args["gpu"])
     elif args["model"] == "pretrainer" and args["action"] == "train":
@@ -111,6 +115,126 @@ def _load_cfg_and_ds(config_file: Path, gpu: int = None, model: str = 'conceptua
         raise ValueError("Invalid mode. Please specify 'conceptual' or 'pretrain'.")
     
     return cfg, ds
+
+def get_calibration_dataset(cfg, dataset, basin):
+
+    # Check the period_calibrate value and choose the appropriate dataset
+    if cfg.period_calibrate == 'all':
+        # Select the basin and concatenate datasets
+        ds_train = dataset.ds_train.sel(basin=basin)
+        ds_valid = dataset.ds_valid.sel(basin=basin) if hasattr(dataset, 'ds_valid') else None
+        ds_test = dataset.ds_test.sel(basin=basin) if hasattr(dataset, 'ds_test') else None
+
+        # Concatenate the datasets if they exist
+        ds_calib = ds_train
+        if ds_valid is not None:
+            ds_calib = xr.concat([ds_calib, ds_valid], dim='date')
+        if ds_test is not None:
+            ds_calib = xr.concat([ds_calib, ds_test], dim='date')
+
+        # Sort by date to ensure temporal ordering
+        ds_calib = ds_calib.sortby('date')
+        time_idx0 = 0
+
+    else:
+        # Handle individual cases (train, valid, or test)
+        if cfg.period_calibrate == 'train':
+            ds_calib = dataset.ds_train.sel(basin=basin)
+            time_idx0 = 0
+        elif cfg.period_calibrate == 'test':
+            if hasattr(dataset, 'ds_test'):
+                ds_calib = dataset.ds_test.sel(basin=basin)
+                time_idx0 = len(dataset.ds_train['date'].values)
+            else:
+                raise ValueError("The test dataset (ds_test) is not available.")
+        elif cfg.period_calibrate == 'valid':
+            if hasattr(dataset, 'ds_valid'):
+                ds_calib = dataset.ds_valid.sel(basin=basin)
+                time_idx0 = len(dataset.ds_train['date'].values)
+            else:
+                raise ValueError("The validation dataset (ds_valid) is not available.")
+        else:
+            raise ValueError("Invalid period. Please specify 'train', 'test', 'valid', or 'all'.")
+        
+    # Load the variables for the concept model
+    _, var_outputs, concept_vars = cfg._load_concept_model_vars(cfg.concept_model)
+
+    # Get the alias map
+    alias_map = dataset._get_alias_map(concept_vars + var_outputs)
+
+    # Create a reversed alias map: each alias points to its main key
+    reversed_alias_map = {alias: key for key, aliases in alias_map.items() for alias in aliases}
+
+    # Replace the concept_vars with their main name if found in the reversed alias map
+    updated_concept_vars = [reversed_alias_map.get(var, var) for var in concept_vars]
+
+    # Check which concept variables exist in the dataset
+    existing_vars = [var for var in concept_vars + var_outputs if var in ds_calib]
+
+    # Replace the concept_vars with their main name if found in the reversed alias map
+    updated_concept_vars = [reversed_alias_map.get(var, var) for var in existing_vars]
+
+    # Select and rename only the variables that exist in ds_calib
+    ds_calib = ds_calib[existing_vars].rename({var: reversed_alias_map.get(var, var) for var in existing_vars})
+
+    return ds_calib, time_idx0
+
+def optimize_M0(model, ds_calib, basin):
+
+    # Convert ds to df
+    df_calib = ds_calib.to_dataframe()
+
+    algorithm = model.opt_algorithm
+    # Create the sampler
+    # SPOTPY algorithm to use for parameter optimization
+    # mc  : Monte Carlo
+    # lhs : Latin Hypercube Sampling
+    # mcmc: Markov Chain Monte Carlo
+    # mle : Maximum Likelihood Estimation
+    # sa  : Simulated Annealing
+    # rope: RObust Parameter Estimation
+    # sceua: Shuffled Complex Evolution
+    # demcz: Differential Evolution Markov Chain
+    if algorithm == 'mc':
+        sampler = algorithms.mc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'lhs':
+        sampler = algorithms.lhs(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'mcmc':
+        sampler = algorithms.mcmc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'mle':
+        sampler = algorithms.mle(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'sa':
+        sampler = algorithms.sa(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'rope':
+        sampler = algorithms.rope(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'sceua':
+        sampler = algorithms.sceua(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    elif algorithm == 'demcz':
+        sampler = algorithms.demcz(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+    else:
+        raise ValueError('Invalid Optimization Algorithm')
+
+    # Sample the model - the number of epochs is the number of iterations
+    sampler.sample(repetitions=model.cfg.epochs_calibrate)
+    results = sampler.getdata()
+
+    # Dynamically retrieve the parameter names from the results
+    param_names = analyser.get_parameternames(results)
+
+    # Get the best parameter set from the results
+    best_params = analyser.get_best_parameterset(results, maximize=False)[0]
+
+    # Convert numpy.void to a list and wrap it in another list to create a row for DataFrame
+    best_params_list = [list(best_params)]  # The outer list makes it a single row with multiple columns
+
+    # Create a DataFrame with the best parameters, using param_names as the columns
+    best_params_df = pd.DataFrame(best_params_list, columns=param_names)
+
+    # Add the basinID column as the first column
+    best_params_df.insert(0, 'basinID', basin)  # Insert basinID at the first position (index 0)
+
+    return best_params_df
+
 
 def _basin_interpolator_dict(ds, vars):
     '''
@@ -187,6 +311,57 @@ def get_basin_interpolators(dataset, cfg, project_dir=project_dir):
         interpolators[basin] = _basin_interpolator_dict(ds_full, interpolator_vars)
 
     return interpolators
+
+def run_calibrate_model(config_file: Path, gpu: int = None):
+    '''
+    Calibrate the model using the SPOTPY library.
+    
+    - Args:
+        - config_file: Path to the configuration file
+        - gpu: GPU id to use. Overrides config argument 'device'. Use a value < 0 for CPU.
+    '''
+
+
+    cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
+
+    # Get the basin interpolators
+    interpolators = get_basin_interpolators(dataset, cfg, project_dir)
+
+    # Define the output file path
+    output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_exphydro.csv'
+
+    # Check if the output file already exists (to append if crashed previously)
+    if output_file.exists():
+        combined_df = pd.read_csv(output_file)
+        processed_basins = combined_df['basinID'].unique().tolist()  # Get already processed basins
+    else:
+        combined_df = pd.DataFrame()  # Empty DataFrame to collect results
+        processed_basins = []  # Empty list if no basins have been processed
+
+    for basin in tqdm(dataset.basins, disable=cfg.disable_pbar, file=sys.stdout):
+        # Skip basins that have already been processed
+        if basin in processed_basins:
+            print(f"Basin {basin} already processed, skipping.")
+            continue
+
+        ds_calib, time_idx0 = get_calibration_dataset(cfg, dataset, basin)
+
+        time_idx0 = 0
+        model_concept = get_concept_model(cfg, ds_calib, interpolators, time_idx0,
+                                          dataset.scaler, odesmethod=cfg.odesmethod)
+
+        # Run the optimization
+        df_optm_params = optimize_M0(model_concept, ds_calib, basin)
+
+        # Append the DataFrame to the combined DataFrame
+        combined_df = pd.concat([combined_df, df_optm_params], ignore_index=True)
+        print(basin, 'optm_params:', df_optm_params)
+
+        # Save the combined DataFrame after each basin to avoid losing progress
+        combined_df.to_csv(output_file, index=False)
+        print(f"Saved results for basin {basin} to {output_file}")
+    
+
 
 def run_conceptual_model(config_file: Path, gpu: int = None):
 

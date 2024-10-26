@@ -13,6 +13,8 @@ from scipy.interpolate import Akima1DInterpolator
 import xarray as xr
 import torch.nn as nn
 import time
+from spotpy import parameter
+from sklearn.metrics import root_mean_squared_error as rmse
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -429,7 +431,7 @@ class Config(object):
 
         # Load variables for the concept model
         if 'concept_model' in cfg:
-            cfg['concept_inputs'],  cfg['concept_target'] = self._load_concept_model_vars(cfg['concept_model'])
+            cfg['concept_inputs'],  cfg['concept_target'], _ = self._load_concept_model_vars(cfg['concept_model'])
        
         # Get periods from config file
         periods = []
@@ -520,8 +522,9 @@ class Config(object):
         # Load the variables for the concept model
         var_inputs = model_vars[concept_model]['model_inputs']
         var_outputs = model_vars[concept_model]['model_target']
+        var_concept = model_vars[concept_model]['concept_vars']
 
-        return var_inputs, var_outputs
+        return var_inputs, var_outputs, var_concept
          
     @staticmethod
     def _as_default_list(value: Any) -> list:
@@ -585,6 +588,10 @@ class Config(object):
     @property
     def scale_target_vars(self) -> bool:
         return self._get_property_value("scale_target_vars", default=False)
+
+    @property
+    def scaler_type(self) -> str:
+        return self._get_property_value("scaler_type", default='standard')
 
     @property
     def target_variables(self) -> list:
@@ -782,6 +789,18 @@ class Config(object):
         return self._get_property_value("epochs_pretrain", default=10)
 
     @property
+    def epochs_calibrate(self) -> int:
+        return self._get_property_value("epochs_calibrate", default=10)
+
+    @property
+    def params_bounds(self) -> dict:
+        return self._get_property_value("params_bounds", default={})
+    
+    @property
+    def opt_algorithm(self) -> str:
+        return self._get_property_value("opt_algorithm", default="sceua")
+
+    @property
     def patience(self) -> int:
         return self._get_property_value("patience", default=10)
 
@@ -808,6 +827,10 @@ class Config(object):
     @property
     def periods(self) -> List[str]:
         return self._get_property_value("periods")
+
+    @property
+    def period_calibrate(self) -> List[str]:
+        return self._get_property_value("period_calibrate", default=[])
 
     @property
     def seed(self) -> int:
@@ -1003,8 +1026,24 @@ class ExpHydroCommon:
                 params_df['basinID'] = params_df['basinID'].astype(int)
                 
             params_dict = dict()
-            # Loop over the basins and extract the parameters
-            for basin in self.dataset['basin'].values:
+
+            # Check if 'basin' is an array or a single value
+            basin_values = self.dataset['basin'].values
+
+            # Check if it's a numpy array with more than one element
+            if isinstance(basin_values, np.ndarray):
+                if basin_values.ndim == 0:
+                    # If it's a 0-dimensional array (scalar), wrap it into a list
+                    basins = [basin_values.item()]  # Extract the scalar value and wrap it in a list
+                else:
+                    # If it's a 1D array or higher, flatten and use it directly
+                    basins = basin_values.flatten()
+            else:
+                # If it's already a single value (non-numpy type), wrap it into a list
+                basins = [basin_values]
+
+            # Loop ov   er the basins and extract the parameters
+            for basin in basins:
                 
                 # Convert basin to int to match the parameter file
                 basin_int = int(basin)
@@ -1347,6 +1386,83 @@ class EarlyStopping:
             self.counter += 1
             if self.counter >= self.patience:
                 self.early_stop = True
+
+class spotSetupExpHydro:
+    # https://github.com/thouska/spotpy/blob/master/src/spotpy/algorithms/sceua.py
+    # EXP-Hydro model: Two buckets (snow and water), 5 processes and 6 parameters
+    
+    def __init__(self, model, df_calib, basin):
+
+        self.model = model
+        self.df_calib = df_calib
+        self.basin = basin
+        
+        # Create dict of parameter values for the model (all columns but 'date')
+        self.var_names = [var for var in df_calib.columns if var != 'date']
+        self.var_series_dict = {key: df_calib[key].values for key in self.var_names}
+        
+        # Extract params names, low and high bounds
+        self.params_names = list(self.model.params_bounds.keys())
+        self.params_low_bounds = [self.model.params_bounds[key][0] for key in self.params_names]
+        self.params_up_bounds = [self.model.params_bounds[key][1] for key in self.params_names]
+        
+        # Set parameters
+        self.params = self.parse_search_params()
+
+    def parse_search_params(self):
+        """
+        Parse the parameters to be optimized.
+        """
+        
+        params = [parameter.Uniform(name=name, low=low, high=up) for name, low, up 
+                  in zip(self.params_names, self.params_low_bounds, self.params_up_bounds)]
+        
+        return params
+
+    def parameters(self):
+        '''
+        parameter: function
+                When called, it should return a random parameter combination. Which can
+                be e.g. uniform or Gaussian
+                
+        # https://github.com/thouska/spotpy/blob/master/src/spotpy/parameter.py
+        '''
+        return parameter.generate(self.params)
+
+    def objectivefunction(self, simulation, evaluation):
+        '''
+        objectivefunction: function
+            Should return the objectivefunction for a given list of a model simulation and
+            observation.
+        '''
+                
+        return rmse(evaluation, simulation)
+        
+        # # Compute NSE (Nash-Sutcliffe Efficiency) 
+        # nse = np.sum((evaluation - simulation)**2) / (np.sum((evaluation - np.mean(evaluation))**2) + np.finfo(float).eps)
+        
+        # return nse
+    
+    def simulation(self, vector):
+        '''
+        vector[0] -> S0_0: Storage state S_snow (t=0)
+        vector[1] -> S1_0: Storage state S_water (t=0)
+        vector[2] -> f: Rate of decline in flow from catchment bucket
+        vector[3] -> Smax: Maximum storage of the catchment bucket
+        vector[4] -> Qmax: Maximum subsurface flow at full bucket
+        vector[5] -> Df: Thermal degree-day factor
+        vector[6] -> Tmax: Temperature above which snow starts melting
+        vector[7] -> Tmin: Temperature below which precipitation is snow
+        '''
+    
+        # Run the model
+        Q_mech = self.model.run(basin=self.basin, basin_params=vector)[-1]
+        
+        return Q_mech
+
+    def evaluation(self):
+        
+        return self.var_series_dict[self.var_names[-1]]
 
 
 if __name__ == "__main__":

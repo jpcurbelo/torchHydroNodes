@@ -101,6 +101,8 @@ class BaseHybridModelTrainer:
 
             for (inputs, targets, basin_ids) in pbar:
 
+                print('basin_id:', basin_ids[0], 'batch:', num_batches_seen+1)
+
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()
 
@@ -173,12 +175,14 @@ class BaseHybridModelTrainer:
 
                 # Backward pass
                 loss.backward()
-                # Update the weights
-                self.model.optimizer.step()
+
                 # Gradient clipping
                 if self.model.cfg.clip_gradient_norm is not None:
                     torch.nn.utils.clip_grad_norm_(self.model.pretrainer.nnmodel.parameters(), self.model.cfg.clip_gradient_norm)
                
+                # Update the weights
+                self.model.optimizer.step()
+
                 # Accumulate the loss
                 epoch_loss_sum += loss.item()
                 num_batches_seen += 1

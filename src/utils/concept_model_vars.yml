@@ -1,5 +1,10 @@
 
 exphydro:
+  concept_vars: # First the dynamic inputs and then the target variables
+    - prcp
+    - dayl
+    - tmean
+    - q_obs
   model_inputs:
     - prcp
     - dayl
@@ -10,7 +15,7 @@ exphydro:
     - vp
   model_target:
     - obs_runoff
-  nn_mech_targets:
+  nn_mech_targets: # First the dynamic inputs and then the target variables
     - ps_bucket
     - pr_bucket
     - m_bucket
@@ -27,3 +32,5 @@ exphydro:
   #   - tmax
   #   - srad
   #   - vp
+
+  param_names: S0 S1 f Smax Qmax Df Tmax Tmin

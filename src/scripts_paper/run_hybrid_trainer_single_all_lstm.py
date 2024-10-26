@@ -47,7 +47,9 @@ from utils import (
 NNMODEL_TYPE = 'lstm'   # 'lstm' or 'mlp'
 
 # CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single.yml')
-CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_cuda0.yml')
+# CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_cuda0.yml')
+# CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_cuda1.yml')
+CONFIG_FILE = Path(f'config_run_hybrid_{NNMODEL_TYPE}_single_cuda1_test.yml')
 
 # # #pretrainer_runs_folder = f'runs_pretrainer_single_{NNMODEL_TYPE}32x5'
 
@@ -59,13 +61,15 @@ BASIN_FILE_ALL = '../../examples/569_basin_file.txt'
 # RUN_FOLDER = f'4basins_single_{NNMODEL_TYPE}32x5_256b_euler1d_lr4_50ep_1000pre_lr3'
 # RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}32x5_256b_bosh3tol46_lr4_50ep_1000pre_lr3'
 # RUN_FOLDER = f'___59basins_single_{NNMODEL_TYPE}32x5_256b_euler05d_lr4_150ep_1000pre_lr3'
-RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}128x1_256b_euler05d_lr34_50ep_2000pre_lr3'
+# RUN_FOLDER = f'569basins_single_{NNMODEL_TYPE}128x1_256b_euler05d_lr34_50ep_2000pre_lr3'
+RUN_FOLDER = f'__569basins_single_{NNMODEL_TYPE}128x1_256b_euler05d_lr34_50ep_2000pre_lr3'
 
-RUN_VERSION = 'lstm'
+# RUN_VERSION = 'lstm'
+RUN_VERSION = 'lstm_cuda1'
 # RUN_VERSION = 'bosh3tol46'
 
 USE_PROCESS_POOL = 1
-MAX_WORKERS = 20
+MAX_WORKERS = 3
 # MAX_WORKERS = os.cpu_count()  # Adjust this based on your system and GPU availability
 
 CHECK_IF_FINISHED = 1

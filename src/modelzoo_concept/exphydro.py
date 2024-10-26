@@ -109,9 +109,10 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         '''
         return (np.tanh(5.0 * x) + 1.0) * 0.5
         
-    def run(self, basin):
+    def run(self, basin, basin_params=None):
         
-        basin_params = self.params_dict[basin]
+        if basin_params is None:
+            basin_params = self.params_dict[basin]
         
         # Get the interpolator functions for the basin
         self.precp_interp = self.interpolators[basin]['prcp']
@@ -119,9 +120,14 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         self.lday_interp = self.interpolators[basin]['dayl']
 
         # Get input variables for the basin
-        self.precp_basin = self.precp.sel(basin=basin).values
-        self.temp_basin = self.temp.sel(basin=basin).values
-        self.lday_basin = self.lday.sel(basin=basin).values
+        if self.precp.ndim == 2: # When running the model - N basins
+            self.precp_basin = self.precp.sel(basin=basin).values
+            self.temp_basin = self.temp.sel(basin=basin).values
+            self.lday_basin = self.lday.sel(basin=basin).values
+        else: # When calibrating the model - 1 basin
+            self.precp_basin = self.precp.values
+            self.temp_basin = self.temp.values
+            self.lday_basin = self.lday.values
         
         # Set the initial conditions
         y0 = np.array([basin_params[0], basin_params[1]])
@@ -137,12 +143,13 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         }
 
         if self.ode_solver_lib == 'scipy':
+
             # Run the model
             if self.odesmethod.lower() in ['euler', 'rk2', 'rk4']:           
                 # Use the desired method: "euler", "rk2", or "rk4"
                 y = self.solve_ivp_custom(
                     self.conceptual_model, 
-                    t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), 
+                    t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[-1] - 1), 
                     y0=y0, 
                     step_size=self.time_step,
                     t_eval=self.time_series, 
@@ -150,7 +157,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                 )
             else:
                 # Use the scipy's solve_ivp method with the desired method
-                y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[1] - 1), y0=y0, t_eval=self.time_series, 
+                y = sp_solve_ivp(self.conceptual_model, t_span=(self.time_idx0, self.time_idx0 + self.precp.shape[-1] - 1), y0=y0, t_eval=self.time_series, 
                                 method=self.odesmethod,
                                 # method='LSODA',
                                 #  method='DOP853',
@@ -242,7 +249,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         '''
 
         # Load the variables for the concept model
-        input_vars, output_vars = self.cfg._load_concept_model_vars(self.cfg.concept_model)
+        input_vars, output_vars, _ = self.cfg._load_concept_model_vars(self.cfg.concept_model)
 
         # Open and read the 'variable_aliases.yml' file
         with open(Path(project_dir) / 'src' / 'utils' / 'variable_aliases.yml', 'r') as file:

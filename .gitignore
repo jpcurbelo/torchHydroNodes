@@ -10,6 +10,7 @@ src/scripts_paper/M100_results*
 src/scripts_paper/AAruns_*
 src/scripts_paper/4basins_single_*
 src/scripts_paper/569basins_single*
+src/scripts_paper/__*
 src/scripts/scripts_plots/gifs/*
 src/scripts/scripts_plots/AA*
 src/scripts/scripts_plots/4basins_test/

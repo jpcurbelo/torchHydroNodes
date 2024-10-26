@@ -10,8 +10,8 @@ forcings:
   - daymet
 
 # Files to specify training, validation and test basins
-basin_file: 569_basin_file.txt
-# basin_file: 4_basin_file.txt
+# basin_file: 569_basin_file.txt
+basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
@@ -29,7 +29,7 @@ ode_solver_lib: scipy
 # odesmethod: rk4
 # time_step: 0.1
 odesmethod: euler
-time_step: 0.01
+time_step: 1.0
 
 
 # ode_solver_lib: torchdiffeq
@@ -53,10 +53,15 @@ time_step: 0.01
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
-train_start_date: "01/10/1980"
+# train_start_date: "01/10/1980"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1995"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2010"
+valid_end_date: "30/09/2005"
 
 # Metrics to use for evaluation
 metrics:
@@ -109,12 +114,12 @@ metrics:
 # experiment_name: M0_results_569basins_1980_2010_euler05d_custom
 # experiment_name: M0_results_569basins_1980_2010_euler01d_custom
 # experiment_name: M0_results_569basins_1980_2010_euler005d_custom
-experiment_name: M0_results_569basins_1980_2010_euler001d_custom
+# experiment_name: M0_results_569basins_1980_2010_euler001d_custom
 # experiment_name: M0_results_569basins_1980_2010_rk4_1d_custom
 # experiment_name: M0_results_569basins_1980_2010_rk4_05d_custom
 # experiment_name: ____M0_results_4basins_1980_2010_euler1d_custom
 # experiment_name: ____M0_results_4basins_1980_2010_euler05d_custom
-# experiment_name: ____M0_results_4basins_1980_2010_euler01d_custom
+experiment_name: ____M0_results_4basins_1980_2010_euler01d_custom
 # experiment_name: ____M0_results_4basins_1980_2010_euler005d_custom
 # experiment_name: ____M0_results_4basins_1980_2010_rk4_1d_custom
 # experiment_name: ____M0_results_4basins_1980_2010_rk4_01d_custom

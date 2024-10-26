@@ -33,6 +33,15 @@ class BaseConceptModel:
         # Set the data type attribute for the model
         self.data_type_np = cfg.precision['numpy']
         self.data_type_torch = cfg.precision['torch']
+
+        # self.params_bounds = params_bounds
+        # self.opt_algorithm = opt_algorithm
+        if "params_bounds" in cfg._cfg.keys():
+            self.params_bounds = cfg.params_bounds
+        if "opt_algorithm" in cfg._cfg.keys():
+            self.opt_algorithm = cfg.opt_algorithm
+        if "epochs_calibrate" in cfg._cfg.keys():
+            self.epochs_calibrate = cfg.epochs_calibrate
         
         # Time series
         self.time_series = np.linspace(self.time_idx0, self.time_idx0 + len(ds['date'].values) - 1, len(ds['date'].values))
@@ -57,3 +66,7 @@ class BaseConceptModel:
         '''This function should load the last states of the model in the previous period.
         To be used for the valid or test period after the train period'''
         raise NotImplementedError("This function has to be implemented by the child class")  
+    
+    def optimize_M0(self, ds_calib, basin):
+        '''This function should optimize the model parameters'''
+        raise NotImplementedError("This function has to be implemented by the child class")
