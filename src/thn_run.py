@@ -9,7 +9,7 @@ import numpy as np
 from scipy.interpolate import Akima1DInterpolator
 import time
 import pandas as pd
-from spotpy import algorithms, parameter, analyser  # SPOTPY:
+from spotpy import algorithms, analyser  # SPOTPY:
 from pathlib import Path
 
 # Make sure code directory is in path,
@@ -196,26 +196,31 @@ def optimize_M0(model, ds_calib, basin):
     # sceua: Shuffled Complex Evolution
     # demcz: Differential Evolution Markov Chain
     if algorithm == 'mc':
-        sampler = algorithms.mc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.mc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'lhs':
-        sampler = algorithms.lhs(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.lhs(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'mcmc':
-        sampler = algorithms.mcmc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.mcmc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'mle':
-        sampler = algorithms.mle(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.mle(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'sa':
-        sampler = algorithms.sa(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.sa(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'rope':
-        sampler = algorithms.rope(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.rope(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'sceua':
-        sampler = algorithms.sceua(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.sceua(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     elif algorithm == 'demcz':
-        sampler = algorithms.demcz(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=model.cfg.seed)
+        sampler = algorithms.demcz(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
     else:
         raise ValueError('Invalid Optimization Algorithm')
 
     # Sample the model - the number of epochs is the number of iterations
-    sampler.sample(repetitions=model.cfg.epochs_calibrate)
+    sampler.sample(repetitions=model.cfg.epochs_calibrate, 
+                # ngs=10,
+                # kstop=10,
+                # pcento=1.0,
+                # peps=1e-3,
+        )
     results = sampler.getdata()
 
     # Dynamically retrieve the parameter names from the results
@@ -223,6 +228,8 @@ def optimize_M0(model, ds_calib, basin):
 
     # Get the best parameter set from the results
     best_params = analyser.get_best_parameterset(results, maximize=False)[0]
+
+    print('best_params:', best_params)
 
     # Convert numpy.void to a list and wrap it in another list to create a row for DataFrame
     best_params_list = [list(best_params)]  # The outer list makes it a single row with multiple columns
@@ -328,7 +335,11 @@ def run_calibrate_model(config_file: Path, gpu: int = None):
     interpolators = get_basin_interpolators(dataset, cfg, project_dir)
 
     # Define the output file path
-    output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_exphydro.csv'
+    # if time_step is specified, add it to the output file name
+    if cfg.time_step in cfg._cfg:
+        output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.odesmethod}{cfg.time_step}.csv'
+    elif cfg.rtol in cfg._cfg:
+        output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.odesmethod}_tol{cfg.rtol}{cfg.atol}.csv'
 
     # Check if the output file already exists (to append if crashed previously)
     if output_file.exists():

@@ -10,14 +10,26 @@ forcings:
   - daymet
 
 # Files to specify training, validation and test basins
-# basin_file: 569_basin_file.txt
-basin_file: 4_basin_file.txt
+basin_file: 569_basin_file.txt
+# basin_file: 4_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
 # exphydro model: Two buckets (water and snow), 5 processes and 6 parameters
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
+
+ode_solver_lib: scipy
+# Method to solve the ODEs (using solve_ivp from scipy.integrate)
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
+# Options: RK45, RK23, DOP853, Radau, BDF, LSODA
+# odesmethod: Radau
+# rtol: 1e-4
+# atol: 1e-6
+odesmethod: rk4
+time_step: 0.5
+# odesmethod: euler
+# time_step: 0.5
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
@@ -52,10 +64,10 @@ metrics:
 scaler: standard
 
 # Number of epochs to calibrate the model
-epochs_calibrate: 100
+epochs_calibrate: 1000
 
 # Period to calibrate the model (train, valid, test, all -> * all goes from  train_start_date to test_end_date)
-period_calibrate: all
+period_calibrate: train
 
 # Set seed for reproducibility
 seed: 1111
@@ -84,11 +96,11 @@ params_bounds:
 # Tmin    -5.395901e+00  8.331763e-02       -6.217784     9.052004e-01
 # UNKNOWN -7.383889e-01  2.770862e+00       -1.264776     3.297249e+00
 
-  S0: [0.0, 1142.9]
-  S1: [0.0, 1658.6]
-  f: [0.0, 0.3183]
-  Smax: [0.0, 3162.6]
-  Qmax: [0.0, 198.6]
-  Df: [0.0, 11.5]
-  Tmax: [-1.2, 8.9]
-  Tmin: [-6.2, 0.9]
+  S0: [0.0, 1000.0]
+  S1: [10.0, 1500.0]
+  f: [0.0, 0.3]
+  Smax: [50.0, 2900.0]
+  Qmax: [2.0, 180.0]
+  Df: [0.0, 10.0]
+  Tmax: [-0.5, 8.9]
+  Tmin: [-6.0, 0.9]

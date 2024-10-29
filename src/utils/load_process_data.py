@@ -14,7 +14,8 @@ import xarray as xr
 import torch.nn as nn
 import time
 from spotpy import parameter
-from sklearn.metrics import root_mean_squared_error as rmse
+from spotpy.objectivefunctions import rmse, nashsutcliffe
+# from sklearn.metrics import root_mean_squared_error as rmse
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -1409,6 +1410,7 @@ class spotSetupExpHydro:
         # Set parameters
         self.params = self.parse_search_params()
 
+
     def parse_search_params(self):
         """
         Parse the parameters to be optimized.
@@ -1416,6 +1418,8 @@ class spotSetupExpHydro:
         
         params = [parameter.Uniform(name=name, low=low, high=up) for name, low, up 
                   in zip(self.params_names, self.params_low_bounds, self.params_up_bounds)]
+
+        print('paramsParse', params)
         
         return params
 
@@ -1427,7 +1431,10 @@ class spotSetupExpHydro:
                 
         # https://github.com/thouska/spotpy/blob/master/src/spotpy/parameter.py
         '''
+        
+        # print('self.paramsNEW', parameter.generate(self.params))
         return parameter.generate(self.params)
+        # return self.params
 
     def objectivefunction(self, simulation, evaluation):
         '''
@@ -1435,13 +1442,23 @@ class spotSetupExpHydro:
             Should return the objectivefunction for a given list of a model simulation and
             observation.
         '''
+
+
+        print('self.basin', self.basin)
+        print('simulation', simulation[:5])
+        print('evaluation', evaluation[:5])
                 
-        return rmse(evaluation, simulation)
+        # return rmse(evaluation, simulation)
         
         # # Compute NSE (Nash-Sutcliffe Efficiency) 
         # nse = np.sum((evaluation - simulation)**2) / (np.sum((evaluation - np.mean(evaluation))**2) + np.finfo(float).eps)
-        
-        # return nse
+        # print('-nse', -nse)
+        # return -nse
+
+        # loss = nashsutcliffe(simulation, evaluation)
+        loss = rmse(simulation, evaluation)
+        print('loss', loss)
+        return loss
     
     def simulation(self, vector):
         '''
@@ -1456,13 +1473,33 @@ class spotSetupExpHydro:
         '''
     
         # Run the model
-        Q_mech = self.model.run(basin=self.basin, basin_params=vector)[-1]
+        print('vector', vector)
+        model_results = self.model.run(basin=self.basin, basin_params=vector)
         
-        return Q_mech
+        return model_results[-1]
 
     def evaluation(self):
         
-        return self.var_series_dict[self.var_names[-1]]
+        return self.var_series_dict[self.var_names[-2]] # Target variable, the last one is basinID
+
+
+    def rmse_custom(self, evaluation, simulation):
+        """
+        Root Mean Squared Error with a penalty for near-zero simulation values.
+        """
+        if len(evaluation) == len(simulation) > 0:
+            obs, sim = np.array(evaluation), np.array(simulation)
+            mse = np.nanmean((obs - sim) ** 2)
+            rmse_value = np.sqrt(mse(evaluation, simulation))
+            
+            # Penalize near-zero simulation values
+            zero_penalty = np.sum(simulation < 1e-3) * 1e3  # Add a penalty for near-zero values
+            total_loss = rmse_value + zero_penalty
+            return total_loss
+        else:
+            print("!!!!!!!!Evaluation and simulation lists do not have the same length.")
+            return np.nan
+
 
 
 if __name__ == "__main__":

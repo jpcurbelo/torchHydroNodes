@@ -113,6 +113,8 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         
         if basin_params is None:
             basin_params = self.params_dict[basin]
+
+        print('basin_params:', basin_params)
         
         # Get the interpolator functions for the basin
         self.precp_interp = self.interpolators[basin]['prcp']
@@ -212,12 +214,18 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             s_snow = y[:, 0].detach().cpu().numpy()
             s_water = y[:, 1].detach().cpu().numpy()
 
+        print('s_snow:', s_snow)
+        print('s_water:', s_water)
+
         # Unpack the parameters to call the mechanistic processes
         f, smax, qmax, df, tmax, tmin = self.params.values()
         
         # Calculate the mechanistic processes -> q_bucket, et_bucket, m_bucket, ps_bucket, pr_bucket
         # Discharge
+        print('Qb:', Qb(s_water, f, smax, qmax, self.step_function))
+        print('Qs:', Qs(s_water, smax, self.step_function))
         q_bucket = Qb(s_water, f, smax, qmax, self.step_function) + Qs(s_water, smax, self.step_function)
+        print('q_bucket:', q_bucket)
         q_bucket = np.maximum(q_bucket, self.eps)
         # Evapotranspiration
         et_bucket = ET(s_water, self.temp_basin, self.lday_basin, smax, self.step_function)
@@ -232,6 +240,8 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Precipitation as rain
         pr_bucket = Pr(self.precp_basin, self.temp_basin, tmin, self.step_function)
         pr_bucket = np.maximum(pr_bucket, self.eps)
+
+        print('q_bucket:', q_bucket)
         
         # Mind this order for 'save_results' method - the last element is the target variable (q_obs)
         return s_snow, s_water, et_bucket, m_bucket, ps_bucket, pr_bucket, q_bucket
