@@ -237,12 +237,19 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
                 y0 = torch.tensor(y0, dtype=self.cfg.precision['torch'])
                 # Ensure y0 is expanded to 2D if required, e.g., [2] -> [2, 1]
                 if y0.dim() == 1:
-                    y0 = y0.unsqueeze(1)  # Adds an extra dimension
+                    # y0 = y0.unsqueeze(1)  # Adds an extra dimension
+                    y0 = y0.clone().detach().requires_grad_(True).unsqueeze(1)  # Adds an extra dimension safely
 
             # Set time series to torch.Tensor
-            # self.time_series = torch.tensor(self.time_series, dtype=self.cfg.precision['torch'])
-            self.time_series = self.time_series.clone().detach().requires_grad_(True)
+            self.time_series = torch.tensor(self.time_series, dtype=self.cfg.precision['torch'])
 
+            # # # Ensure self.time_series is a PyTorch tensor, and handle it safely if it's already a tensor
+            # # if isinstance(self.time_series, np.ndarray):
+            # #     self.time_series = torch.tensor(self.time_series, dtype=self.cfg.precision['torch'])
+            # # else:
+            # #     self.time_series = self.time_series.clone().detach().requires_grad_(use_grad)
+
+            # Run the ODE solver
             y = ode_solver(self.conceptual_model, y0=y0, t=self.time_series, method=self.odesmethod, 
                            rtol=self.rtol, atol=self.atol, options=options)
         
