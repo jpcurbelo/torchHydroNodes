@@ -14,8 +14,11 @@ import xarray as xr
 import torch.nn as nn
 import time
 from spotpy import parameter
-from spotpy.objectivefunctions import rmse, nashsutcliffe
+from spotpy.objectivefunctions import rmse, nashsutcliffe, mse
 # from sklearn.metrics import root_mean_squared_error as rmse
+from spotpy.analyser import get_minlikeindex
+
+from matplotlib import pyplot as plt
 
 # Get the absolute path to the current script
 script_dir = Path(__file__).resolve().parent
@@ -173,6 +176,34 @@ def update_hybrid_cfg(cfg, model_type: str='pretrainer',
         _ = dump_config(cfg._cfg, config_fname)
 
     return cfg
+
+def get_best_spotpy_run(results):
+    """
+    Retrieve the best model run and extract simulation data 
+    based on minimization or maximization.
+    """
+    
+    bestindex, bestobjf = get_minlikeindex(results)  # Minimize by default
+
+    best_model_run = results[bestindex]
+
+    # Retrieve fields starting with 'sim'
+    fields = [word for word in best_model_run.dtype.names if word.startswith('sim')]
+    best_simulation = list(best_model_run[fields])
+
+    return best_simulation, bestobjf
+
+def plot_best_spotpy_run(best_simulation, bestobjf, setup):
+    """Plot the best model simulation and observed data."""
+
+    fig = plt.figure(figsize=(16, 9))
+    ax = plt.subplot(1, 1, 1)
+    ax.plot(best_simulation, color='black', linestyle='solid', label=f'Best objf.={bestobjf}')
+    ax.plot(setup.evaluation(), 'r.', markersize=3, label='Observation data')
+    plt.xlabel('Number of Observation Points')
+    plt.ylabel('Discharge [l s-1]')
+    plt.legend(loc='upper right')
+    fig.savefig('best_modelrun.png', dpi=150)
 
 
 
@@ -1392,11 +1423,13 @@ class spotSetupExpHydro:
     # https://github.com/thouska/spotpy/blob/master/src/spotpy/algorithms/sceua.py
     # EXP-Hydro model: Two buckets (snow and water), 5 processes and 6 parameters
     
-    def __init__(self, model, df_calib, basin):
+    def __init__(self, model, df_calib, basin, algorithm):
 
         self.model = model
         self.df_calib = df_calib
         self.basin = basin
+        self.algorithm = algorithm
+        self.is_maximizing = self.algorithm in ['sa', 'rope', 'mcmc', 'demcz']
         
         # Create dict of parameter values for the model (all columns but 'date')
         self.var_names = [var for var in df_calib.columns if var != 'date']
@@ -1410,6 +1443,11 @@ class spotSetupExpHydro:
         # Set parameters
         self.params = self.parse_search_params()
 
+        print('self.params', self.params)
+        # aux = input('Press any key to continue...')
+
+        self.best_loss = np.inf if not self.is_maximizing else -np.inf
+
 
     def parse_search_params(self):
         """
@@ -1419,7 +1457,7 @@ class spotSetupExpHydro:
         params = [parameter.Uniform(name=name, low=low, high=up) for name, low, up 
                   in zip(self.params_names, self.params_low_bounds, self.params_up_bounds)]
 
-        print('paramsParse', params)
+        # print('paramsParse', params)
         
         return params
 
@@ -1444,9 +1482,9 @@ class spotSetupExpHydro:
         '''
 
 
-        print('self.basin', self.basin)
-        print('simulation', simulation[:5])
-        print('evaluation', evaluation[:5])
+        # # print('self.basin', self.basin)
+        # print('simulation', simulation[:5], simulation[-5:])
+        # print('evaluation', evaluation[:5], evaluation[-5:])
                 
         # return rmse(evaluation, simulation)
         
@@ -1456,8 +1494,44 @@ class spotSetupExpHydro:
         # return -nse
 
         # loss = nashsutcliffe(simulation, evaluation)
-        loss = rmse(simulation, evaluation)
-        print('loss', loss)
+
+        # loss_name = 'rmse'
+        # loss = rmse(simulation, evaluation)
+
+        loss_name = 'nse'
+        loss = self.nse_loss(evaluation, simulation)
+        
+        if self.is_maximizing:
+            loss = -loss
+
+        # Plot the simulation and evaluation data
+        plt.figure(figsize=(16, 6))
+        plt.plot(evaluation, label='Observed')
+        plt.plot(simulation, label='Simulation', color='red', linestyle='--')
+        plt.title(f'Basin {self.basin} | Loss: {loss:.3f}')
+        plt.legend()
+        plt.savefig(f'q_bucket_{self.algorithm}_{loss_name}.png')
+        
+        # Clear the current figure to avoid over-plotting
+        plt.clf()  # or alternatively, use plt.close()
+
+
+        # aux = input('Press any key to continue...')
+
+        # Update best loss based on maximizing or minimizing criteria
+        if (self.is_maximizing and loss > self.best_loss) \
+            or (not self.is_maximizing and loss < self.best_loss):
+            self.best_loss = loss
+            # Plot and save the best basin results
+            plt.figure(figsize=(16, 6))
+            plt.plot(evaluation, label='Observed')
+            plt.plot(simulation, label='Simulation', color='red', linestyle='--')
+            plt.title(f'Basin {self.basin} | Loss: {loss:.3f}')
+            plt.legend()
+            filename = f'{self.basin}_q_bucket_{self.algorithm}_{loss_name}.png'
+            plt.savefig(filename)
+            plt.clf()  # Clear the figure to prevent over-plotting
+
         return loss
     
     def simulation(self, vector):
@@ -1473,7 +1547,7 @@ class spotSetupExpHydro:
         '''
     
         # Run the model
-        print('vector', vector)
+        # print('vector', vector)
         model_results = self.model.run(basin=self.basin, basin_params=vector)
         
         return model_results[-1]
@@ -1489,16 +1563,28 @@ class spotSetupExpHydro:
         """
         if len(evaluation) == len(simulation) > 0:
             obs, sim = np.array(evaluation), np.array(simulation)
-            mse = np.nanmean((obs - sim) ** 2)
-            rmse_value = np.sqrt(mse(evaluation, simulation))
             
-            # Penalize near-zero simulation values
-            zero_penalty = np.sum(simulation < 1e-3) * 1e3  # Add a penalty for near-zero values
-            total_loss = rmse_value + zero_penalty
-            return total_loss
+            # Apply penalty to simulation values below a certain threshold before computing the loss
+            penalty_factor = 1e3  # Adjust the magnitude of the penalty
+            sim_penalized = np.where(sim < 1e-3, sim + penalty_factor, sim)  # Penalize near-zero values
+
+            # Now calculate the MSE and RMSE using the penalized simulation values
+            mse = np.nanmean((obs - sim_penalized) ** 2)
+            rmse_value = np.sqrt(mse)
+            
+            return rmse_value
         else:
-            print("!!!!!!!!Evaluation and simulation lists do not have the same length.")
+            print("!!!!!!!! Evaluation and simulation lists do not have the same length.")
             return np.nan
+
+
+    def nse_loss(self, evaluation, simulation):
+        """
+        Nash-Sutcliffe Efficiency (NSE) loss function to be minimized.
+        """
+        # Compute NSE (Nash-Sutcliffe Efficiency) 
+        nse = np.sum((evaluation - simulation)**2) / (np.sum((evaluation - np.mean(evaluation))**2) + np.finfo(float).eps)
+        return - ( 1 - nse )
 
 
 

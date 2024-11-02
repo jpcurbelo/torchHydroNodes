@@ -12,6 +12,7 @@ forcings:
 # Files to specify training, validation and test basins
 basin_file: 569_basin_file.txt
 # basin_file: 4_basin_file.txt
+# basin_file: 2_basin_file.txt
 
 # --- Model configurations --- #
 # Conceptual model to use [exphydro, ...
@@ -23,11 +24,14 @@ ode_solver_lib: scipy
 # Method to solve the ODEs (using solve_ivp from scipy.integrate)
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
 # Options: RK45, RK23, DOP853, Radau, BDF, LSODA
-# odesmethod: Radau
-# rtol: 1e-4
-# atol: 1e-6
-odesmethod: rk4
-time_step: 0.5
+odesmethod: RK23
+rtol: 1e-3
+atol: 1e-6
+# odesmethod: RK45
+# rtol: 1e-6
+# atol: 1e-9
+# odesmethod: rk4
+# time_step: 1.0
 # odesmethod: euler
 # time_step: 0.5
 
@@ -38,13 +42,13 @@ train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
 
-# train_start_date: "01/10/1998"
+# train_start_date: "01/10/1995"
 # train_end_date: "30/09/2000"
 # valid_start_date: "01/10/2000"
 # valid_end_date: "30/09/2002"
 
-# Loss function (mse)
-loss: mse 
+# Loss function (rmse, nashsutcliffe)
+loss: nse
 
 # Metrics to use for evaluation
 metrics:
@@ -64,7 +68,7 @@ metrics:
 scaler: standard
 
 # Number of epochs to calibrate the model
-epochs_calibrate: 1000
+epochs_calibrate: 2500
 
 # Period to calibrate the model (train, valid, test, all -> * all goes from  train_start_date to test_end_date)
 period_calibrate: train
@@ -81,9 +85,17 @@ seed: 1111
   # rope: RObust Parameter Estimation
   # sceua: Shuffled Complex Evolution
   # demcz: Differential Evolution Markov Chain
-opt_algorithm: sceua
+opt_algorithm: demcz
 
 params_bounds:
+# Parameter ranges for bucket model:
+# f: Rate of decline in flow from catchment bucket   | Range: (0, 0.1)
+# smax: Maximum storage of the catchment bucket      | Range: (100, 1500)
+# qmax: Maximum subsurface flow at full bucket       | Range: (10, 50)
+# ddf: Thermal degree‐day factor                     | Range: (0, 5.0)
+# tmax: Temperature above which snow starts melting  | Range: (0, 3.0)
+# tmin: Temperature below which precipitation is snow| Range: (-3.0, 0)
+
 #              min_values    max_values  low_boundaries  high_boundaries
 # basinID  1.013500e+06  1.440000e+07  -994475.000000     1.640798e+07
 # S0       0.000000e+00  9.938407e+02     -149.076099     1.142917e+03

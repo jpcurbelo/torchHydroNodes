@@ -145,8 +145,8 @@ experiment_name: 1basin_hybrid_lstm_4inp_270d_128x1_lr4_euler05d_m0rk4_1d_pre200
 
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:0
-# device: cpu
+# device: cuda:0
+device: cpu
 
 # Set seed for reproducibility
 seed: 1111

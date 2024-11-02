@@ -11,6 +11,16 @@ import time
 import pandas as pd
 from spotpy import algorithms, analyser  # SPOTPY:
 from pathlib import Path
+import matplotlib.pyplot as plt
+
+from ax import optimize
+# from ax.service.managed_loop import optimize
+# from ax.modelbridge.factory import get_sobol, get_botorch
+# from ax.modelbridge.generation_strategy import GenerationStep, GenerationStrategy
+# from botorch.acquisition import UpperConfidenceBound  # Import UCB from BoTorch
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, message="Encountered exception in computing model fit quality")
 
 # Make sure code directory is in path,
 # Add the parent directory of your project to the Python path
@@ -21,6 +31,8 @@ from src.utils.load_process_data import (
     Config,
     update_hybrid_cfg,
     spotSetupExpHydro,
+    get_best_spotpy_run,
+    plot_best_spotpy_run
 )
 from src.datasetzoo import (
     get_dataset, 
@@ -179,9 +191,9 @@ def get_calibration_dataset(cfg, dataset, basin):
 
     return ds_calib, time_idx0
 
-def optimize_M0(model, ds_calib, basin):
+def optimize_M0(model, ds_calib, basin, loss='nse'):
 
-    # Convert ds to df
+    # Convert calibration dataset to DataFrame
     df_calib = ds_calib.to_dataframe()
 
     algorithm = model.opt_algorithm
@@ -195,39 +207,65 @@ def optimize_M0(model, ds_calib, basin):
     # rope: RObust Parameter Estimation
     # sceua: Shuffled Complex Evolution
     # demcz: Differential Evolution Markov Chain
+    # # if algorithm == 'mc':
+    # #     sampler = algorithms.mc(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'lhs':
+    # #     sampler = algorithms.lhs(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'mcmc':
+    # #     sampler = algorithms.mcmc(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'mle':
+    # #     sampler = algorithms.mle(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'sa':
+    # #     sampler = algorithms.sa(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'rope':
+    # #     sampler = algorithms.rope(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'sceua':
+    # #     sampler = algorithms.sceua(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # elif algorithm == 'demcz':
+    # #     sampler = algorithms.demcz(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='None', dbformat='csv', random_state=int(basin)) # model.cfg.seed)
+    # # else:
+    # #     raise ValueError('Invalid Optimization Algorithm')
     if algorithm == 'mc':
-        sampler = algorithms.mc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.mc(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_MC', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'lhs':
-        sampler = algorithms.lhs(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.lhs(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_LHS', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'mcmc':
-        sampler = algorithms.mcmc(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.mcmc(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_MCMC', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'mle':
-        sampler = algorithms.mle(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.mle(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_MLE', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'sa':
-        sampler = algorithms.sa(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.sa(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_SA', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'rope':
-        sampler = algorithms.rope(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.rope(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_ROPE', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'sceua':
-        sampler = algorithms.sceua(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.sceua(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_SCEUA', dbformat='csv', random_state=model.cfg.seed)
     elif algorithm == 'demcz':
-        sampler = algorithms.demcz(spotSetupExpHydro(model, df_calib, basin), dbname='None', dbformat='ram', random_state=int(basin)) # model.cfg.seed)
+        sampler = algorithms.demcz(spotSetupExpHydro(model, df_calib, basin, algorithm), dbname='opt_DEMCZ', dbformat='csv', random_state=model.cfg.seed)
     else:
         raise ValueError('Invalid Optimization Algorithm')
 
     # Sample the model - the number of epochs is the number of iterations
     sampler.sample(repetitions=model.cfg.epochs_calibrate, 
-                # ngs=10,
-                # kstop=10,
-                # pcento=1.0,
-                # peps=1e-3,
+                # ngs=7,
+                # kstop=3,
+                # pcento=0.1,
+                # peps=0.1,
         )
     results = sampler.getdata()
+
+    best_simulation, bestobjf = get_best_spotpy_run(results)
+    # plot_best_spotpy_run(best_simulation, bestobjf, spotSetupExpHydro)
 
     # Dynamically retrieve the parameter names from the results
     param_names = analyser.get_parameternames(results)
 
+    if algorithm in ['sa', 'rope', 'mcmc', 'demcz']:
+        maximize = True
+    else:
+        maximize = False
+
     # Get the best parameter set from the results
-    best_params = analyser.get_best_parameterset(results, maximize=False)[0]
+    best_params = analyser.get_best_parameterset(results, maximize=maximize)[0]
 
     print('best_params:', best_params)
 
@@ -239,6 +277,129 @@ def optimize_M0(model, ds_calib, basin):
 
     # Add the basinID column as the first column
     best_params_df.insert(0, 'basinID', basin)  # Insert basinID at the first position (index 0)
+
+
+    fig= plt.figure(1,figsize=(9,5))
+    plt.plot(results['like1'])
+    plt.show()
+    plt.ylabel('LOSS')
+    plt.xlabel('Iteration')
+    fig.savefig(f'{basin}_obj_function_trace_{algorithm.upper()}_{loss}.png',dpi=150)
+
+    return best_params_df
+
+def optimize_M0_ax(model, ds_calib, basin, loss='nse'):
+
+    # Convert calibration dataset to DataFrame
+    df_calib = ds_calib.to_dataframe()
+
+    # Define parameter search space dynamically from cfg.params_bounds
+    search_space = [
+        {"name": param, "type": "range", "bounds": bounds, "value_type": "float"}
+        for param, bounds in model.cfg.params_bounds.items()
+    ]
+
+    # List to store loss values for each trial
+    loss_values = []
+
+    observed_data = df_calib['obs_runoff'].values  # Replace with the actual target variable name
+
+    def objective_function(parameterization):
+        # Run the model with the current parameterization
+        simulation_results = model.run(basin, basin_params=list(parameterization.values()))
+        
+        # Calculate NSE or other loss between simulation and observed data
+        # loss_value = nse_loss(observed_data, simulation_results[-1])  # Assuming the last element is discharge/target
+        loss_value = np.mean((observed_data - simulation_results[-1]) ** 2)
+
+        # Plot the observed and simulated data - temporary for debugging
+        plt.figure(figsize=(12, 6))
+        plt.plot(observed_data, label='Observed')
+        plt.plot(simulation_results[-1], label='Simulated', color='red', linestyle='--')
+        plt.title(f"Basin {basin} | Trial Simulation | Loss: {loss_value:.3f} | NSE: {(1 - loss_value):.3f}")
+        plt.legend()
+        plt.show()
+        plt.savefig(f"ax_{basin}_trial_simulation_{loss}.png", dpi=150)
+        plt.clf()
+
+        # Log and store the loss value for each trial
+        print(f"Trial loss for basin {basin}: {loss_value:.3f} | NSE: {(1 - loss_value):.3f}")
+        loss_values.append(loss_value)
+        
+        return loss_value
+
+    def nse_loss(observed, simulated):
+        # Calculate the NSE
+        nse = np.sum((observed - simulated) ** 2) / (np.sum((observed - np.mean(observed)) ** 2) + np.finfo(float).eps)
+
+        return nse
+
+    # # Define the percentage of total trials for Sobol initialization
+    # sobol_percentage = 0.2  # e.g., 20% for Sobol initialization
+
+    # # Calculate the number of trials for each stage based on the total number of epochs
+    # sobol_trials = int(model.cfg.epochs_calibrate * sobol_percentage)
+    # botorch_trials = model.cfg.epochs_calibrate - sobol_trials
+
+    # # Set up the generation strategy with Sobol and BoTorch, using calculated trial numbers
+    # gs = GenerationStrategy(
+    #     steps=[
+    #         GenerationStep(model=get_sobol, num_trials=sobol_trials),  # Sobol initialization
+    #         GenerationStep(
+    #             model=get_botorch,
+    #             num_trials=botorch_trials,  # Remaining trials for BoTorch
+    #             model_kwargs={"acquisition_function": UpperConfidenceBound}  # BoTorch's UCB acquisition
+    #         )
+    #     ]
+    # )
+
+    # Use Ax's optimization function with the custom generation strategy
+    best_parameters, best_values, experiment, axmodel = optimize(
+        parameters=search_space,
+        evaluation_function=objective_function,
+        minimize=True,
+        total_trials=model.cfg.epochs_calibrate,
+        random_seed=model.cfg.seed,
+        # generation_strategy=gs  # Use the generation strategy
+    )
+
+    print(f"Best parameters for basin {basin}: {best_parameters}")
+    # print(f"Best loss value for basin {basin}: {best_values}")
+    # print(f"Best experiment for basin {basin}: {experiment}")
+    # print(f"Best model for basin {basin}: {axmodel}")
+
+    # Convert best parameters to DataFrame format, similar to SPOTPY output
+    best_params_df = pd.DataFrame([best_parameters], columns=best_parameters.keys())
+    best_params_df.insert(0, 'basinID', basin)
+
+    print('best_params_df:', best_params_df)
+
+    # Plot the loss values over trials
+    plt.figure(figsize=(10, 6))
+    plt.plot(loss_values, marker='o')
+    plt.title(f"Objective Function Trace - Basin {basin}")
+    plt.xlabel("Trial")
+    plt.ylabel("Loss (NSE)")
+    plt.grid()
+    plt.savefig(f"ax_{basin}_obj_function_trace_{loss}.png", dpi=150)
+    plt.show()
+
+    # Run the model with the best parameters to plot observed vs simulated data
+    basin_params=list(best_parameters.values())
+    print('basin_params:', basin_params)
+    best_simulation = model.run(basin, basin_params=basin_params)
+    print('best_simulation:', len(best_simulation), best_simulation[-1].shape)
+
+    best_loss_value = nse_loss(observed_data, best_simulation[-1])
+    print(f"Recalculated Best Loss: {best_loss_value:.3f} | NSE: {1 - best_loss_value:.3f}")
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(df_calib['obs_runoff'].values, label='Observed')
+    plt.plot(best_simulation[-1], label='Simulated', color='red', linestyle='--')
+    plt.title(f"Basin {basin} | Best Simulation | Loss: {best_loss_value:.3f} | NSE: {1 - min(loss_values):.3f}")
+    plt.legend()
+    plt.savefig(f"ax_{basin}_best_simulation_{loss}.png", dpi=150)
+    plt.show()
 
     return best_params_df
 
@@ -336,24 +497,31 @@ def run_calibrate_model(config_file: Path, gpu: int = None):
 
     # Define the output file path
     # if time_step is specified, add it to the output file name
-    if cfg.time_step in cfg._cfg:
-        output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.odesmethod}{cfg.time_step}.csv'
-    elif cfg.rtol in cfg._cfg:
-        output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.odesmethod}_tol{cfg.rtol}{cfg.atol}.csv'
+    # if cfg.time_step in cfg._cfg:
+    #     output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.odesmethod}{cfg.time_step}.csv'
+    # elif cfg.rtol in cfg._cfg:
+    #     output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.odesmethod}_tol{cfg.rtol}{cfg.atol}.csv'
+
+    # output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.loss}_{cfg.odesmethod}{cfg.time_step}_{cfg.epochs_calibrate}ep.csv'
+
+    # output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'{len(dataset.basins)}calibrated_{cfg.concept_model}_{cfg.opt_algorithm}_{cfg.loss}_{cfg.odesmethod}tol{cfg.rtol}{cfg.atol}_{cfg.epochs_calibrate}ep.csv'
+
+    # output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'___{len(dataset.basins)}calibrated_{cfg.opt_algorithm}_test_nse.csv'
+
+    output_file = Path(project_dir) / 'src' / 'modelzoo_concept' / 'bucket_parameter_files' / f'___{len(dataset.basins)}calibrated_{cfg.opt_algorithm}_test_{cfg.loss}.csv'
 
     # Check if the output file already exists (to append if crashed previously)
     if output_file.exists():
-        combined_df = pd.read_csv(output_file)
+        combined_df = pd.read_csv(output_file, dtype={'basinID': str})
         processed_basins = combined_df['basinID'].unique().tolist()  # Get already processed basins
     else:
         combined_df = pd.DataFrame()  # Empty DataFrame to collect results
-        processed_basins = []  # Empty list if no basins have been processed
 
     for basin in tqdm(dataset.basins, disable=cfg.disable_pbar, file=sys.stdout):
-        # Skip basins that have already been processed
-        if basin in processed_basins:
-            print(f"Basin {basin} already processed, skipping.")
-            continue
+        # # Skip basins that have already been processed
+        # if basin in processed_basins:
+        #     print(f"Basin {basin} already processed, skipping.")
+        #     continue
 
         ds_calib, time_idx0 = get_calibration_dataset(cfg, dataset, basin)
 
@@ -362,21 +530,30 @@ def run_calibrate_model(config_file: Path, gpu: int = None):
                                           dataset.scaler, odesmethod=cfg.odesmethod)
 
         # Run the optimization
-        df_optm_params = optimize_M0(model_concept, ds_calib, basin)
+        # df_optm_params = optimize_M0(model_concept, ds_calib, basin)
+        df_optm_params = optimize_M0_ax(model_concept, ds_calib, basin)
+
+        # Convert basinID to string in the new DataFrame
+        df_optm_params['basinID'] = df_optm_params['basinID'].astype(str)
 
         # Append the DataFrame to the combined DataFrame
         combined_df = pd.concat([combined_df, df_optm_params], ignore_index=True)
-        print(basin, 'optm_params:', df_optm_params)
+
+        # print(basin, 'optm_params:')
+        # print(df_optm_params)
+        # print('combined_df:')
+        # print(combined_df)
 
         # Save the combined DataFrame after each basin to avoid losing progress
         combined_df.to_csv(output_file, index=False)
-        print(f"Saved results for basin {basin} to {output_file}")
+        # print(f"Saved results for basin {basin} to {output_file}")
     
 
 
 def run_conceptual_model(config_file: Path, gpu: int = None):
 
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
+    
 
     # Get the basin interpolators
     interpolators = get_basin_interpolators(dataset, cfg, project_dir)
@@ -657,7 +834,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
         model_file = matching_files[0]
         # Load the state dictionary from the saved model
         state_dict = torch.load(model_file)
-        print('state_dict:', state_dict)
+        # print('state_dict:', state_dict)
         # # Load the state dictionary into the model
         # model_nn.load_state_dict(state_dict)
         # print(f'-- Loaded the model weights from {model_file}')
@@ -680,6 +857,7 @@ def resume_training(run_dir: Path, epoch: int = None, gpu: int = None):
 
 # Example usage:
 # python thn_run.py conceptual --action calibrate --config-file ../examples/config_run_calibrate.yml
+# python thn_run.py conceptual --action calibrate --config-file ../examples/config_run_calibrate_test.yml
 # python thn_run.py conceptual --config-file ../examples/config_run_m0.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_test.yml
 # python thn_run.py pretrainer --action train --config-file ../examples/config_run_nn_mlp.yml

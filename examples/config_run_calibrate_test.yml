@@ -1,0 +1,127 @@
+# --- Data configurations --- #
+# Dataset to use for training and testing [camelsus, summaca]
+dataset: camelsus
+# concept_data_dir: ../../../../../gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+## See file src/utils/data_dir.yml for more details
+concept_data_dir: data_dir_camelsus
+
+# Forcing product [daymet, maurer, maurer_extended, nldas, nldas_extended, nldas_hourly]
+forcings: 
+  - daymet
+
+# Files to specify training, validation and test basins
+# basin_file: 569_basin_file.txt
+basin_file: 4_basin_file.txt
+# basin_file: 2_basin_file.txt
+
+# --- Model configurations --- #
+# Conceptual model to use [exphydro, ...
+# exphydro model: Two buckets (water and snow), 5 processes and 6 parameters
+# Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
+concept_model: exphydro
+
+# # ode_solver_lib: scipy
+# # # Method to solve the ODEs (using solve_ivp from scipy.integrate)
+# # # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html
+# # # Options: RK45, RK23, DOP853, Radau, BDF, LSODA
+# # odesmethod: RK23
+# # rtol: 1e-3
+# # atol: 1e-6
+# # # odesmethod: RK45
+# # # rtol: 1e-6
+# # # atol: 1e-9
+# # # odesmethod: rk4
+# # # time_step: 1.0
+# odesmethod: euler
+# time_step: 0.5
+
+ode_solver_lib: torchdiffeq
+# Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun, midpoint]
+# https://github.com/rtqichen/torchdiffeq/blob/master/README.md
+# odesmethod: bosh3
+# rtol: 1e-4
+# atol: 1e-6
+odesmethod: euler
+time_step: 1.0
+
+# --- Training configurations --- #
+# Period to train, validate and test the model (they should be consecutive)
+# train_start_date: "01/10/1980"
+# train_end_date: "30/09/2000"
+# valid_start_date: "01/10/2000"
+# valid_end_date: "30/09/2010"
+
+train_start_date: "01/10/1995"
+train_end_date: "30/09/2000"
+valid_start_date: "01/10/2000"
+valid_end_date: "30/09/2002"
+
+# Loss function (rmse, nashsutcliffe)
+loss: nse
+
+# Metrics to use for evaluation
+metrics:
+  - NSE
+  - Alpha-NSE
+  - Beta-NSE
+  - FHV
+  - FMS
+  - FLV
+  - KGE
+  - Beta-KGE
+  - Peak-Timing
+  - Peak-MAPE
+  - Pearson-r
+
+# Scaler (standard, minmax, null)
+scaler: standard
+
+# Number of epochs to calibrate the model
+epochs_calibrate: 200
+
+# Period to calibrate the model (train, valid, test, all -> * all goes from  train_start_date to test_end_date)
+period_calibrate: train
+
+# Set seed for reproducibility
+seed: 1111
+
+# # SPOTPY algorithm to use for parameter optimization
+# # mc  : Monte Carlo
+# # lhs : Latin Hypercube Sampling
+# # mcmc: Markov Chain Monte Carlo
+# # mle : Maximum Likelihood Estimation
+# # sa  : Simulated Annealing
+# # rope: RObust Parameter Estimation
+# # sceua: Shuffled Complex Evolution
+# # demcz: Differential Evolution Markov Chain
+# opt_algorithm: demcz
+
+params_bounds:
+# Parameter ranges for bucket model:
+# f: Rate of decline in flow from catchment bucket   | Range: (0, 0.1)
+# smax: Maximum storage of the catchment bucket      | Range: (100, 1500)
+# qmax: Maximum subsurface flow at full bucket       | Range: (10, 50)
+# ddf: Thermal degree‐day factor                     | Range: (0, 5.0)
+# tmax: Temperature above which snow starts melting  | Range: (0, 3.0)
+# tmin: Temperature below which precipitation is snow| Range: (-3.0, 0)
+
+#              min_values    max_values  low_boundaries  high_boundaries
+# basinID  1.013500e+06  1.440000e+07  -994475.000000     1.640798e+07
+# S0       0.000000e+00  9.938407e+02     -149.076099     1.142917e+03
+# S1       1.942632e+01  1.444822e+03     -194.383010     1.658631e+03
+# f        2.077040e-03  2.770690e-01       -0.039172     3.183178e-01
+# Smax     6.851271e+01  2.758988e+03     -335.058642     3.162560e+03
+# Qmax     2.655393e+00  1.730426e+02      -22.902682     1.986006e+02
+# Df       1.006858e-02  9.993979e+00       -1.487518     1.149157e+01
+# Tmax    -4.329773e-02  7.772363e+00       -1.215647     8.944712e+00
+# Tmin    -5.395901e+00  8.331763e-02       -6.217784     9.052004e-01
+# UNKNOWN -7.383889e-01  2.770862e+00       -1.264776     3.297249e+00
+
+  S0: [0.0, 1000.0]
+  S1: [10.0, 1500.0]
+  f: [0.0, 0.3]
+  Smax: [50.0, 2900.0]
+  Qmax: [2.0, 180.0]
+  Df: [0.0, 10.0]
+  Tmax: [-0.5, 8.9]
+  Tmin: [-6.0, 0.9]

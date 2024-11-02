@@ -1,19 +1,19 @@
 # Folder where the data is stored
-# results_folder: ~/HydroNODE_fork/M0_results_569basins_1980_2010_BS3_julia
+results_folder: ~/HydroNODE_fork/M0_results_569basins_1980_2010_BS3_julia
 # results_folder: ~/HydroNODE_fork/M0_results_569basins_1980_2010_BS3tol69_julia
 # results_folder: ~/HydroNODE_fork/M0_results_569basins_1980_2010_DP5tol33_julia
-results_folder: ~/HydroNODE_fork/M0_results_569basins_1980_2010_DP5tol912_julia
+# results_folder: ~/HydroNODE_fork/M0_results_569basins_1980_2010_DP5tol912_julia
 
 # Folder (to be created) where the processed data will be stored
-# plots_folder: plots_conceptualBS3_julia
+plots_folder: plots_conceptualBS3_julia
 # plots_folder: plots_conceptualBS3tol69_julia
 # plots_folder: plots_conceptualDP5tol33_julia
-plots_folder: plots_conceptualDP5tol912_julia
+# plots_folder: plots_conceptualDP5tol912_julia
 
-# graph_title: Conceptual model (exp-hydro) - BOSH3
+graph_title: Conceptual model (exp-hydro) - BOSH3
 # graph_title: Conceptual model (exp-hydro) - BOSH3tol69
 # graph_title: Conceptual model (exp-hydro) - DP5tol33
-graph_title: Conceptual model (exp-hydro) - DP5tol912
+# graph_title: Conceptual model (exp-hydro) - DP5tol912
 
 # Periods to be processed
 periods:

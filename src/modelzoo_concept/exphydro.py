@@ -85,6 +85,14 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
 
         # Compute and substitute the 5 mechanistic processes
         q_out = Qb(s1, f, smax, qmax, self.step_function) + Qs(s1, smax, self.step_function)
+
+        if isinstance(s0, torch.Tensor):
+            # temp to torch tensor
+            temp = torch.tensor(temp, dtype=self.cfg.precision['torch'])
+            # precp to torch tensor
+            precp = torch.tensor(precp, dtype=self.cfg.precision['torch'])
+            # lday to torch tensor
+            lday = torch.tensor(lday, dtype=self.cfg.precision['torch'])
         m_out = M(s0, temp, df, tmax, self.step_function)
 
         # Eq 1 - Hoge_EtAl_HESS_2022
@@ -92,29 +100,46 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         # Eq 2 - Hoge_EtAl_HESS_2022
         ds1_dt = Pr(precp, temp, tmin, self.step_function) + m_out - ET(s1, temp, lday, smax, self.step_function) - q_out
 
+        # print('Ps:', Ps(precp, temp, tmin, self.step_function))
+        # print('Pr:', Pr(precp, temp, tmin, self.step_function))
+        # print('m_out:', m_out)
+        # print('ET:', ET(s1, temp, lday, smax, self.step_function))
+        # print('q_out:', q_out)
+
         if self.ode_solver_lib == 'scipy':
             return [ds0_dt, ds1_dt]
         elif self.ode_solver_lib == 'torchdiffeq':
-            return torch.stack([ds0_dt, ds1_dt])
+            # # print('t:', t)
+            # # print('ds0_dt:', ds0_dt)
+            # # print('ds1_dt:', ds1_dt)
+            # return torch.stack([ds0_dt, ds1_dt])
+            return torch.stack([ds0_dt, ds1_dt]).squeeze()  # Use .squeeze() to avoid extra dimensions if present
            
     def step_function(self, x):
-        '''
-        Step function to be used in the model.
+        """
+        Step function to handle both PyTorch tensors (for gradient tracking) and NumPy arrays.
         
         - Args:
-            x: float, input value.
-            
-        - Returns:
-            array_like, step function applied to input value(s).
-        '''
-        return (np.tanh(5.0 * x) + 1.0) * 0.5
+            x: Input value, can be a torch.Tensor or a np.ndarray.
         
-    def run(self, basin, basin_params=None):
+        - Returns:
+            Output with step function applied.
+        """
+        if isinstance(x, torch.Tensor):
+            # If x is a tensor, we stay within the PyTorch computation graph
+            return (torch.tanh(5.0 * x) + 1.0) * 0.5
+        elif isinstance(x, np.ndarray):
+            # If x is a NumPy array, we use NumPy operations
+            return (np.tanh(5.0 * x) + 1.0) * 0.5
+        else:
+            raise TypeError("Input must be either a torch.Tensor or a np.ndarray")
+        
+    def run(self, basin, basin_params=None, use_grad=False):
         
         if basin_params is None:
             basin_params = self.params_dict[basin]
 
-        print('basin_params:', basin_params)
+        # print('basin_params:', basin_params)
         
         # Get the interpolator functions for the basin
         self.precp_interp = self.interpolators[basin]['prcp']
@@ -130,9 +155,17 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             self.precp_basin = self.precp.values
             self.temp_basin = self.temp.values
             self.lday_basin = self.lday.values
+            if use_grad:
+                self.precp_basin = torch.tensor(self.precp_basin, dtype=self.cfg.precision['torch'])
+                self.temp_basin = torch.tensor(self.temp_basin, dtype=self.cfg.precision['torch'])
+                self.lday_basin = torch.tensor(self.lday_basin, dtype=self.cfg.precision['torch'])
         
         # Set the initial conditions
-        y0 = np.array([basin_params[0], basin_params[1]])
+        if use_grad: # Use PyTorch tensors for initial conditions and parameters
+            y0 = torch.tensor([basin_params[0], basin_params[1]], dtype=self.cfg.precision['torch'])
+            y0 = y0.squeeze() if y0.dim() > 1 else y0  # Squeezes extra dimensions if they exist
+        else:
+            y0 = np.array([basin_params[0], basin_params[1]])
         
         # Set the parameters as class attributes to avoid passing them in `args`
         self.params = {
@@ -198,10 +231,17 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             ode_solver = torchdiffeq.odeint
 
             # Set the initial conditions to  torch.Tensor
-            y0 = torch.tensor(y0, dtype=self.cfg.precision['torch'])
+            if use_grad:
+                y0 = y0.clone().detach().requires_grad_(True)
+            else:
+                y0 = torch.tensor(y0, dtype=self.cfg.precision['torch'])
+                # Ensure y0 is expanded to 2D if required, e.g., [2] -> [2, 1]
+                if y0.dim() == 1:
+                    y0 = y0.unsqueeze(1)  # Adds an extra dimension
 
             # Set time series to torch.Tensor
-            self.time_series = torch.tensor(self.time_series, dtype=self.cfg.precision['torch'])
+            # self.time_series = torch.tensor(self.time_series, dtype=self.cfg.precision['torch'])
+            self.time_series = self.time_series.clone().detach().requires_grad_(True)
 
             y = ode_solver(self.conceptual_model, y0=y0, t=self.time_series, method=self.odesmethod, 
                            rtol=self.rtol, atol=self.atol, options=options)
@@ -211,37 +251,67 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
             s_snow = y.y[0]
             s_water = y.y[1]
         elif self.ode_solver_lib == 'torchdiffeq':
-            s_snow = y[:, 0].detach().cpu().numpy()
-            s_water = y[:, 1].detach().cpu().numpy()
+            if use_grad:
+                s_snow = y[:, 0]
+                s_water = y[:, 1]
+            else:
+                s_snow = y[:, 0].detach().cpu().numpy()
+                s_water = y[:, 1].detach().cpu().numpy()
 
-        print('s_snow:', s_snow)
-        print('s_water:', s_water)
+        # print('s_snow:', s_snow)
+        # print('s_water:', s_water)
 
         # Unpack the parameters to call the mechanistic processes
         f, smax, qmax, df, tmax, tmin = self.params.values()
         
         # Calculate the mechanistic processes -> q_bucket, et_bucket, m_bucket, ps_bucket, pr_bucket
         # Discharge
-        print('Qb:', Qb(s_water, f, smax, qmax, self.step_function))
-        print('Qs:', Qs(s_water, smax, self.step_function))
+        # print('Qb:', Qb(s_water, f, smax, qmax, self.step_function))
+        # print('Qs:', Qs(s_water, smax, self.step_function))
         q_bucket = Qb(s_water, f, smax, qmax, self.step_function) + Qs(s_water, smax, self.step_function)
-        print('q_bucket:', q_bucket)
-        q_bucket = np.maximum(q_bucket, self.eps)
+        # print('before q_bucket:', q_bucket[:5], q_bucket[-5:])
+        if not use_grad:
+            q_bucket = np.maximum(q_bucket, self.eps)
+        else:
+            q_bucket = torch.clamp(q_bucket, min=self.eps)
+        # print('after  q_bucket:', q_bucket[:5], q_bucket[-5:])
+
+        # aux = input('Press any key to continue...')
+
+        # # Plot and save q_bucket vs time
+        # import matplotlib.pyplot as plt
+        # plt.plot(self.time_series, q_bucket)
+        # plt.title(f'basin {basin} - q_bucket')
+        # plt.savefig('q_bucket.png')
+
+
+
+
         # Evapotranspiration
         et_bucket = ET(s_water, self.temp_basin, self.lday_basin, smax, self.step_function)
-        et_bucket = np.maximum(et_bucket, self.eps)
+        if not use_grad:
+            et_bucket = np.maximum(et_bucket, self.eps)
+        else:
+            et_bucket = torch.clamp(et_bucket, min=self.eps)
 
         # Melting
         m_bucket = M(s_snow, self.temp_basin, df, tmax, self.step_function)
-        m_bucket = np.maximum(m_bucket, self.eps)
+        if not use_grad:
+            m_bucket = np.maximum(m_bucket, self.eps)
+        else:
+            m_bucket = torch.clamp(m_bucket, min=self.eps)
         # Precipitation as snow
         ps_bucket = Ps(self.precp_basin, self.temp_basin, tmin, self.step_function)
-        ps_bucket = np.maximum(ps_bucket, self.eps)
+        if not use_grad:
+            ps_bucket = np.maximum(ps_bucket, self.eps)
+        else:
+            ps_bucket = torch.clamp(ps_bucket, min=self.eps)
         # Precipitation as rain
         pr_bucket = Pr(self.precp_basin, self.temp_basin, tmin, self.step_function)
-        pr_bucket = np.maximum(pr_bucket, self.eps)
-
-        print('q_bucket:', q_bucket)
+        if not use_grad:
+            pr_bucket = np.maximum(pr_bucket, self.eps)
+        else:
+            pr_bucket = torch.clamp(pr_bucket, min=self.eps)
         
         # Mind this order for 'save_results' method - the last element is the target variable (q_obs)
         return s_snow, s_water, et_bucket, m_bucket, ps_bucket, pr_bucket, q_bucket
@@ -432,15 +502,34 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
     def model_outputs(self):
         return ['s_snow', 's_water']
     
-## Auxiliary functions
-# Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
-Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
-                                        + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
+# ## Auxiliary functions
+# # Qbucket is the runoff generated based on the available stored water in the bucket (unit: mm/day) - Patil_Stieglitz_HR_2012
 # Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
-#     + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(np.clip(-f * (smax - s1), a_min=-700, a_max=700))   
+#                                         + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(-f * (smax - s1))
+# # Qb = lambda s1, f, smax, qmax, step_fct: step_fct(s1) * step_fct(s1 - smax) * qmax \
+# #     + step_fct(s1) * step_fct(smax - s1) * qmax * np.exp(np.clip(-f * (smax - s1), a_min=-700, a_max=700))   
 
-# Qspill is the snowmelt is available to infiltrate into the catchment bucket, but the storage S has reached full capacity smax.
-Qs = lambda s1, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * (s1 - smax)
+# # Qspill is the snowmelt is available to infiltrate into the catchment bucket, but the storage S has reached full capacity smax.
+# Qs = lambda s1, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * (s1 - smax)
+
+def Qb(s1, f, smax, qmax, step_fct):
+    """
+    Calculate Qb, handling both torch.Tensor and np.ndarray inputs.
+    """
+    if isinstance(s1, torch.Tensor):
+        exp_term = torch.exp(torch.clamp(-f * (smax - s1), min=-50, max=50))
+    elif isinstance(s1, np.ndarray):
+        exp_term = np.exp(-f * (smax - s1))
+    else:
+        raise TypeError("Input must be either a torch.Tensor or a np.ndarray")
+    
+    return step_fct(s1) * step_fct(s1 - smax) * qmax + step_fct(s1) * step_fct(smax - s1) * qmax * exp_term
+
+def Qs(s1, smax, step_fct):
+    """
+    Calculate Qs, handling both torch.Tensor and np.ndarray inputs.
+    """
+    return step_fct(s1) * step_fct(s1 - smax) * (s1 - smax)
 
 # Precipitation as snow (A1) - Hoge_EtAl_HESS_2022
 Ps = lambda p, temp, tmin, step_fct: step_fct(tmin - temp) * p
@@ -448,13 +537,48 @@ Ps = lambda p, temp, tmin, step_fct: step_fct(tmin - temp) * p
 # Precipitation as snow (A2) - Hoge_EtAl_HESS_2022
 Pr = lambda p, temp, tmin, step_fct: step_fct(temp - tmin) * p
 
-# Melting (A4) - Hoge_EtAl_HESS_2022
-M = lambda s0, temp, df, tmax, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
+# # Melting (A4) - Hoge_EtAl_HESS_2022
+# M = lambda s0, temp, df, tmax, step_fct: step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
 
 
-# Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
-ET = lambda s1, temp, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(temp, lday)  \
-                            + step_fct(s1) * step_fct(smax - s1) * PET(temp, lday) * (s1 / smax)
+# # Evapotranspiration (A3) - Hoge_EtAl_HESS_2022
+# ET = lambda s1, temp, lday, smax, step_fct: step_fct(s1) * step_fct(s1 - smax) * PET(temp, lday)  \
+#                             + step_fct(s1) * step_fct(smax - s1) * PET(temp, lday) * (s1 / smax)
                                                  
-# Potential evapotranspiration - Hamon’s formula (Hamon, 1963) - Hoge_EtAl_HESS_2022 
-PET = lambda temp, lday: 29.8 * lday * 0.611 * np.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)    
+# # Potential evapotranspiration - Hamon’s formula (Hamon, 1963) - Hoge_EtAl_HESS_2022 
+# PET = lambda temp, lday: 29.8 * lday * 0.611 * np.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)    
+
+def M(s0, temp, df, tmax, step_fct):
+    """Melting function, with type-checking for compatibility."""
+    if isinstance(s0, torch.Tensor):
+        return step_fct(temp - tmax) * step_fct(s0) * torch.minimum(s0, df * (temp - tmax))
+    elif isinstance(s0, np.ndarray):
+        return step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
+    else:
+        raise TypeError("Inputs must be either torch.Tensor or np.ndarray")
+
+def ET(s1, temp, lday, smax, step_fct):
+    """Evapotranspiration function, compatible with both tensor and array inputs."""
+    PET_val = PET(temp, lday)
+    if isinstance(s1, torch.Tensor):
+        # print('s1:', type(s1), s1)
+        # print('smax:', type(smax), smax)
+        # print('PET_val:', type(PET_val), PET_val)
+        et_val = step_fct(s1) * step_fct(s1 - smax) * PET_val + step_fct(s1) * step_fct(smax - s1) * PET_val * (s1 / smax)
+    elif isinstance(s1, np.ndarray):
+        et_val = step_fct(s1) * step_fct(s1 - smax) * PET_val + step_fct(s1) * step_fct(smax - s1) * PET_val * (s1 / smax)
+    else:
+        raise TypeError("Inputs must be either torch.Tensor or np.ndarray")
+    return et_val
+
+def PET(temp, lday):
+    """Potential evapotranspiration using Hamon's formula."""
+    # print('In PET')
+    # print('temp:', type(temp), temp)
+    # print('lday:', type(lday), lday)
+    if isinstance(temp, torch.Tensor):
+        return 29.8 * lday * 0.611 * torch.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)
+    elif isinstance(temp, np.ndarray):
+        return 29.8 * lday * 0.611 * np.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)
+    else:
+        raise TypeError("Temperature input must be either torch.Tensor or np.ndarray")
