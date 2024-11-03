@@ -42,7 +42,7 @@ ode_solver_lib: torchdiffeq
 # rtol: 1e-4
 # atol: 1e-6
 odesmethod: euler
-time_step: 1.0
+time_step: 0.5
 
 # --- Training configurations --- #
 # Period to train, validate and test the model (they should be consecutive)
