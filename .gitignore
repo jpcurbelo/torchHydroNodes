@@ -3,6 +3,8 @@
 venv-*/*
 examples/runs*/
 data/*
+# Except the data/ folder itself
+!data/
 src/scripts_paper/runs_pretrainer*
 src/scripts_paper/runs_hybrid*
 src/scripts_paper/ZZZruns_*
