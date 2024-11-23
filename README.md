@@ -1,7 +1,7 @@
 <table>
   <tr>
     <td>
-      <img src="docs/source/_static/img/torchhydronodes-logo.png" alt="torchHydroNodes Logo" title="Logo designed with the help of AI via OpenAI's tools" width="200">
+      <img src="docs/source/_static/img/torchhydronodes-logo.webp" alt="torchHydroNodes Logo" title="Logo designed with the help of AI via OpenAI's tools" width="200">
     </td>
     <td>
       <strong>torchHydroNodes</strong>: Python package to train hybrid hydrological models (conceptual/physics-based models + neural networks)
