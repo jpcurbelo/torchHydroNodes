@@ -28,7 +28,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # -- Options for HTML output -------------------------------------------------
 # Path to logo image file
 html_logo = '_static/img/torchhydronodes-logo.webp'
-html_theme = 'alabaster'  # Change theme to your preference ('sphinx_rtd_theme' is popular)
+html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # -- Options for extensions --------------------------------------------------
