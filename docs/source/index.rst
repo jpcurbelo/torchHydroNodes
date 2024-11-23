@@ -9,3 +9,14 @@ In this documentation, you'll find:
 A :doc:quickstart guide <usage/quickstart> to get started with installation, datasets, and basic usage.
 :doc:Tutorials <tutorials/index> with code examples to train and test hybrid hydrologic models.
 Details on the :doc:model zoo <usage/models> of pre-packaged models, with the option to extend them.
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   usage/quickstart
+   usage/models
+   usage/config
+   tutorials/index
+   contributing
