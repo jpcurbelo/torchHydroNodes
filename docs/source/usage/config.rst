@@ -3,7 +3,9 @@ Configuration Arguments
 
 This page provides a list of possible configuration arguments.
 Check out the files:
+
 -  `docs/source/tutorials/run_concept_model/config_run_concept.yml <https://github.com/jpcurbelo/torchHydroNodes/blob/master/docs/source/tutorials/run_concept_model/config_run_concept.yml>`__ 
+
 -  `docs/source/tutorials/run_concept_model/config_run_concept.yml <https://github.com/jpcurbelo/torchHydroNodes/blob/master/docs/source/tutorials/run_hybrid_model/config_run_hybrid_mlp.yml>`__ 
 
 for examples of how a config file could look like.

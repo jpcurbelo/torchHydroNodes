@@ -1,8 +1,10 @@
-# Contributing to torchHydroNodes
+Contributing to torchHydroNodes
+===============================
 
 Thank you for considering contributing to **torchHydroNodes**! This document outlines the guidelines for contributing to this project. Please take a moment to review these guidelines before making contributions.
 
-## How to Contribute
+How to Contribute
+------------------
 
 We welcome contributions from all members of the community. Here are a few ways you can contribute to **torchHydroNodes**:
 
@@ -14,8 +16,11 @@ We welcome contributions from all members of the community. Here are a few ways 
 Even if you don't have the time to contribute directly, there are still ways to support us and show your appreciation:
 
 - **Star the Project**: Show your support by starring the project on GitHub.
+
 - **Spread the Word**: Share about **torchHydroNodes** on social media or in relevant online communities.
+
 - **Include in Your Project's README**: Consider mentioning **torchHydroNodes** in your project's README to help others discover it.
+
 - **Recommend at Meetups**: If you attend local meetups or conferences, recommending **torchHydroNodes** to your peers can help increase its visibility and adoption.
 
 We appreciate any contributions you make to improve **torchHydroNodes** and make it even more valuable for the community. Thank you for your support!
