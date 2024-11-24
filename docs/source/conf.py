@@ -32,6 +32,7 @@ html_logo = '_static/img/torchhydronodes-logo.webp'
 html_theme = 'sphinx_rtd_theme'
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
+templates_path = ['_templates']
 
 # -- Options for extensions --------------------------------------------------
 # autodoc settings
