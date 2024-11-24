@@ -20,6 +20,7 @@ extensions = [
     'sphinx.ext.napoleon',      # Support for Google and NumPy style docstrings
     'sphinx.ext.viewcode',      # Add links to source code
     'sphinx.ext.todo',          # Support for TODO directives
+    'sphinx.ext.intersphinx',   # Link to other Sphinx documentation
 ]
 
 templates_path = ['_templates']
