@@ -14,12 +14,12 @@ for examples of how a config file could look like.
 ## Configuration Arguments
 
 ### Data entries
+**
+- **``dataset``**: Defines which dataset will be used. Currently supported is ``camelsus`` (CAMELS-US dataset by [Newman et al., 2015](https://hess.copernicus.org/articles/19/209/2015/)). The code is intended to support other datasets but might require specific adaptations, such as extending the parent class to handle differences in dataset structure or features.
 
-- ```dataset```: Defines which dataset will be used. Currently supported is ```camelsus``` (CAMELS-US dataset by [Newman et al., 2015](https://hess.copernicus.org/articles/19/209/2015/)). The code is intended to support other datasets but might require specific adaptations, such as extending the parent class to handle differences in dataset structure or features.
+- **``concept_data_dir``**: Specifies the path to the data source required for the conceptual model. This path should be defined in the configuration file ``src/utils/data_dir.yml``.
 
-- ```concept_data_dir```: Specifies the path to the data source required for the conceptual model. This path should be defined in the configuration file ```src/utils/data_dir.yml```.
-
-- ```forcings```: This entry can be ignored if the dataset is not ```camelsus``` or unless it is strictly required by a newly defined dataset. It can be either a string or a list of strings corresponding to forcing products in the CAMELS dataset. 
+- **``forcings``**: This entry can be ignored if the dataset is not ``camelsus`` or unless it is strictly required by a newly defined dataset. It can be either a string or a list of strings corresponding to forcing products in the CAMELS dataset. 
 
     *Examples*:  ```[daymet, maurer, maurer_extended, nldas]```.
 
