@@ -3,39 +3,44 @@ Getting started
 
 Installation
 ------------
-Recommended Configuration: Tested on Ubuntu 22.04 with Python 3.12
+Recommended Configuration: Tested on Ubuntu 22.04 with Python 3.12.
 
-#### 1. Clone GO-RXR from the main branch in this repository:
-```bash
-$ git clone https://github.com/jpcurbelo/torchHydroNodes.git
-```
+1. Clone the repository from the main branch:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#### 2. Prerequisites and Setup (Tested with Python 3.12.13)
+   .. code-block:: bash
 
-2.1. **Set Up the Virtual Environment**
+      $ git clone https://github.com/jpcurbelo/torchHydroNodes.git
 
+2. Prerequisites and Setup (Tested with Python 3.12.13)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  - **Navigate to the `torchHydroNodes` Directory**:
-    ```bash
-    $ cd torchHydroNodes
-    ```
+2.1. Set Up the Virtual Environment
 
-   - **Create the virtual environment**:  
+- Navigate to the ``torchHydroNodes`` directory:
 
-      ```bash
+   .. code-block:: bash
+
+      $ cd torchHydroNodes
+
+- Create the virtual environment:
+
+   .. code-block:: bash
+
       $ python3.12 -m venv venv-thn
-      ```
 
-   - **Activate the virtual environment**:  
+- Activate the virtual environment:
 
-     ```bash
-     (venv-go-rxr) $ source venv-go-rxr/bin/activate
-     ```
+   .. code-block:: bash
 
-2.2. **Install Package Dependencies**
+      $ source venv-thn/bin/activate
 
-  <!-- Install the required Python packages using `pip`:
+2.2. Install Package Dependencies
 
-  ```bash
-  (venv-go-rxr) $ pip install .
-  ``` -->
+- Install the required packages using ``pip``:
+
+   .. code-block:: bash
+
+      (venv-thn) $ pip install .
+
+  This command will handle the installation of all dependencies

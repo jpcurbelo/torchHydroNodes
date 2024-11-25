@@ -48,7 +48,7 @@ General experiment entries
       - ``time_step``: ``0.5``  
 
   - ``torchdiffeq``: Solves ODEs using the ``torchdiffeq`` library.  
-    Reference: `TorchDiffEq Documentation <https://github.com/rtqichen/torchdiffeq/blob/master/README.md>`__.  
+    Reference: `torchdiffeq documentation <https://github.com/rtqichen/torchdiffeq/blob/master/README.md>`__.  
     Supported methods: ``euler``, ``rk4``, ``midpoint``, ``adaptive_heun``, ``bosh3``,``dopri5``.  
 
 - ``train_start_date``: Start date of the training period (first day of discharge) in the format `DD/MM/YYYY`.  
