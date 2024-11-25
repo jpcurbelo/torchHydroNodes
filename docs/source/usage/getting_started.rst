@@ -50,3 +50,30 @@ Recommended Configuration: Tested on Ubuntu 22.04 with Python 3.12.
       .. code-block:: bash
 
         (venv-thn) $ pip install -r requirements.txt
+
+3. Data Preparation
+^^^^^^^^^^^^^^^^^^^
+
+- Download and place your dataset in a convenient directory.
+
+  **Note**: For the CAMELS US dataset, we recommend referring to the entries on meteorological time series, streamflow data, and catchment attributes in the `Tutorial on Data Prerequisites <https://neuralhydrology.readthedocs.io/en/latest/tutorials/data-prerequisites.html>`_ within the `NeuralHydrology documentation <https://neuralhydrology.readthedocs.io>`_.
+
+- Define or update the corresponding ``data_dir`` entry in the ``src/utils/data_dir.yml`` file.
+
+  **Note**: In the default configurations of our tutorials, the key ``data_dir`` is defined as:
+
+  .. code-block:: yaml
+
+      data_dir_camelsus: /gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+
+  This path may vary depending on your setup.
+
+- Ensure that the shapefiles (`.shp`) required for plotting are specified in the ``data_dir.yml`` file. These files are dataset-specific and are used for geographic visualization of catchment boundaries or other spatial attributes. 
+
+  **For example:**
+
+  .. code-block:: yaml
+
+      # Relative path after the data_dir
+      map_shape_file: basin_set_full_res/usa-states-census-2014.shp
+      hm_catchment_file: basin_set_full_res/HCDN_nhru_final_671.shp
