@@ -21,10 +21,14 @@ extensions = [
     'sphinx.ext.viewcode',      # Add links to source code
     'sphinx.ext.todo',          # Support for TODO directives
     'sphinx.ext.intersphinx',   # Link to other Sphinx documentation
+    'nbsphinx',  # For rendering Jupyter notebooks
+    'nbsphinx_link' # For linking to Jupyter notebooks
+    'sphinx.ext.mathjax',  # latex rendering of equations using MathJax
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', 
+                    '.DS_Store', '**.ipynb_checkpoints']
 
 # -- Options for HTML output -------------------------------------------------
 # Path to logo image file

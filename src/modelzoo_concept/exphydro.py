@@ -128,7 +128,7 @@ class ExpHydro(BaseConceptModel, ExpHydroCommon):
         if isinstance(x, torch.Tensor):
             # If x is a tensor, we stay within the PyTorch computation graph
             return (torch.tanh(5.0 * x) + 1.0) * 0.5
-        elif isinstance(x, np.ndarray):
+        elif isinstance(x, np.ndarray) or isinstance(x, float):
             # If x is a NumPy array, we use NumPy operations
             return (np.tanh(5.0 * x) + 1.0) * 0.5
         else:
@@ -523,9 +523,10 @@ def Qb(s1, f, smax, qmax, step_fct):
     """
     Calculate Qb, handling both torch.Tensor and np.ndarray inputs.
     """
+
     if isinstance(s1, torch.Tensor):
         exp_term = torch.exp(torch.clamp(-f * (smax - s1), min=-50, max=50))
-    elif isinstance(s1, np.ndarray):
+    elif isinstance(s1, np.ndarray) or isinstance(s1, float):
         exp_term = np.exp(-f * (smax - s1))
     else:
         raise TypeError("Input must be either a torch.Tensor or a np.ndarray")
@@ -559,7 +560,7 @@ def M(s0, temp, df, tmax, step_fct):
     """Melting function, with type-checking for compatibility."""
     if isinstance(s0, torch.Tensor):
         return step_fct(temp - tmax) * step_fct(s0) * torch.minimum(s0, df * (temp - tmax))
-    elif isinstance(s0, np.ndarray):
+    elif isinstance(s0, np.ndarray) or isinstance(s0, float):
         return step_fct(temp - tmax) * step_fct(s0) * np.minimum(s0, df * (temp - tmax))
     else:
         raise TypeError("Inputs must be either torch.Tensor or np.ndarray")
@@ -572,7 +573,7 @@ def ET(s1, temp, lday, smax, step_fct):
         # print('smax:', type(smax), smax)
         # print('PET_val:', type(PET_val), PET_val)
         et_val = step_fct(s1) * step_fct(s1 - smax) * PET_val + step_fct(s1) * step_fct(smax - s1) * PET_val * (s1 / smax)
-    elif isinstance(s1, np.ndarray):
+    elif isinstance(s1, np.ndarray) or isinstance(s1, float):
         et_val = step_fct(s1) * step_fct(s1 - smax) * PET_val + step_fct(s1) * step_fct(smax - s1) * PET_val * (s1 / smax)
     else:
         raise TypeError("Inputs must be either torch.Tensor or np.ndarray")
@@ -585,7 +586,7 @@ def PET(temp, lday):
     # print('lday:', type(lday), lday)
     if isinstance(temp, torch.Tensor):
         return 29.8 * lday * 0.611 * torch.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)
-    elif isinstance(temp, np.ndarray):
+    elif isinstance(temp, np.ndarray) or isinstance(temp, float):
         return 29.8 * lday * 0.611 * np.exp((17.3 * temp) / (temp + 237.3)) / (temp + 273.2)
     else:
         raise TypeError("Temperature input must be either torch.Tensor or np.ndarray")

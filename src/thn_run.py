@@ -554,7 +554,6 @@ def run_conceptual_model(config_file: Path, gpu: int = None):
 
     cfg, dataset = _load_cfg_and_ds(config_file, gpu, model='conceptual')
     
-
     # Get the basin interpolators
     interpolators = get_basin_interpolators(dataset, cfg, project_dir)
     

@@ -19,10 +19,10 @@ odesmethod: euler
 time_step: 0.5
 
 # --- Training configurations --- #
-train_start_date: "01/10/1995"
+train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
-valid_end_date: "30/09/2005"
+valid_end_date: "30/09/2010"
 
 # Metrics to use for evaluation
 metrics:
@@ -39,7 +39,7 @@ metrics:
   - Pearson-r
 
 ## --- Run configurations --- ##
-experiment_name: example_concept_model
+experiment_name: run_concept_model
 
 device: cpu
 

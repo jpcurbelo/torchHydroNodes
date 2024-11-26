@@ -66,7 +66,7 @@ General experiment entries
 
   **Reference**: For a full list of available metrics, see `src/utils/metrics`.
 
-- ``experiment_name``: Defines the name of your experiment that will be used as a folder name (+ date-time string),
+- ``experiment_name``: Defines the name of your experiment that will be used as a folder name (+ date-time string suffix) to save the model and results.,
 
 - ``device``: Which device to use in format of ``cuda:0``, ``cuda:1``, etc, for GPUs or ``cpu``.
 
