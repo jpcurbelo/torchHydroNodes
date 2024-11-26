@@ -1,0 +1,50 @@
+atol: 1e-3
+basin_file: 569_basin_file.txt
+basin_file_path: ../examples/569_basin_file.txt
+concept_data_dir: /gladwell/hydrology/SUMMA/summa-ml-models/CAMELS_US
+concept_inputs:
+- prcp
+- dayl
+- tmean
+- tmin
+- tmax
+- srad
+- vp
+concept_model: exphydro
+concept_target:
+- obs_runoff
+config_dir: ../examples
+dataset: camelsus
+device: cpu
+experiment_name: M0_results_569basins_1980_2010_RK23_tol33_7vars
+forcings:
+- daymet
+metrics:
+- NSE
+- Alpha-NSE
+- Beta-NSE
+- FHV
+- FMS
+- FLV
+- KGE
+- Beta-KGE
+- Peak-Timing
+- Peak-MAPE
+- Pearson-r
+number_of_basins: 569
+ode_solver_lib: scipy
+odesmethod: RK23
+periods:
+- train
+- valid
+plots_dir: ../examples/runs/M0_results_569basins_1980_2010_RK23_tol33_7vars_241004_104247/model_plots
+precision: float32
+results_dir: ../examples/runs/M0_results_569basins_1980_2010_RK23_tol33_7vars_241004_104247/model_results
+rtol: 1e-3
+run_dir: ../examples/runs/M0_results_569basins_1980_2010_RK23_tol33_7vars_241004_104247
+seed: 111
+train_end_date: 30/09/2000
+train_start_date: 01/10/1980
+valid_end_date: 30/09/2010
+valid_start_date: 01/10/2000
+verbose: 1

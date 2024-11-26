@@ -5,6 +5,7 @@ examples/runs*/
 data/*
 # Except the data/ folder itself
 !data/
+!data/M0_results_569basins_1980_2010_RK23_tol33_7vars
 src/scripts_paper/runs_pretrainer*
 src/scripts_paper/runs_hybrid*
 src/scripts_paper/ZZZruns_*

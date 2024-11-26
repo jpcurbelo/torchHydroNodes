@@ -4,9 +4,9 @@ Configuration Arguments
 This page provides a list of possible configuration arguments.
 For examples of how a config file could look like, check out the files:
 
--  `docs/source/tutorials/run_concept_model/config_run_concept.yml <https://github.com/jpcurbelo/torchHydroNodes/blob/master/docs/source/tutorials/run_concept_model/config_run_concept.yml>`_
+-  `tutorials/01-RunConceptModel/config_run_concept.yml <https://github.com/jpcurbelo/torchHydroNodes/blob/master/tutorials/01-RunConceptModel/config_run_concept.yml>`_
 
--  `docs/source/tutorials/run_hybrid_model/config_run_hybrid_mlp.yml <https://github.com/jpcurbelo/torchHydroNodes/blob/master/docs/source/tutorials/run_hybrid_model/config_run_hybrid_mlp.yml>`_
+-  `tutorials/02-PretrainNNmodel/config_pretrain_nn_model.yml <https://github.com/jpcurbelo/torchHydroNodes/blob/master/tutorials/02-PretrainNNmodel/config_run_pretrain.yml>`_
 
 Data entries
 ------------
