@@ -5,7 +5,7 @@ exphydro:
     - dayl
     - tmean
     - q_obs
-  model_inputs:
+  model_inputs: # 
     - prcp
     - dayl
     - tmean
