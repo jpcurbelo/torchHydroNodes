@@ -1,7 +1,7 @@
 from src.utils.load_process_data import Config
 from src.modelzoo_nn.basepretrainer import NNpretrainer
 from src.datasetzoo.basedataset import BaseDataset
-from src.modelzoo_hybrid.expohydroM100 import (
+from src.modelzoo_hybrid.exphydroM100 import (
     BaseHybridModel, 
     ExpHydroM100,
 )

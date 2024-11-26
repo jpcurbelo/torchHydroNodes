@@ -17,41 +17,13 @@ Data entries
 
 - ``forcings``: This entry can be ignored if the dataset is not ``camelsus`` or unless it is strictly required by a newly defined dataset. It can be either a string or a list of strings corresponding to forcing products in the CAMELS dataset. 
 
-  *Examples*:  ``[daymet, maurer, maurer_extended, nldas]``.
+  Examples:  ``[daymet, maurer, maurer_extended, nldas]``.
 
 
 General experiment entries
 --------------------------
 
-- ``basin_file``: Specifies the full or relative path to a text file containing the basin IDs used for training, validation, and testing. Each line in the file should contain a single basin ID, as defined in the dataset.
-
-- ``ode_solver_lib``: Specifies the library used for solving ODEs. Supported options include ``scipy`` and ``torchdiffeq``. 
-
-  - ``scipy``: Solves ODEs using ``solve_ivp`` from ``scipy.integrate``.  
-    Reference: `SciPy Documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html>`_.
-
-    Supported methods: ``RK45``, ``RK23``, ``DOP853``, ``Radau``, ``BDF``, ``LSODA``.  
-
-    Example:
-
-    - For adaptive-step solvers:
-
-      - ``odesmethod``: ``RK23``  
-      - ``rtol``: ``1e-4``  
-      - ``atol``: ``1e-6``  
-
-    **Note**: Methods such as ``euler`` and ``rk4`` are not part of the `scipy` module and have been separately implemented in the model class.  
-
-    Example:
-
-    - For fixed-step solvers:
-
-      - ``odesmethod``: ``euler``  
-      - ``time_step``: ``0.5``  
-
-  - ``torchdiffeq``: Solves ODEs using the ``torchdiffeq`` library.  
-    Reference: `torchdiffeq documentation <https://github.com/rtqichen/torchdiffeq/blob/master/README.md>`_.  
-    Supported methods: ``euler``, ``rk4``, ``midpoint``, ``adaptive_heun``, ``bosh3``, ``dopri5``.  
+- ``basin_file``: Specifies the full or relative path to a text file containing the basin IDs used for training, validation, and testing. Each line in the file should contain a single basin ID, as defined in the dataset. 
 
 - ``train_start_date``: Start date of the training period (first day of discharge) in the format `DD/MM/YYYY`.  
   Corresponding pairs of start and end dates denote the different periods.
@@ -90,8 +62,46 @@ Conceptual model entries
 
   ``exphydro``: A two-bucket model (water and snow) with 5 processes and 6 parameters. (`Höge et al., 2022. <https://hess.copernicus.org/articles/26/5085/2022/>`_)
 
+- ``ode_solver_lib``: Specifies the library used for solving ODEs. Supported options include ``scipy`` and ``torchdiffeq``. 
+
+  - ``scipy``: Solves ODEs using ``solve_ivp`` from ``scipy.integrate``.  
+    Reference: `SciPy Documentation <https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html>`_.
+
+    Supported methods: ``RK45``, ``RK23``, ``DOP853``, ``Radau``, ``BDF``, ``LSODA``.  
+
+    Example:
+
+    For adaptive-step solvers:
+
+    - ``ode_solver_lib``: ``scipy``
+    - ``odesmethod``: ``RK23``  
+    - ``rtol``: ``1e-4``  
+    - ``atol``: ``1e-6``  
+
+    **Note**: Methods such as ``euler`` and ``rk4`` are not part of the `scipy` module and have been separately implemented in the model class.  
+
+    For fixed-step solvers:
+
+    - ``ode_solver_lib``: ``scipy``
+    - ``odesmethod``: ``euler``  
+    - ``time_step``: ``0.5``  
+
+  - ``torchdiffeq``: Solves ODEs using the ``torchdiffeq`` library.  
+    Reference: `torchdiffeq documentation <https://github.com/rtqichen/torchdiffeq/blob/master/README.md>`_.  
+    Supported methods: ``euler``, ``rk4``, ``midpoint``, ``adaptive_heun``, ``bosh3``, ``dopri5``. 
+
+    Example:
+
+    - ``ode_solver_lib``: ``torchdiffeq``
+    - ``odesmethod``: ``dopri5``  
+    - ``rtol``: ``1e-4``  
+    - ``atol``: ``1e-6``
+
 Neural network entries
 ----------------------
+
+- ``data_dir``: Specifies the folder that contains the data obtained by running the conceptual model. The path should be: ``src/data/data_dir`` - beware of locating the data in the correct folder.
+
 - ``nn_model``: Specifies the neural network model to use. Supported models include ``mlp`` and ``lstm``. The code is intended to support other neural network models but might require specific adaptations.
 
   ``mlp``: A multi-layer perceptron model with fully connected layers.  
@@ -129,9 +139,21 @@ Neural network entries
 Hybrid model entries
 --------------------
 
+``data_dir``: Same as in the **Neural network entries**.
+
+- ``hybrid_model``: Specifies the hybrid model to use. Supported models include ``exphydroM100``. The code is intended to support other hybrid models but might require specific adaptations.
+
+  ``exphydroM100``: A hybrid model that combines a conceptual model with a neural network model. (`Höge et al., 2022. <https://hess.copernicus.org/articles/26/5085/2022/>`_). See ``class ExpHydroM100`` in `src/modelzoo_hybrid/exphydroM100.py` for more details.
+
+- ``concept_model``: Same as in the **Conceptual model entries**.
+
+- ``ode_solver_lib``: Same as in the **Conceptual model entries** but only ``torchdiffeq`` is supported for hybrid models.
+
+- ``basin_file``: Same as in the **General experiment entries**.
+
 - ``nn_model_dir``: Specifies the path to the pre-trained neural network model. 
 
-  **Note**: If ``nn_model_dir`` is not specified, the model will be trained from scratch and all the neural network entries should be defined in the configuration file.
+  **Note**: If ``nn_model_dir`` is not specified, the model will be trained from scratch and all the **Neural network entries** should be defined in the configuration file.
 
 - ``scale_target_vars``: Specifies whether to scale the target variables. If set to `True`, the target variables will be scaled using the `mea` and `standard deviation` of the training period.
 
