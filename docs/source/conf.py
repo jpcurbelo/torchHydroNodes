@@ -20,10 +20,10 @@ extensions = [
     'sphinx.ext.napoleon',      # Support for Google and NumPy style docstrings
     'sphinx.ext.viewcode',      # Add links to source code
     'sphinx.ext.todo',          # Support for TODO directives
+    'sphinx.ext.mathjax',  # latex rendering of equations using MathJax
     'sphinx.ext.intersphinx',   # Link to other Sphinx documentation
     'nbsphinx',  # For rendering Jupyter notebooks
-    'nbsphinx_link' # For linking to Jupyter notebooks
-    'sphinx.ext.mathjax',  # latex rendering of equations using MathJax
+    'nbsphinx_link', # For linking to Jupyter notebooks
 ]
 
 templates_path = ['_templates']
