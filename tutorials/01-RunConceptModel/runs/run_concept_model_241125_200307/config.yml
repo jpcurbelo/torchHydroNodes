@@ -36,10 +36,10 @@ odesmethod: euler
 periods:
 - train
 - valid
-plots_dir: runs/run_concept_model_241125_183422/model_plots
+plots_dir: runs/run_concept_model_241125_200307/model_plots
 precision: float32
-results_dir: runs/run_concept_model_241125_183422/model_results
-run_dir: runs/run_concept_model_241125_183422
+results_dir: runs/run_concept_model_241125_200307/model_results
+run_dir: runs/run_concept_model_241125_200307
 seed: 111
 time_step: 0.5
 train_end_date: 30/09/2000
