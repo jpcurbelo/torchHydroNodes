@@ -711,7 +711,10 @@ def train_hybrid_model(config_file: Path, gpu: int = None):
     if cfg.nn_model_dir is False:
         start_time = time.time()
         # Pretrain the model
-        pretrain_ok = pretrainer.train(loss=cfg.loss_pretrain, lr=cfg.lr_pretrain, epochs=cfg.epochs_pretrain)
+        pretrain_ok = pretrainer.train(loss=cfg.loss_pretrain, 
+                                       lr=cfg.lr_pretrain, 
+                                       epochs=cfg.epochs_pretrain,
+                                       disable_pbar=True)
         if pretrain_ok:
             print(f'-- Pretraining took {time.time() - start_time:.2f}s')
         else:

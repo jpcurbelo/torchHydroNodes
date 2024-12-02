@@ -268,8 +268,13 @@ class NNpretrainer(ExpHydroCommon):
 
         return dataloader
     
-    def train(self, max_nan_batches=10, loss=None, lr=None, epochs=None, any_log=True):
-
+    def train(self, max_nan_batches=10, loss=None, lr=None, 
+              epochs=None, any_log=True, disable_pbar=False):
+      
+        print('loss:', loss)
+        print('lr:', lr)
+        print('epochs:', epochs)
+        
         # Determine the training behavior based on whether loss, lr, or epochs have been provided
         if loss is not None:
             self.loss = loss_name_func_dict[loss.lower()]
@@ -278,14 +283,17 @@ class NNpretrainer(ExpHydroCommon):
             self.scheduler = None
         if epochs is not None:
             self.epochs = epochs
-        if any([loss, lr, epochs]):
-            verbose = False
-            disable_pbar = True
-            save_model_results = False
-        else:
-            verbose = self.cfg.verbose
-            disable_pbar = self.cfg.disable_pbar
-            save_model_results = True
+        # if any([loss, lr, epochs]):
+        #     verbose = False
+        #     disable_pbar = disable_pbar
+        #     save_model_results = False
+        # else:
+        #     verbose = self.cfg.verbose
+        #     disable_pbar = self.cfg.disable_pbar
+        #     save_model_results = True
+
+        verbose = self.cfg.verbose
+        save_model_results = True
 
         early_stopping = EarlyStopping(patience=self.cfg.patience)
 

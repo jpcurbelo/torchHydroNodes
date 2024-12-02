@@ -18,7 +18,7 @@ class Pretrainer(BaseDataset):
         ):
         
         super(Pretrainer, self).__init__(cfg, scaler, is_train)
-        
+
     def _load_basin_dynamics(self, basin: str) -> pd.DataFrame:
         '''
         Load the basin dynamics for a basin of the pretrainer data set.

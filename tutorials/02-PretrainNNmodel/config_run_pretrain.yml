@@ -2,14 +2,13 @@
 # Conceptual model to use [exphydro, ...
 # Ref: exphydro -> https://hess.copernicus.org/articles/26/5085/2022/
 concept_model: exphydro
-# NN model to use [mlp, lstm]
-# nn_model: lstm
-nn_model: mlp
 
 # --- Data configurations --- #
-# Dataset to use for training and testing [camelsus, summaca]
-# data_dir: M0_results_569basins_1980_2010_RK23
-data_dir: M0_results_4basins_1980_2010_RK23
+# Folder in src/data containing the outputs from the conceptual model
+data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
+
+# -- Configurations for the neural network model -- #
+nn_model: mlp
 
 nn_dynamic_inputs:
   - s_snow
@@ -27,75 +26,26 @@ nn_mech_targets:
 target_variables: 
   - obs_runoff
 
-# static_attributes:
-#   - elev_mean
-#   - slope_mean
-#   - area_gages2
-#   - frac_forest
-#   - lai_max
-#   - lai_diff
-#   - gvf_max
-#   - gvf_diff
-#   - soil_depth_pelletier
-#   - soil_depth_statsgo
-#   - soil_porosity
-#   - soil_conductivity
-#   - max_water_content
-#   - sand_frac
-#   - silt_frac
-#   - clay_frac
-#   - carbonate_rocks_frac
-#   - geol_permeability
-#   - p_mean
-#   - pet_mean
-#   - aridity
-#   - frac_snow
-#   - high_prec_freq
-#   - high_prec_dur
-#   - low_prec_freq
-#   - low_prec_dur
-#   - p_seasonality
-
-
 scale_target_vars: True
 
-# Files to specify training, validation and test basins
-# basin_file: 569_basin_file.txt
-# basin_file: 569_basin_file_hydronodes.txt
-basin_file: 1_basin_file.txt
-# basin_file: 1_basin_fileB.txt
-# basin_file: 4_basin_file.txt
-# basin_file: 25_basin_file.txt
-# n_first_basins: 100
-# n_random_basins: 100
+basin_file: 4_basin_file.txt
 
 # --- Training configurations --- #
-
 # Period to train, validate and test the model (they should be consecutive)
 train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
-# test_start_date: "01/10/2000"
-# test_end_date: "30/09/2010"
 
 # Loss function to use [mse, nse, nse-nh]
 loss: mse
 
 # Number of epochs to train the model
-epochs: 200
+epochs_pretrain: 200
 
 # Patience for early stopping
 patience: 30
 
-# # If a value, clips the gradients during training to that norm.
-# clip_gradient_norm: 1.0
-
-# Batch size for training (if -1, it will be only one batch for the whole dataset)
-# batch_size: 7305
-# batch_size: 128
-# batch_size: 256
-# batch_size: 1024
 batch_size: 256
 
 # Optimizer to use [adam, sgd]
@@ -103,10 +53,6 @@ optimizer: adam
 
 # # Learning rate for the optimizer
 learning_rate: 0.01
-# learning_rate:
-#   initial: 0.001
-#   decay: 0.5
-#   decay_step_fraction: 4  # Decay step fraction (e.g., N-> 1/N of the total epochs
 
 # Hidden layers for the NN model
 hidden_size: 
@@ -116,22 +62,8 @@ hidden_size:
   - 32
   - 32
 
-  # - 32
-  # - 64
-  # - 64
-  # - 64
-  # - 32
-
-# # Dropout rate for the NN model
-# dropout: 0.2
-
 ## --- Run configurations --- ##
-# Experiment name, used as folder name
-# experiment_name: 569basin_pretrainer_mlp
-# experiment_name: 4basin_pretrainer_mlp
-# experiment_name: 4basin_pretrainer_mlp_static
-# experiment_name: 1basin_pretrainer_mlp_32x5
-experiment_name: ZZZZ1basin_pretrainer_mlp_32x5_lr2_200ep
+experiment_name: run_pretrain_nn_model
 
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
 device: cpu
@@ -150,11 +82,7 @@ verbose: 1
 
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 1
-  # - 1013500
-  # - 6431500
-  # - 1022500
-  # - 1030500
+log_n_basins: 4
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
 log_every_n_epochs: 50

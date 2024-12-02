@@ -23,6 +23,7 @@ src/scripts/scripts_finetuning/test_runs_*
 src/scripts/scripts_finetuning/finetune_lstm*/
 src/*.png
 src/*.csv
+tutorials/*/runs/*
 
 
 # Files
