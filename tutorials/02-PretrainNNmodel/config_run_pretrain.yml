@@ -41,7 +41,7 @@ valid_end_date: "30/09/2010"
 loss: mse
 
 # Number of epochs to train the model
-epochs_pretrain: 200
+epochs_pretrain: 50
 
 # Patience for early stopping
 patience: 30

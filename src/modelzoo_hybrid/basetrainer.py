@@ -101,7 +101,7 @@ class BaseHybridModelTrainer:
 
             for (inputs, targets, basin_ids) in pbar:
 
-                print('basin_id:', basin_ids[0], 'batch:', num_batches_seen+1)
+                # print('basin_id:', basin_ids[0], 'batch:', num_batches_seen+1)
 
                 # Zero the parameter gradients
                 self.model.optimizer.zero_grad()

@@ -57,7 +57,10 @@ DELETE_IF_UNFINISHED = 0
 
 ONLY_CHECK_FINISHED = 0
 
-def train_model_for_basin(config_file, nn_model_dir, pretrainer_runs_folder, project_path, run_folder, nnmodel_type, basin=None):
+def train_model_for_basin(config_file, nn_model_dir, 
+                          pretrainer_runs_folder, 
+                          project_path, run_folder, 
+                          nnmodel_type, basin=None):
     '''
     Train the hybrid model for a single basin
 
@@ -106,7 +109,6 @@ def train_model_for_basin(config_file, nn_model_dir, pretrainer_runs_folder, pro
                                         # nn_model_path=Path(project_path) / 'src' / 'scripts_paper' / pretrainer_runs_folder)
                                         nn_model_path=script_path)
     
-
     # Delete the basin_file and config_file_temp after training
     if os.path.isfile(basin_file):
         os.remove(basin_file)

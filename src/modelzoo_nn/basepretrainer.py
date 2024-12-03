@@ -270,10 +270,6 @@ class NNpretrainer(ExpHydroCommon):
     
     def train(self, max_nan_batches=10, loss=None, lr=None, 
               epochs=None, any_log=True, disable_pbar=False):
-      
-        print('loss:', loss)
-        print('lr:', lr)
-        print('epochs:', epochs)
         
         # Determine the training behavior based on whether loss, lr, or epochs have been provided
         if loss is not None:

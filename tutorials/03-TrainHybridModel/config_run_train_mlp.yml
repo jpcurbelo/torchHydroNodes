@@ -6,59 +6,76 @@ hybrid_model: exphydroM100
 concept_model: exphydro
 # Method to solve the ODEs with torchdiffeq [bosh3, rk4, dopri5, euler, adaptive_heun]
 odesmethod: euler
+time_step: 1.0
 
 # Files to specify training, validation and test basins
-basin_file: 4_basin_file.txt
+basin_file: 2_basin_file.txt
 
 # --- Data configurations --- #
-# Dataset to use for training and testing [camelsus, summaca]
-data_dir: M0_results_569basins_1980_2010_RK23
-# nn_model_dir: NNpretrainer_250basins_1980_2010
-# nn_model_dir: NNpretrainer_01013500_1980_2010_1000ep
-# nn_model_dir: NNpretrainer_06431500_1980_2010
+# Folder in src/data containing the outputs from the conceptual model
+data_dir: M0_results_569basins_1980_2010_RK23_tol33_7vars
 
-# nn_model_dir: 4basin_pretrainer_lstm_240628_080705
-# nn_model_dir: 4basin_pretrainer_lstm_do04_1hid64
-# nn_model_dir: 4basin_pretrainer_lstm_240628_1hid256_270d
-# nn_model_dir: 4basin_pretrainer_mlp_static
-# nn_model_dir: 4basin_pretrainer_mlp
-nn_model_dir: 4basin_pretrainer_mlp_static_128x1_minscale
+# If not nn_model_dir, specify the model and parameters to use:
+###############################################################
+# NN model to use [mlp, lstm]
+nn_model: mlp
+
+nn_dynamic_inputs:
+  - s_snow
+  - s_water
+  - prcp
+  - tmean
+
+nn_mech_targets:
+  - ps_bucket
+  - pr_bucket
+  - m_bucket
+  - et_bucket
+  - q_bucket
+
+target_variables: 
+  - obs_runoff
+
+hidden_size: 
+  - 32
+  - 32
+  - 32
+  - 32
+  - 32
+
+loss_pretrain: mse
+lr_pretrain: 0.01
+epochs_pretrain: 50
+###############################################################
 
 scale_target_vars: True
 
 # --- Training configurations --- #
-
 # Period to train, validate and test the model (they should be consecutive)
 train_start_date: "01/10/1980"
 train_end_date: "30/09/2000"
 valid_start_date: "01/10/2000"
 valid_end_date: "30/09/2010"
 
-# train_start_date: "01/10/1995"
-# train_end_date: "30/09/2000"
-# valid_start_date: "01/10/2000"
-# valid_end_date: "30/09/2003"
-
 # Loss function to use [mse, nse, nse-nh]
-loss: nse-nh
+loss: nse
 
 # Number of epochs to train the model
-epochs: 200
+epochs: 10
 
 # Patience for early stopping
-patience: 10
+patience: 30
 
 # If a value, clips the gradients during training to that norm.
 clip_gradient_norm: 1.0
 
 # Batch size for training (if -1, it will be only one batch for the whole dataset)
-batch_size: 512
+batch_size: 256
 
 # Optimizer to use [adam, sgd]
 optimizer: adam
 
 # # Learning rate for the optimizer
-# learning_rate: 0.001
 learning_rate:
   initial: 0.001
   decay: 0.5
@@ -66,16 +83,13 @@ learning_rate:
 
 ## --- Run configurations --- ##
 # Experiment name, used as folder name
-# experiment_name: 4basin_hybrid_mlp_static
-experiment_name: 4basin_hybrid_mlp_static_128x1_minscale
-# experiment_name: 4basin_hybrid_mlp
-# experiment_name: 4basin_hybrid_lstm
-# experiment_name: cluster1_hybrid_lstm
+experiment_name: run_train_hybrid_mlp
+
 # which GPU (id) to use [in format of cuda:0, cuda:1 etc, or cpu or None]
-device: cuda:1
+device: cpu
 
 # Set seed for reproducibility
-seed: 1111
+seed: 111
 
 # Set precision for the model [float32, float64]
 precision: float32
@@ -86,17 +100,12 @@ num_workers: 16
 # Verbose level [0, 1] (0: only log info messages, don't show progress bars, 1: show progress bars)
 verbose: 1
 
-
 # If a value and greater than 0, logs n random basins as figures after pretraining the NN model
 # If list of basins, logs the specified basins: format is either '01013500' or 1013500
-log_n_basins: 4
-  # - 1013500
-  # - 6431500
-  # 2
-  # 1
+log_n_basins: 1  # We'll run multiple single-basin models for this tutorial
 
 # If a value and greater than 0, logs figures and metrics, and save model after each n epochs
-log_every_n_epochs: 20
+log_every_n_epochs: 50
 
 # Metrics to use for evaluation (after training)
 metrics:
