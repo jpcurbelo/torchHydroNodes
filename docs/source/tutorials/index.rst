@@ -11,3 +11,7 @@ This :doc:`tutorial <run-concept-model>` demonstrates how to run a conceptual hy
 
 This :doc:`tutorial <pretrain-nn-model>` demonstrates how to pretrain a neural network model using **torchHydroNodes**.
 
+**03-TrainHybridModel**
+
+This :doc:`tutorial <train-hybrid-model>` demonstrates how to train a hybrid model with MLP or LSTM as the Neural Network componet using **torchHydroNodes**.
+
